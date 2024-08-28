@@ -544,9 +544,9 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
     lazy val isCelebornSortBasedShuffle = conf.isUseCelebornShuffleManager &&
       conf.celebornShuffleWriterType == GlutenConfig.GLUTEN_SORT_SHUFFLE_WRITER
     partitioning != SinglePartition &&
-    (partitioning.numPartitions >= GlutenConfig.getConf.columnarShuffleSortPartitionsThreshold ||
+    ((partitioning.numPartitions >= GlutenConfig.getConf.columnarShuffleSortPartitionsThreshold ||
       output.size >= GlutenConfig.getConf.columnarShuffleSortColumnsThreshold) ||
-    isCelebornSortBasedShuffle
+      isCelebornSortBasedShuffle)
   }
 
   /**

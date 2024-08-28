@@ -49,7 +49,7 @@ class VeloxCelebornColumnarShuffleWriter[K, V](
     celebornConf,
     client,
     writeMetrics) {
-  private val isSort = !GlutenConfig.GLUTEN_HASH_SHUFFLE_WRITER.equals(shuffleWriterType)
+  private val isSort = handle.dependency.asInstanceOf[ColumnarShuffleDependency[K, V, V]].isSort
 
   private val runtime = Runtimes.contextInstance("CelebornShuffleWriter")
 
