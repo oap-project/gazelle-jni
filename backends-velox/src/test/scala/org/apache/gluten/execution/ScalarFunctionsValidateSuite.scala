@@ -1438,4 +1438,37 @@ abstract class ScalarFunctionsValidateSuite extends FunctionsValidateSuite {
         checkGlutenOperatorMatch[FilterExecTransformer](df)
     }
   }
+
+  test("date_trunc") {
+    withTempPath {
+      path =>
+        Seq(
+          (1, Timestamp.valueOf("2015-07-22 10:01:40.123456")),
+          (2, Timestamp.valueOf("2014-12-31 05:29:06.123456")))
+          .toDF("a", "b")
+          .write
+          .parquet(path.getCanonicalPath)
+
+        spark.read.parquet(path.getCanonicalPath).createOrReplaceTempView("view")
+
+        runQueryAndCompare("""
+                             |SELECT
+                             |  date_trunc('yy', b) as t1,
+                             |  date_trunc('yyyy', b) as t2,
+                             |  date_trunc('year', b) as t3,
+                             |  date_trunc('quarter', b) as t4,
+                             |  date_trunc('mon', b) as t5,
+                             |  date_trunc('month', b) as t6,
+                             |  date_trunc('mm', b) as t7,
+                             |  date_trunc('dd', b) as t8,
+                             |  date_trunc('day', b) as t9,
+                             |  date_trunc('hour', b) as t10,
+                             |  date_trunc('minute', b) as t11,
+                             |  date_trunc('second', b) as t12
+                             |FROM view
+                             |""".stripMargin) {
+          checkGlutenOperatorMatch[ProjectExecTransformer]
+        }
+    }
+  }
 }

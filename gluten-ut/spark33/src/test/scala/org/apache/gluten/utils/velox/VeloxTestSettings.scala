@@ -126,6 +126,8 @@ class VeloxTestSettings extends BackendTestSettings {
     .exclude("to_unix_timestamp")
     // Replaced by a gluten test to pass timezone through config.
     .exclude("Hour")
+    // Replaced by a gluten test to pass timezone through config.
+    .exclude("TruncTimestamp")
     // Unsupported format: yyyy-MM-dd HH:mm:ss.SSS
     .exclude("SPARK-33498: GetTimestamp,UnixTimestamp,ToUnixTimestamp with parseError")
     // Replaced by a gluten test to pass timezone through config.

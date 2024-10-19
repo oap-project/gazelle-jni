@@ -17,7 +17,7 @@
 package org.apache.spark.sql.catalyst.expressions
 
 import org.apache.spark.sql.GlutenTestsTrait
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection
 import org.apache.spark.sql.catalyst.util.DateTimeTestUtils._
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
@@ -474,6 +474,69 @@ class GlutenDateExpressionsSuite extends DateExpressionsSuite with GlutenTestsTr
                 }
               }
           }
+      }
+    }
+  }
+
+  private def testTruncTimestamp(input: Timestamp, fmt: String, expected: Timestamp): Unit = {
+    checkEvaluation(
+      TruncTimestamp(Literal.create(fmt, StringType), Literal.create(input, TimestampType)),
+      expected)
+    checkEvaluation(
+      TruncTimestamp(
+        NonFoldableLiteral.create(fmt, StringType),
+        Literal.create(input, TimestampType)),
+      expected)
+    // SPARK-38990: ensure that evaluation with input rows also works
+    val catalystInput = CatalystTypeConverters.convertToCatalyst(input)
+    val inputRow = InternalRow(UTF8String.fromString(fmt), catalystInput)
+    checkEvaluation(
+      TruncTimestamp(
+        BoundReference(ordinal = 0, dataType = StringType, nullable = true),
+        BoundReference(ordinal = 1, dataType = TimestampType, nullable = true)),
+      expected,
+      inputRow
+    )
+  }
+
+  testGluten("TruncTimestamp") {
+    withDefaultTimeZone(UTC) {
+      val inputDate = Timestamp.valueOf("2015-07-22 05:30:06")
+
+      withSQLConf(SQLConf.SESSION_LOCAL_TIMEZONE.key -> UTC_OPT.get) {
+        Seq("yyyy", "YYYY", "year", "YEAR", "yy", "YY").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-01-01 00:00:00"))
+        }
+
+        Seq("month", "MONTH", "mon", "MON", "mm", "MM").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-07-01 00:00:00"))
+        }
+
+        Seq("DAY", "day", "DD", "dd").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-07-22 00:00:00"))
+        }
+
+        Seq("HOUR", "hour").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-07-22 05:00:00"))
+        }
+
+        Seq("MINUTE", "minute").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-07-22 05:30:00"))
+        }
+
+        Seq("SECOND", "second").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-07-22 05:30:06"))
+        }
+
+        Seq("WEEK", "week").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-07-20 00:00:00"))
+        }
+
+        Seq("QUARTER", "quarter").foreach {
+          fmt => testTruncTimestamp(inputDate, fmt, Timestamp.valueOf("2015-07-01 00:00:00"))
+        }
+
+        testTruncTimestamp(null, "MON", null)
       }
     }
   }
