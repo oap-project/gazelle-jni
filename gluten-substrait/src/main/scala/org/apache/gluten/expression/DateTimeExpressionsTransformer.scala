@@ -17,8 +17,12 @@
 package org.apache.gluten.expression
 
 import org.apache.gluten.exception.GlutenNotSupportException
+import org.apache.gluten.substrait.expression.{ExpressionBuilder, ExpressionNode}
 
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.unsafe.types.UTF8String
+
+import java.util.Locale
 
 /** The extract trait for 'GetDateField' from Date */
 case class ExtractDateTransformer(
@@ -43,9 +47,45 @@ case class TruncTimestampTransformer(
     timestamp: ExpressionTransformer,
     original: TruncTimestamp)
   extends ExpressionTransformer {
-  override def children: Seq[ExpressionTransformer] = {
-    val timeZoneId = original.timeZoneId.map(timeZoneId => LiteralTransformer(timeZoneId))
-    Seq(format, timestamp) ++ timeZoneId
+  override def children: Seq[ExpressionTransformer] = Seq(format, timestamp)
+
+  override def doTransform(args: java.lang.Object): ExpressionNode = {
+    if (!original.format.foldable) {
+      throw new GlutenNotSupportException(s"The format ${original.format} must be constant string.")
+    }
+    val formatStr = original.format.eval().asInstanceOf[UTF8String]
+    if (formatStr == null) {
+      throw new GlutenNotSupportException("The format is null.")
+    }
+    val newFormatStr = formatStr.toString.toLowerCase(Locale.ROOT) match {
+      case "second" => "second"
+      case "minute" => "minute"
+      case "hour" => "hour"
+      case "day" | "dd" => "day"
+      case "week" => "week"
+      case "mon" | "month" | "mm" => "month"
+      case "quarter" => "quarter"
+      case "year" | "yyyy" | "yy" => "year"
+      // Can not support now.
+      // case "microsecond" => "microsecond"
+      // case "millisecond" => "millisecond"
+      case _ => throw new GlutenNotSupportException(s"The format $formatStr is invalidate.")
+    }
+
+    val functionMap = args.asInstanceOf[java.util.HashMap[String, java.lang.Long]]
+    val dataTypes = Seq(original.format.dataType, original.timestamp.dataType)
+    val functionId = ExpressionBuilder.newScalarFunction(
+      functionMap,
+      ConverterUtils.makeFuncName(substraitExprName, dataTypes))
+
+    val expressionNodes = new java.util.ArrayList[ExpressionNode]()
+    val timestampNode = timestamp.doTransform(args)
+    val lowerFormatNode = ExpressionBuilder.makeStringLiteral(newFormatStr)
+    expressionNodes.add(lowerFormatNode)
+    expressionNodes.add(timestampNode)
+
+    val typeNode = ConverterUtils.getTypeNode(original.dataType, original.nullable)
+    ExpressionBuilder.makeScalarFunction(functionId, expressionNodes, typeNode)
   }
 }
 
