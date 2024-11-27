@@ -66,11 +66,16 @@ std::shared_ptr<IcebergSplitInfo> IcebergPlanConverter::parseIcebergSplitInfo(
           fileContent = FileContent::kEqualityDeletes;
           break;
         default:
-          fileContent = FileContent::kData;
-          break;
+          VELOX_NYI("Unsupported Iceberg delete file content.");
       }
+      std::vector<int32_t> equalityFieldIds(deleteFile.equalityfieldids().begin(), deleteFile.equalityfieldids().end());
       deletes.emplace_back(IcebergDeleteFile(
-          fileContent, deleteFile.filepath(), format, deleteFile.recordcount(), deleteFile.filesize()));
+          fileContent,
+          deleteFile.filepath(),
+          format,
+          deleteFile.recordcount(),
+          deleteFile.filesize(),
+          equalityFieldIds));
     }
     icebergSplitInfo->deleteFilesVec.emplace_back(deletes);
   } else {

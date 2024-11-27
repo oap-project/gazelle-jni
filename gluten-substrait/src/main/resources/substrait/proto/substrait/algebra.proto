@@ -156,6 +156,14 @@ message ReadRel {
           EQUALITY_DELETES = 2;
         }
         message DeleteFile {
+          message Map {
+            message KeyValue {
+              int32 key = 1;
+              string value = 2;
+            }
+
+            repeated KeyValue key_values = 1;
+          }
           FileContent fileContent = 1;
           string filePath = 2;
           uint64 fileSize = 3;
@@ -164,6 +172,9 @@ message ReadRel {
             ParquetReadOptions parquet = 5;
             OrcReadOptions orc = 6;
           }
+          repeated int32 equalityFieldIds = 7;
+          Map lowerBounds = 8;
+          Map upperBounds = 9;
         }
         oneof file_format {
           ParquetReadOptions parquet = 1;
