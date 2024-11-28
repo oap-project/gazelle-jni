@@ -23,7 +23,6 @@ import org.apache.gluten.runtime.Runtimes
 import org.apache.gluten.sql.shims.SparkShimLoader
 import org.apache.gluten.utils.ArrowAbiUtil
 import org.apache.gluten.vectorized.{ColumnarBatchSerializerJniWrapper, NativeColumnarToRowJniWrapper}
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.execution.joins.BuildSideRelation
@@ -31,12 +30,13 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.utils.SparkArrowUtil
 import org.apache.spark.sql.vectorized.ColumnarBatch
 import org.apache.spark.task.TaskResources
-
 import org.apache.arrow.c.ArrowSchema
+import org.apache.spark.sql.execution.vectorized.OffHeapColumnVector
+import org.apache.spark.sql.types.DataTypes
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
-case class ColumnarBuildSideRelation(output: Seq[Attribute], batches: Array[Array[Byte]])
+case class ColumnarBuildSideRelation(output: Seq[Attribute], batches: UnsafeArray)
   extends BuildSideRelation {
 
   override def deserialized: Iterator[ColumnarBatch] = {
@@ -60,15 +60,16 @@ case class ColumnarBuildSideRelation(output: Seq[Attribute], batches: Array[Arra
         var batchId = 0
 
         override def hasNext: Boolean = {
-          batchId < batches.length
+          batchId < batches.getLength
         }
 
         override def next: ColumnarBatch = {
-          val handle =
-            jniWrapper
-              .deserialize(serializeHandle, batches(batchId))
+          val batch = batches.get(batchId)
+          val columnVector = new OffHeapColumnVector(batch.numElements(), DataTypes.BinaryType)
+          columnVector.putByteArray(batchId, batch.toByteArray, batch.getBaseOffset.toInt, batch.numElements)
+          val columnarBatch = new ColumnarBatch(Array(columnVector))
           batchId += 1
-          ColumnarBatches.create(handle)
+          columnarBatch
         }
       })
       .protectInvocationFlow()
