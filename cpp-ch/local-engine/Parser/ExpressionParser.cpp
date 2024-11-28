@@ -322,6 +322,8 @@ const ActionsDAG::Node * ExpressionParser::parseExpression(ActionsDAG & actions_
                 String function_name = "sparkCastFloatTo" + denull_output_type->getName();
                 result_node = toFunctionNode(actions_dag, function_name, args);
             }
+            else if (isFloat(denull_input_type) && isString(denull_output_type))
+                result_node = toFunctionNode(actions_dag, "sparkCastFloatToString", args);
             else if ((isDecimal(denull_input_type) && substrait_type.has_decimal()))
             {
                 args.emplace_back(addConstColumn(actions_dag, std::make_shared<DataTypeInt32>(), substrait_type.decimal().precision()));

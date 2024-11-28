@@ -2169,6 +2169,19 @@ class GlutenClickHouseTPCHSaltNullParquetSuite extends GlutenClickHouseTPCHAbstr
     spark.sql("drop table test_tbl_3149")
   }
 
+  test("GLUTEN-3289: Fix convert float to string") {
+    val tbl_create_sql = "create table test_tbl_3289(id bigint, a float) using parquet"
+    val tbl_insert_sql = "insert into test_tbl_3289 values(1, 2.0), (2, 2.1), (3, 2.2)"
+    val select_sql_1 = "select cast(a as string), cast(a * 1.0f as string) from test_tbl_3289"
+    val select_sql_2 =
+      "select cast(cast(a as double) as string), cast(cast(a * 1.0f as double) as string) from test_tbl_3289"
+    spark.sql(tbl_create_sql)
+    spark.sql(tbl_insert_sql)
+    compareResultsAgainstVanillaSpark(select_sql_1, true, { _ => })
+    compareResultsAgainstVanillaSpark(select_sql_2, true, { _ => })
+    spark.sql("drop table test_tbl_3289")
+  }
+
   test("test in-filter contains null value (bigint)") {
     val sql = "select s_nationkey from supplier where s_nationkey in (null, 1, 2)"
     compareResultsAgainstVanillaSpark(sql, true, { _ => })
