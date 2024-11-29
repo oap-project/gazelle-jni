@@ -20,16 +20,17 @@ import org.apache.gluten.columnarbatch.ColumnarBatches
 import org.apache.gluten.runtime.Runtimes
 import org.apache.gluten.sql.shims.SparkShimLoader
 import org.apache.gluten.vectorized.{ColumnarBatchSerializeResult, ColumnarBatchSerializerJniWrapper}
-
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkContext, TaskContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.physical.{BroadcastMode, BroadcastPartitioning, IdentityBroadcastMode, Partitioning}
 import org.apache.spark.sql.execution.joins.{HashedRelation, HashedRelationBroadcastMode, LongHashedRelation}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.vectorized.ColumnarBatch
 import org.apache.spark.task.TaskResources
+import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.map.BytesToBytesMap
 
 import scala.collection.mutable.ArrayBuffer;
 
@@ -90,6 +91,9 @@ object BroadcastUtils {
       schema: StructType,
       from: Broadcast[F],
       fn: Iterator[InternalRow] => Iterator[ColumnarBatch]): Broadcast[T] = {
+    val factory = UnsafeProjection
+    val converter = factory.create(schema)
+
     mode match {
       case HashedRelationBroadcastMode(_, _) =>
         // HashedRelation to ColumnarBuildSideRelation.
@@ -113,6 +117,16 @@ object BroadcastUtils {
         // Array[InternalRow] to ColumnarBuildSideRelation.
         val fromBroadcast = from.asInstanceOf[Broadcast[Array[InternalRow]]]
         val fromRelation = fromBroadcast.value
+        val taskContext = TaskContext.get()
+        val bytesToBytesMap = new BytesToBytesMap(taskContext.taskMemoryManager, 1000000000, 1000)
+        fromRelation.foreach(internalRow =>
+          {
+            val unsafeRow = converter.apply(internalRow)
+            val loc = bytesToBytesMap.lookup(unsafeRow.getBaseObject, unsafeRow.getBaseOffset, unsafeRow.getSizeInBytes)
+            loc.append(unsafeRow.getBaseObject, Platform.BYTE_ARRAY_OFFSET, unsafeRow.getSizeInBytes,
+              unsafeRow.getBaseObject, Platform.BYTE_ARRAY_OFFSET, unsafeRow.getSizeInBytes)
+          })
+
         val toRelation = TaskResources.runUnsafe {
           val batchItr: Iterator[ColumnarBatch] = fn(fromRelation.iterator)
           val serialized: Array[Array[Byte]] = serializeStream(batchItr) match {
