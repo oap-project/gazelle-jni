@@ -277,7 +277,7 @@ abstract class ScalarFunctionsValidateSuite extends FunctionsValidateSuite {
     }
   }
 
-  ignore("json_array_length") {
+  test("json_array_length") {
     runQueryAndCompare(
       s"select *, json_array_length(string_field1) " +
         s"from datatab limit 5")(checkGlutenOperatorMatch[ProjectExecTransformer])
