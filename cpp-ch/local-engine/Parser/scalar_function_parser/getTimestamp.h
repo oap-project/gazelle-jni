@@ -73,7 +73,7 @@ public:
             fmt = fmt_string_literal ? literal_fmt_expr.string() : "";
         }
         if (!fmt_string_literal)
-            throw Exception(ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "The second argument of function {} must be const String.", name);
+            throw DB::Exception(DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "The second argument of function {} must be const String.", name);
 
         UInt32 s_count = std::count(fmt.begin(), fmt.end(), 'S');
         String time_parser_policy = getContext()->getSettingsRef().has(TIMER_PARSER_POLICY) ? toString(getContext()->getSettingsRef().get(TIMER_PARSER_POLICY)) : "";
