@@ -16,8 +16,8 @@
  */
 #include <Core/Field.h>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <Parser/FunctionParser.h>
-
 
 namespace DB
 {
@@ -40,9 +40,9 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /**
             parse sequence(start, end, step) as
@@ -63,16 +63,16 @@ public:
 
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() < 2 || parsed_args.size() > 3)
-            throw Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires two or three arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires two or three arguments", getName());
 
         const auto * start_arg = parsed_args[0];
         const auto * end_arg = parsed_args[1];
         const auto * step_arg = parsed_args.size() == 3 ? parsed_args[2] : nullptr;
 
-        const auto * one_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 1);
+        const auto * one_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 1);
         if (!step_arg)
         {
-            const auto * minus_one_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), -1);
+            const auto * minus_one_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), -1);
             /// start <= end
             const auto * start_le_end_node = toFunctionNode(actions_dag, "lessOrEquals", {start_arg, end_arg});
             /// if(start <= end, 1, -1)
@@ -85,7 +85,7 @@ public:
 
         const auto * end_minus_start_node = toFunctionNode(actions_dag, "minus", {end_arg, start_arg});
         const auto * modulo_step_node = toFunctionNode(actions_dag, "modulo", {end_minus_start_node, step_arg});
-        const auto * zero_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 0);
+        const auto * zero_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 0);
         /// (end - start) % step = 0
         const auto * modulo_step_eq_zero_node = toFunctionNode(actions_dag, "equals", {modulo_step_node, zero_const_node});
 
@@ -103,7 +103,7 @@ public:
         /// range(assumeNotNull(start), assumeNotNull(end), assumeNotNull(step))
         const auto * range_2_node = toFunctionNode(actions_dag, "range", {start_not_null_node, end_not_null_node, tricky_step_node});
 
-        DataTypePtr result_type = makeNullable(range_1_node->result_type);
+        DB::DataTypePtr result_type = makeNullable(range_1_node->result_type);
         const auto * null_const_node = addColumnToActionsDAG(actions_dag, result_type, {});
         const auto * or_condition_node = toFunctionNode(actions_dag, "or", {start_is_null_node, end_is_null_node, step_is_null_node});
 

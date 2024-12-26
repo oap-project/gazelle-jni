@@ -31,14 +31,14 @@ trait RuleApplier[T <: AnyRef] {
 
 object RuleApplier {
   def apply[T <: AnyRef](ras: Ras[T], closure: Closure[T], rule: RasRule[T]): RuleApplier[T] = {
-    new ShapeAwareRuleApplier[T](ras, new RegularRuleApplier(ras, closure, rule))
+    new RegularRuleApplier(ras, closure, rule)
   }
 
   def apply[T <: AnyRef](
       ras: Ras[T],
       closure: Closure[T],
       rule: EnforcerRule[T]): RuleApplier[T] = {
-    new ShapeAwareRuleApplier[T](ras, new EnforcerRuleApplier[T](ras, closure, rule))
+    new EnforcerRuleApplier[T](ras, closure, rule)
   }
 
   private class RegularRuleApplier[T <: AnyRef](ras: Ras[T], closure: Closure[T], rule: RasRule[T])
@@ -46,6 +46,9 @@ object RuleApplier {
     private val deDup = mutable.Map[RasClusterKey, mutable.Set[UnsafeHashKey[T]]]()
 
     override def apply(icp: InClusterPath[T]): Unit = {
+      if (!shape.identify(icp.path())) {
+        return
+      }
       val cKey = icp.cluster()
       val path = icp.path()
       val plan = path.plan()
@@ -68,7 +71,7 @@ object RuleApplier {
       }
     }
 
-    override def shape(): Shape[T] = rule.shape()
+    override val shape: Shape[T] = rule.shape()
   }
 
   private class EnforcerRuleApplier[T <: AnyRef](
@@ -81,6 +84,9 @@ object RuleApplier {
     private val constraintDef = constraint.definition()
 
     override def apply(icp: InClusterPath[T]): Unit = {
+      if (!shape.identify(icp.path())) {
+        return
+      }
       val cKey = icp.cluster()
       val path = icp.path()
       val propSet = path.node().self().propSet()
@@ -108,20 +114,6 @@ object RuleApplier {
       }
     }
 
-    override def shape(): Shape[T] = rule.shape()
-  }
-
-  private class ShapeAwareRuleApplier[T <: AnyRef](ras: Ras[T], rule: RuleApplier[T])
-    extends RuleApplier[T] {
-    private val ruleShape = rule.shape()
-
-    override def apply(icp: InClusterPath[T]): Unit = {
-      if (!ruleShape.identify(icp.path())) {
-        return
-      }
-      rule.apply(icp)
-    }
-
-    override def shape(): Shape[T] = ruleShape
+    override val shape: Shape[T] = rule.shape()
   }
 }

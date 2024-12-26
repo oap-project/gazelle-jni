@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>gluten-uniffle</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <name>Gluten Uniffle</name>
 
   <dependencies>
@@ -75,15 +75,4 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>backends-velox</id>
-      <properties>
-      </properties>
-      <modules>
-        <module>velox</module>
-        <module>package</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>

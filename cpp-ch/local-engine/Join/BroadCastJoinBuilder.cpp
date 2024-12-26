@@ -42,6 +42,7 @@ namespace local_engine
 {
 namespace BroadCastJoinBuilder
 {
+using namespace DB;
 static jclass Java_CHBroadcastBuildSideCache = nullptr;
 static jmethodID Java_get = nullptr;
 jlong callJavaGet(const std::string & id)

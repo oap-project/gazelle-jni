@@ -22,12 +22,9 @@
 #include <Parser/ParserContext.h>
 #include <Parser/SerializedPlanParser.h>
 #include <base/types.h>
-#include <boost/noncopyable.hpp>
 #include <substrait/algebra.pb.h>
 #include <Poco/Logger.h>
 #include <Common/IFactoryWithAliases.h>
-#include <Common/logger_useful.h>
-#include "ParserContext.h"
 
 namespace local_engine
 {
@@ -142,7 +139,10 @@ protected:
 
     const DB::ActionsDAG::Node * parseExpression(DB::ActionsDAG & actions_dag, const substrait::Expression & rel) const;
 
-    std::pair<DataTypePtr, Field> parseLiteral(const substrait::Expression_Literal & literal) const;
+    std::pair<DB::DataTypePtr, DB::Field> parseLiteral(const substrait::Expression_Literal & literal) const;
+
+    const DB::ActionsDAG::Node * convertNanToNullIfNeed(
+        const CommonFunctionInfo & func_info, const DB::ActionsDAG::Node * func_node, DB::ActionsDAG & actions_dag) const;
 
     ParserContextPtr parser_context;
     std::unique_ptr<ExpressionParser> expression_parser;

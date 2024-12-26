@@ -16,6 +16,9 @@
  */
 #pragma once
 
+#include "Common/assert_cast.h"
+
+
 #include <Columns/ColumnDecimal.h>
 #include <IO/ReadHelpers.h>
 #include <IO/readDecimalText.h>
@@ -30,10 +33,9 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-using namespace DB;
 
 template <typename T>
-bool readExcelCSVDecimalText(ReadBuffer & buf, T & x, uint32_t precision, uint32_t & scale, const FormatSettings & format_settings)
+bool readExcelCSVDecimalText(DB::ReadBuffer & buf, T & x, uint32_t precision, uint32_t & scale, const DB::FormatSettings & format_settings)
 {
     char maybe_quote = *buf.position();
     bool has_quote = false;
@@ -64,15 +66,16 @@ bool readExcelCSVDecimalText(ReadBuffer & buf, T & x, uint32_t precision, uint32
 }
 
 template <typename T>
-void deserializeExcelDecimalText(IColumn & column, ReadBuffer & istr, UInt32 precision, UInt32 scale, const FormatSettings & formatSettings)
+void deserializeExcelDecimalText(
+    DB::IColumn & column, DB::ReadBuffer & istr, UInt32 precision, UInt32 scale, const DB::FormatSettings & formatSettings)
 {
     if (istr.eof())
-        throwReadAfterEOF();
+        DB::throwReadAfterEOF();
 
     T x;
     UInt32 unread_scale = scale;
     bool result = readExcelCSVDecimalText(istr, x, precision, unread_scale, formatSettings);
-    if (result && !common::mulOverflow(x.value, DecimalUtils::scaleMultiplier<T>(unread_scale), x.value))
-        assert_cast<ColumnDecimal<T> &>(column).getData().push_back(x);
+    if (result && !common::mulOverflow(x.value, DB::DecimalUtils::scaleMultiplier<T>(unread_scale), x.value))
+        assert_cast<DB::ColumnDecimal<T> &>(column).getData().push_back(x);
 }
 }

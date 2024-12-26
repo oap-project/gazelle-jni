@@ -29,19 +29,19 @@ class Registry {
  public:
   void registerObj(const std::string& kind, T t) {
     std::lock_guard<std::mutex> l(mutex_);
-    GLUTEN_CHECK(map_.find(kind) == map_.end(), "Already registered for " + kind);
+    GLUTEN_CHECK(map_.find(kind) == map_.end(), "Required object already registered for " + kind);
     map_[kind] = std::move(t);
   }
 
   T& get(const std::string& kind) {
     std::lock_guard<std::mutex> l(mutex_);
-    GLUTEN_CHECK(map_.find(kind) != map_.end(), "Not registered for " + kind);
+    GLUTEN_CHECK(map_.find(kind) != map_.end(), "Required object not registered for " + kind);
     return map_[kind];
   }
 
   bool unregisterObj(const std::string& kind) {
     std::lock_guard<std::mutex> l(mutex_);
-    GLUTEN_CHECK(map_.find(kind) != map_.end(), "Not registered for " + kind);
+    GLUTEN_CHECK(map_.find(kind) != map_.end(), "Required object not registered for " + kind);
     return map_.erase(kind);
   }
 

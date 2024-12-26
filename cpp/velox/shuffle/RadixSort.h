@@ -27,21 +27,19 @@ namespace gluten {
 // https://github.com/apache/spark/blob/308669fc301916837bacb7c3ec1ecef93190c094/core/src/main/java/org/apache/spark/util/collection/unsafe/sort/RadixSort.java#L25
 class RadixSort {
  public:
-  /**
-   * Sorts a given array of longs using least-significant-digit radix sort. This routine assumes
-   * you have extra space at the end of the array at least equal to the number of records. The
-   * sort is destructive and may relocate the data positioned within the array.
-   *
-   * @param array array of long elements followed by at least that many empty slots.
-   * @param numRecords number of data records in the array.
-   * @param startByteIndex the first byte (in range [0, 7]) to sort each long by, counting from the
-   *                       least significant byte.
-   * @param endByteIndex the last byte (in range [0, 7]) to sort each long by, counting from the
-   *                     least significant byte. Must be greater than startByteIndex.
-   *
-   * @return The starting index of the sorted data within the given array. We return this instead
-   *         of always copying the data back to position zero for efficiency.
-   */
+  // Sorts a given array of longs using least-significant-digit radix sort. This routine assumes
+  // you have extra space at the end of the array at least equal to the number of records. The
+  // sort is destructive and may relocate the data positioned within the array.
+  //
+  // @param array array of long elements followed by at least that many empty slots.
+  // @param numRecords number of data records in the array.
+  // @param startByteIndex the first byte (in range [0, 7]) to sort each long by, counting from the
+  //                       least significant byte.
+  // @param endByteIndex the last byte (in range [0, 7]) to sort each long by, counting from the
+  //                     least significant byte. Must be greater than startByteIndex.
+  //
+  // @return The starting index of the sorted data within the given array. We return this instead
+  //         of always copying the data back to position zero for efficiency.
   static int32_t sort(uint64_t* array, size_t size, int64_t numRecords, int32_t startByteIndex, int32_t endByteIndex) {
     assert(startByteIndex >= 0 && "startByteIndex should >= 0");
     assert(endByteIndex <= 7 && "endByteIndex should <= 7");
@@ -66,17 +64,15 @@ class RadixSort {
   }
 
  private:
-  /**
-   * Performs a partial sort by copying data into destination offsets for each byte value at the
-   * specified byte offset.
-   *
-   * @param array array to partially sort.
-   * @param numRecords number of data records in the array.
-   * @param counts counts for each byte value. This routine destructively modifies this array.
-   * @param byteIdx the byte in a long to sort at, counting from the least significant byte.
-   * @param inIndex the starting index in the array where input data is located.
-   * @param outIndex the starting index where sorted output data should be written.
-   */
+  // Performs a partial sort by copying data into destination offsets for each byte value at the
+  // specified byte offset.
+  //
+  // @param array array to partially sort.
+  // @param numRecords number of data records in the array.
+  // @param counts counts for each byte value. This routine destructively modifies this array.
+  // @param byteIdx the byte in a long to sort at, counting from the least significant byte.
+  // @param inIndex the starting index in the array where input data is located.
+  // @param outIndex the starting index where sorted output data should be written.
   static void sortAtByte(
       uint64_t* array,
       int64_t numRecords,
@@ -94,17 +90,15 @@ class RadixSort {
     }
   }
 
-  /**
-   * Computes a value histogram for each byte in the given array.
-   *
-   * @param array array to count records in.
-   * @param numRecords number of data records in the array.
-   * @param startByteIndex the first byte to compute counts for (the prior are skipped).
-   * @param endByteIndex the last byte to compute counts for.
-   *
-   * @return a vector of eight 256-element count arrays, one for each byte starting from the least
-   *         significant byte. If the byte does not need sorting the vector entry will be empty.
-   */
+  // Computes a value histogram for each byte in the given array.
+  //
+  // @param array array to count records in.
+  // @param numRecords number of data records in the array.
+  // @param startByteIndex the first byte to compute counts for (the prior are skipped).
+  // @param endByteIndex the last byte to compute counts for.
+  //
+  // @return a vector of eight 256-element count arrays, one for each byte starting from the least
+  //         significant byte. If the byte does not need sorting the vector entry will be empty.
   static std::vector<std::vector<int64_t>>
   getCounts(uint64_t* array, int64_t numRecords, int32_t startByteIndex, int32_t endByteIndex) {
     std::vector<std::vector<int64_t>> counts;
@@ -134,15 +128,13 @@ class RadixSort {
     return counts;
   }
 
-  /**
-   * Transforms counts into the proper output offsets for the sort type.
-   *
-   * @param counts counts for each byte value. This routine destructively modifies this vector.
-   * @param numRecords number of data records in the original data array.
-   * @param outputOffset output offset in bytes from the base array object.
-   *
-   * @return the input counts vector.
-   */
+  // Transforms counts into the proper output offsets for the sort type.
+  //
+  // @param counts counts for each byte value. This routine destructively modifies this vector.
+  // @param numRecords number of data records in the original data array.
+  // @param outputOffset output offset in bytes from the base array object.
+  //
+  // @return the input counts vector.
   static std::vector<int64_t>& transformCountsToOffsets(std::vector<int64_t>& counts, int64_t outputOffset) {
     assert(counts.size() == 256);
 

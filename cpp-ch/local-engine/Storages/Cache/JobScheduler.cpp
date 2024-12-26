@@ -42,6 +42,9 @@ namespace local_engine
 {
 std::shared_ptr<JobScheduler> global_job_scheduler = nullptr;
 
+JobScheduler::JobScheduler() = default;
+JobScheduler::~JobScheduler() = default;
+
 void JobScheduler::initialize(const DB::ContextPtr & context)
 {
     auto config = GlutenJobSchedulerConfig::loadFromContext(context);

@@ -66,7 +66,7 @@ static void BM_CHFloorFunction_For_Int64(benchmark::State & state)
     auto executable = function->build(int64_block.getColumnsWithTypeAndName());
     for (auto _ : state)
     {
-        auto result = executable->execute(int64_block.getColumnsWithTypeAndName(), executable->getResultType(), int64_block.rows());
+        auto result = executable->execute(int64_block.getColumnsWithTypeAndName(), executable->getResultType(), int64_block.rows(), false);
         benchmark::DoNotOptimize(result);
     }
 }
@@ -80,7 +80,7 @@ static void BM_CHFloorFunction_For_Float64(benchmark::State & state)
     auto executable = function->build(float64_block.getColumnsWithTypeAndName());
     for (auto _ : state)
     {
-        auto result = executable->execute(float64_block.getColumnsWithTypeAndName(), executable->getResultType(), float64_block.rows());
+        auto result = executable->execute(float64_block.getColumnsWithTypeAndName(), executable->getResultType(), float64_block.rows(), false);
         benchmark::DoNotOptimize(result);
     }
 }
@@ -94,7 +94,7 @@ static void BM_SparkFloorFunction_For_Int64(benchmark::State & state)
     auto executable = function->build(int64_block.getColumnsWithTypeAndName());
     for (auto _ : state)
     {
-        auto result = executable->execute(int64_block.getColumnsWithTypeAndName(), executable->getResultType(), int64_block.rows());
+        auto result = executable->execute(int64_block.getColumnsWithTypeAndName(), executable->getResultType(), int64_block.rows(), false);
         benchmark::DoNotOptimize(result);
     }
 }
@@ -108,7 +108,7 @@ static void BM_SparkFloorFunction_For_Float64(benchmark::State & state)
     auto executable = function->build(float64_block.getColumnsWithTypeAndName());
     for (auto _ : state)
     {
-        auto result = executable->execute(float64_block.getColumnsWithTypeAndName(), executable->getResultType(), float64_block.rows());
+        auto result = executable->execute(float64_block.getColumnsWithTypeAndName(), executable->getResultType(), float64_block.rows(), false);
         benchmark::DoNotOptimize(result);
     }
 }

@@ -16,6 +16,7 @@
  */
 #include <iostream>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypeString.h>
 #include <Parser/FunctionExecutor.h>
 #include <Parser/FunctionParser.h>
 #include <gtest/gtest.h>

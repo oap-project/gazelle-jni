@@ -35,10 +35,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ "centos:7", "centos:8", "quay.io/centos/centos:stream9" ]
+    if: ${{ startsWith(github.repository, 'apache/') }}
     runs-on: ubuntu-20.04
     container: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
       - name: Update mirror list
         run: |
           sed -i -e "s|mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-* || true
@@ -72,7 +72,7 @@ jobs:
           mv apache-maven-3.8.8 /usr/lib/maven && \
           export MAVEN_HOME=/usr/lib/maven && \
           export PATH=${PATH}:${MAVEN_HOME}/bin && \
-          cd $GITHUB_WORKSPACE/ && \
+          git clone -b main --depth=1 https://github.com/apache/incubator-gluten.git && cd incubator-gluten/
           ./dev/package.sh
 
   build-on-ubuntu:
@@ -80,6 +80,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ "ubuntu:20.04", "ubuntu:22.04" ]
+    if: ${{ startsWith(github.repository, 'apache/') }}
     runs-on: ubuntu-20.04
     container: ${{ matrix.os }}
     steps:

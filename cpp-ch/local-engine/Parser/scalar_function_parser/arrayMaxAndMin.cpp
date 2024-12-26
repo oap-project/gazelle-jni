@@ -16,13 +16,12 @@
  */
 #include <Core/Field.h>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypeString.h>
 #include <DataTypes/IDataType.h>
 #include <Parser/FunctionParser.h>
 
-
 namespace DB
 {
-
 namespace ErrorCodes
 {
     extern const int BAD_ARGUMENTS;
@@ -31,7 +30,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 class BaseFunctionParserArrayMaxAndMin : public FunctionParser
 {
 public:

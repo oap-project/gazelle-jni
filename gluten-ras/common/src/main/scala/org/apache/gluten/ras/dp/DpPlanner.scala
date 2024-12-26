@@ -184,7 +184,7 @@ object DpPlanner {
 
       // One or more cluster changed. If they're not the current cluster, we should
       // withdraw the DP results for them to trigger re-computation. Since
-      // changed cluster (may created new groups, may added new nodes) could expand the
+      // changed cluster (may create new groups, may add new nodes) could expand the
       // search spaces again.
 
       changedClusters.foreach {

@@ -30,7 +30,8 @@ import org.apache.gluten.substrait.rel.LocalFilesNode.ReadFileFormat
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.hive.HiveTableScanExecTransformer
-import org.apache.spark.sql.types.{BooleanType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.util.SerializableConfiguration
 
 import com.google.protobuf.StringValue
 import io.substrait.proto.NamedStruct
@@ -77,6 +78,9 @@ trait BasicScanExecTransformer extends LeafTransformSupport with BaseDataSource 
           getProperties))
   }
 
+  val serializableHadoopConf: SerializableConfiguration = new SerializableConfiguration(
+    sparkContext.hadoopConfiguration)
+
   override protected def doValidateInternal(): ValidationResult = {
     var fields = schema.fields
 
@@ -91,7 +95,12 @@ trait BasicScanExecTransformer extends LeafTransformSupport with BaseDataSource 
     }
 
     val validationResult = BackendsApiManager.getSettings
-      .validateScanExec(fileFormat, fields, getRootFilePaths, getProperties)
+      .validateScanExec(
+        fileFormat,
+        fields,
+        getRootFilePaths,
+        getProperties,
+        Some(serializableHadoopConf))
     if (!validationResult.ok()) {
       return validationResult
     }
@@ -131,11 +140,7 @@ trait BasicScanExecTransformer extends LeafTransformSupport with BaseDataSource 
     }.asJava
     // Will put all filter expressions into an AND expression
     val transformer = filterExprs()
-      .map {
-        case ar: AttributeReference if ar.dataType == BooleanType =>
-          EqualNullSafe(ar, Literal.TrueLiteral)
-        case e => e
-      }
+      .map(ExpressionConverter.replaceAttributeReference)
       .reduceLeftOption(And)
       .map(ExpressionConverter.replaceWithExpressionTransformer(_, output))
     val filterNodes = transformer.map(_.doTransform(context.registeredFunction))

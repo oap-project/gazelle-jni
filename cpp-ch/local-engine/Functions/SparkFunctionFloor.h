@@ -23,11 +23,12 @@
 #include <Functions/FunctionFactory.h>
 #include <Functions/FunctionsRound.h>
 
-using namespace DB;
+#if USE_MULTITARGET_CODE
+#include <immintrin.h>
+#endif
 
 namespace local_engine
 {
-
 template <typename T>
 requires std::is_floating_point_v<T>
 static void checkAndSetNullable(T & t, UInt8 & null_flag)
@@ -125,25 +126,25 @@ DECLARE_AVX2_SPECIFIC_CODE(
 
 )
 
-template <typename T, ScaleMode scale_mode>
+template <typename T, DB::ScaleMode scale_mode>
 requires std::is_floating_point_v<T>
 struct SparkFloatFloorImpl
 {
 private:
-    static_assert(!is_decimal<T>);
+    static_assert(!DB::is_decimal<T>);
     template <
-        Vectorize vectorize =
+        DB::Vectorize vectorize =
 #ifdef __SSE4_1__
-            Vectorize::Yes
+            DB::Vectorize::Yes
 #else
-            Vectorize::No
+            DB::Vectorize::No
 #endif
         >
-    using Op = FloatRoundingComputation<T, RoundingMode::Floor, scale_mode, vectorize>;
+    using Op = DB::FloatRoundingComputation<T, DB::RoundingMode::Floor, scale_mode, vectorize>;
     using Data = std::array<T, Op<>::data_count>;
 
 public:
-    static void apply(const PaddedPODArray<T> & in, size_t scale, PaddedPODArray<T> & out, PaddedPODArray<UInt8> & null_map)
+    static void apply(const DB::PaddedPODArray<T> & in, size_t scale, DB::PaddedPODArray<T> & out, DB::PaddedPODArray<UInt8> & null_map)
     {
         auto mm_scale = Op<>::prepare(scale);
         const size_t data_count = std::tuple_size<Data>();
@@ -169,7 +170,7 @@ public:
         }
 
 #if USE_MULTITARGET_CODE
-        if (isArchSupported(TargetArch::AVX2))
+        if (isArchSupported(DB::TargetArch::AVX2))
         {
             if constexpr (std::is_same_v<T, Float32>)
             {
@@ -190,21 +191,21 @@ public:
 
 class SparkFunctionFloor : public DB::FunctionFloor
 {
-    static Scale getScaleArg(const ColumnsWithTypeAndName & arguments)
+    static DB::Scale getScaleArg(const DB::ColumnsWithTypeAndName & arguments)
     {
         if (arguments.size() == 2)
         {
-            const IColumn & scale_column = *arguments[1].column;
+            const DB::IColumn & scale_column = *arguments[1].column;
             if (!isColumnConst(scale_column))
-                throw Exception(ErrorCodes::ILLEGAL_COLUMN, "Scale argument for rounding functions must be constant");
+                throw DB::Exception(DB::ErrorCodes::ILLEGAL_COLUMN, "Scale argument for rounding functions must be constant");
 
-            Field scale_field = assert_cast<const ColumnConst &>(scale_column).getField();
-            if (scale_field.getType() != Field::Types::UInt64 && scale_field.getType() != Field::Types::Int64)
-                throw Exception(ErrorCodes::ILLEGAL_COLUMN, "Scale argument for rounding functions must have integer type");
+            DB::Field scale_field = assert_cast<const DB::ColumnConst &>(scale_column).getField();
+            if (scale_field.getType() != DB::Field::Types::UInt64 && scale_field.getType() != DB::Field::Types::Int64)
+                throw DB::Exception(DB::ErrorCodes::ILLEGAL_COLUMN, "Scale argument for rounding functions must have integer type");
 
             Int64 scale64 = scale_field.safeGet<Int64>();
-            if (scale64 > std::numeric_limits<Scale>::max() || scale64 < std::numeric_limits<Scale>::min())
-                throw Exception(ErrorCodes::ARGUMENT_OUT_OF_BOUND, "Scale argument for rounding function is too large");
+            if (scale64 > std::numeric_limits<DB::Scale>::max() || scale64 < std::numeric_limits<DB::Scale>::min())
+                throw DB::Exception(DB::ErrorCodes::ARGUMENT_OUT_OF_BOUND, "Scale argument for rounding function is too large");
 
             return scale64;
         }
@@ -218,9 +219,9 @@ public:
     ~SparkFunctionFloor() override = default;
     String getName() const override { return name; }
 
-    ColumnNumbers getArgumentsThatAreAlwaysConstant() const override { return {1}; }
+    DB::ColumnNumbers getArgumentsThatAreAlwaysConstant() const override { return {1}; }
 
-    DB::DataTypePtr getReturnTypeImpl(const ColumnsWithTypeAndName & arguments) const override
+    DB::DataTypePtr getReturnTypeImpl(const DB::ColumnsWithTypeAndName & arguments) const override
     {
         auto result_type = DB::FunctionFloor::getReturnTypeImpl(arguments);
         return makeNullable(result_type);
@@ -229,13 +230,13 @@ public:
     DB::ColumnPtr
     executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr & result_type, size_t input_rows) const override
     {
-        const ColumnWithTypeAndName & first_arg = arguments[0];
-        Scale scale_arg = getScaleArg(arguments);
+        const DB::ColumnWithTypeAndName & first_arg = arguments[0];
+        DB::Scale scale_arg = getScaleArg(arguments);
         switch (first_arg.type->getTypeId())
         {
-            case TypeIndex::Float32:
+            case DB::TypeIndex::Float32:
                 return executeInternal<Float32>(first_arg.column, scale_arg);
-            case TypeIndex::Float64:
+            case DB::TypeIndex::Float64:
                 return executeInternal<Float64>(first_arg.column, scale_arg);
             default:
                 DB::ColumnPtr res = DB::FunctionFloor::executeImpl(arguments, result_type, input_rows);
@@ -245,29 +246,29 @@ public:
     }
 
     template <typename T>
-    static ColumnPtr executeInternal(const ColumnPtr & col_arg, const Scale & scale_arg)
+    static DB::ColumnPtr executeInternal(const DB::ColumnPtr & col_arg, const DB::Scale & scale_arg)
     {
-        const auto * col = checkAndGetColumn<ColumnVector<T>>(col_arg.get());
-        auto col_res = ColumnVector<T>::create(col->size());
-        MutableColumnPtr null_map_col = DB::ColumnUInt8::create(col->size(), 0);
-        PaddedPODArray<T> & vec_res = col_res->getData();
-        PaddedPODArray<UInt8> & null_map_data = assert_cast<ColumnVector<UInt8> *>(null_map_col.get())->getData();
+        const auto * col = checkAndGetColumn<DB::ColumnVector<T>>(col_arg.get());
+        auto col_res = DB::ColumnVector<T>::create(col->size());
+        DB::MutableColumnPtr null_map_col = DB::ColumnUInt8::create(col->size(), 0);
+        DB::PaddedPODArray<T> & vec_res = col_res->getData();
+        DB::PaddedPODArray<UInt8> & null_map_data = assert_cast<DB::ColumnVector<UInt8> *>(null_map_col.get())->getData();
         if (!vec_res.empty())
         {
             if (scale_arg == 0)
             {
                 size_t scale = 1;
-                SparkFloatFloorImpl<T, ScaleMode::Zero>::apply(col->getData(), scale, vec_res, null_map_data);
+                SparkFloatFloorImpl<T, DB::ScaleMode::Zero>::apply(col->getData(), scale, vec_res, null_map_data);
             }
             else if (scale_arg > 0)
             {
                 size_t scale = intExp10(scale_arg);
-                SparkFloatFloorImpl<T, ScaleMode::Positive>::apply(col->getData(), scale, vec_res, null_map_data);
+                SparkFloatFloorImpl<T, DB::ScaleMode::Positive>::apply(col->getData(), scale, vec_res, null_map_data);
             }
             else
             {
                 size_t scale = intExp10(-scale_arg);
-                SparkFloatFloorImpl<T, ScaleMode::Negative>::apply(col->getData(), scale, vec_res, null_map_data);
+                SparkFloatFloorImpl<T, DB::ScaleMode::Negative>::apply(col->getData(), scale, vec_res, null_map_data);
             }
         }
         return DB::ColumnNullable::create(std::move(col_res), std::move(null_map_col));

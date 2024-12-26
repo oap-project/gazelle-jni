@@ -14,16 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "ExcelStringReader.h"
+
 #include <bit>
 #include <IO/Operators.h>
 #include <IO/PeekableReadBuffer.h>
-#include <base/hex.h>
 #include <Common/PODArray.h>
-#include <Common/StringUtils.h>
-#include <Common/memcpySmall.h>
-
-#include "ExcelStringReader.h"
-
 
 #ifdef __SSE2__
 #    include <emmintrin.h>

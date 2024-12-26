@@ -55,7 +55,7 @@ public:
 
     String getFileFormat() const override { return "Parquet"; }
 
-    static bool pageindex_reader_support(const DB::Block & header);
+    static bool supportPageindexReader(const DB::Block & header);
 
 private:
     bool use_pageindex_reader;

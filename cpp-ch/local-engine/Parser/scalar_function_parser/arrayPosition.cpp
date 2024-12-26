@@ -30,7 +30,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 class FunctionParserArrayPosition : public FunctionParser
 {
 public:

@@ -27,7 +27,6 @@
 
 #include "substrait/SubstraitToVeloxPlan.h"
 #include "substrait/VeloxToSubstraitPlan.h"
-#include "velox/functions/sparksql/Register.h"
 #include "velox/vector/tests/utils/VectorTestBase.h"
 
 #include "substrait/VariantToVectorConverter.h"
@@ -38,6 +37,7 @@ using namespace facebook::velox::test;
 using namespace facebook::velox::exec::test;
 
 namespace gluten {
+
 class VeloxSubstraitRoundTripTest : public OperatorTestBase {
  protected:
   /// Makes a vector of INTEGER type with 'size' RowVectorPtr.
@@ -367,13 +367,13 @@ TEST_F(VeloxSubstraitRoundTripTest, notNullLiteral) {
                   .addNode([&](std::string id, core::PlanNodePtr input) {
                     std::vector<std::string> projectNames = {"a", "b", "c", "d", "e", "f", "g", "h"};
                     std::vector<core::TypedExprPtr> projectExpressions = {
-                        makeConstantExpr(BOOLEAN(), (bool)1),
-                        makeConstantExpr(TINYINT(), (int8_t)23),
-                        makeConstantExpr(SMALLINT(), (int16_t)45),
-                        makeConstantExpr(INTEGER(), (int32_t)678),
-                        makeConstantExpr(BIGINT(), (int64_t)910),
-                        makeConstantExpr(REAL(), (float)1.23),
-                        makeConstantExpr(DOUBLE(), (double)4.56),
+                        makeConstantExpr(BOOLEAN(), static_cast<bool>(1)),
+                        makeConstantExpr(TINYINT(), static_cast<int8_t>(23)),
+                        makeConstantExpr(SMALLINT(), static_cast<int16_t>(45)),
+                        makeConstantExpr(INTEGER(), static_cast<int32_t>(678)),
+                        makeConstantExpr(BIGINT(), static_cast<int64_t>(910)),
+                        makeConstantExpr(REAL(), static_cast<float>(1.23)),
+                        makeConstantExpr(DOUBLE(), static_cast<double>(4.56)),
                         makeConstantExpr(VARCHAR(), "789")};
                     return std::make_shared<core::ProjectNode>(
                         id, std::move(projectNames), std::move(projectExpressions), input);

@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <DataTypes/DataTypeString.h>
 #include <Parser/FunctionParser.h>
 #include <Parser/TypeParser.h>
-#include <Common/Exception.h>
-#include <DataTypes/DataTypeString.h>
 
 namespace local_engine
 {
@@ -40,11 +39,10 @@ public:
         auto ch_function_name = getCHFunctionName(substrait_func);
         parsed_args.emplace_back(parseExpression(actions_dag, substrait_func.arguments()[0].value()));
         auto data_type = TypeParser::parseType(substrait_func.output_type());
-        parsed_args.emplace_back(addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeString>(), data_type->getName()));
+        parsed_args.emplace_back(addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), data_type->getName()));
         const auto * func_node = toFunctionNode(actions_dag, ch_function_name, parsed_args);
         return convertNodeTypeIfNeeded(substrait_func, func_node, actions_dag);
     }
 };
 static FunctionParserRegister<SparkFunctionFromJsonParser> register_from_json;
 }
-

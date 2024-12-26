@@ -355,6 +355,7 @@ class VeloxHashShuffleWriter : public VeloxShuffleWriter {
   // Updated for each input RowVector.
   uint64_t totalInputNumRows_ = 0;
   std::vector<uint64_t> binaryArrayTotalSizeBytes_;
+  size_t complexTotalSizeBytes_ = 0;
 
   // True if input column has null in any processed input RowVector.
   // In the order of fixed-width columns + binary columns.

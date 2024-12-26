@@ -82,4 +82,5 @@ TEST_F(VeloxBatchResizerTest, sanity) {
   checkResize(100, 200, {5, 900, 700}, {5, 200, 200, 200, 200, 100, 200, 200, 200, 100});
   ASSERT_ANY_THROW(checkResize(0, 0, {}, {}));
 }
+
 } // namespace gluten

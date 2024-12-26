@@ -17,7 +17,6 @@
 package org.apache.gluten.memory
 
 import org.apache.gluten.GlutenConfig
-import org.apache.gluten.backend.Backend
 import org.apache.gluten.exception.GlutenException
 import org.apache.gluten.memory.listener.ReservationListeners
 import org.apache.gluten.memory.memtarget.{KnownNameAndStats, MemoryTarget, Spiller, Spillers}
@@ -42,18 +41,19 @@ trait NativeMemoryManager {
 }
 
 object NativeMemoryManager {
-  private class Impl(name: String) extends NativeMemoryManager with TaskResource {
+  private class Impl(backendName: String, name: String)
+    extends NativeMemoryManager
+    with TaskResource {
     private val LOGGER = LoggerFactory.getLogger(classOf[NativeMemoryManager])
     private val spillers = Spillers.appendable()
     private val mutableStats: mutable.Map[String, MemoryUsageStatsBuilder] = mutable.Map()
     private val rl = ReservationListeners.create(name, spillers, mutableStats.asJava)
     private val handle = NativeMemoryManagerJniWrapper.create(
-      Backend.get().name(),
+      backendName,
       rl,
       ConfigUtil.serialize(
-        GlutenConfig.getNativeSessionConf(
-          Backend.get().name(),
-          GlutenConfigUtil.parseConfig(SQLConf.get.getAllConfs)))
+        GlutenConfig
+          .getNativeSessionConf(backendName, GlutenConfigUtil.parseConfig(SQLConf.get.getAllConfs)))
     )
     spillers.append(new Spiller() {
       override def spill(self: MemoryTarget, phase: Spiller.Phase, size: Long): Long = {
@@ -109,11 +109,15 @@ object NativeMemoryManager {
           ))
       }
     }
-    override def priority(): Int = 0
+    override def priority(): Int = {
+      // Memory managers should be released after all runtimes are released.
+      // So lower the priority to 0.
+      0
+    }
     override def resourceName(): String = "nmm"
   }
 
-  def apply(name: String): NativeMemoryManager = {
-    TaskResources.addAnonymousResource(new Impl(name))
+  def apply(backendName: String, name: String): NativeMemoryManager = {
+    TaskResources.addAnonymousResource(new Impl(backendName, name))
   }
 }

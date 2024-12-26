@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.joins
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.physical.BroadcastMode
 import org.apache.spark.sql.vectorized.ColumnarBatch
 
 trait BuildSideRelation extends Serializable {
@@ -26,11 +27,19 @@ trait BuildSideRelation extends Serializable {
   def deserialized: Iterator[ColumnarBatch]
 
   /**
-   * Transform columnar broadcasted value to Array[InternalRow] by key and distinct.
+   * Transform columnar broadcasted value to Array[InternalRow] by key.
    * @return
    */
   def transform(key: Expression): Array[InternalRow]
 
   /** Returns a read-only copy of this, to be safely used in current thread. */
   def asReadOnlyCopy(): BuildSideRelation
+
+  /**
+   * The broadcast mode that is associated with this relation in Gluten allows for direct
+   * broadcasting of the original relation, so transforming a relation has a post-processing nature.
+   *
+   * Post-processed relation transforms can use this mode to obtain the desired format.
+   */
+  val mode: BroadcastMode
 }

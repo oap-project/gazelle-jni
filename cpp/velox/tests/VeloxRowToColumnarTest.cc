@@ -26,6 +26,7 @@ using namespace facebook;
 using namespace facebook::velox;
 
 namespace gluten {
+
 class VeloxRowToColumnarTest : public ::testing::Test, public test::VectorTestBase {
  protected:
   static void SetUpTestCase() {
@@ -141,4 +142,5 @@ TEST_F(VeloxRowToColumnarTest, timestamp) {
   });
   testRowVectorEqual(vector);
 }
+
 } // namespace gluten

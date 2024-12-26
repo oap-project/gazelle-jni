@@ -20,11 +20,11 @@ import org.apache.gluten.expression.ExpressionMappings
 import org.apache.gluten.expression.aggregate.{VeloxCollectList, VeloxCollectSet}
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.expressions.{Expression, WindowExpression}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan, Window}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.trees.TreePattern.{AGGREGATE, AGGREGATE_EXPRESSION, WINDOW, WINDOW_EXPRESSION}
+import org.apache.spark.sql.catalyst.trees.TreePattern.{AGGREGATE, AGGREGATE_EXPRESSION}
 
 import scala.reflect.{classTag, ClassTag}
 
@@ -40,7 +40,7 @@ case class CollectRewriteRule(spark: SparkSession) extends Rule[LogicalPlan] {
       return plan
     }
 
-    val newPlan = plan.transformUpWithPruning(_.containsAnyPattern(WINDOW, AGGREGATE)) {
+    val newPlan = plan.transformUpWithPruning(_.containsPattern(AGGREGATE)) {
       case node =>
         replaceAggCollect(node)
     }
@@ -56,12 +56,6 @@ case class CollectRewriteRule(spark: SparkSession) extends Rule[LogicalPlan] {
         agg.transformExpressionsWithPruning(_.containsPattern(AGGREGATE_EXPRESSION)) {
           case ToVeloxCollect(newAggExpr) =>
             newAggExpr
-        }
-      case w: Window =>
-        w.transformExpressionsWithPruning(
-          _.containsAllPatterns(AGGREGATE_EXPRESSION, WINDOW_EXPRESSION)) {
-          case windowExpr @ WindowExpression(ToVeloxCollect(newAggExpr), _) =>
-            windowExpr.copy(newAggExpr)
         }
       case other => other
     }

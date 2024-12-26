@@ -21,6 +21,7 @@
 #include "operators/writer/ArrowWriter.h"
 
 namespace gluten {
+
 class VeloxArrowWriter : public ArrowWriter {
  public:
   explicit VeloxArrowWriter(const std::string& path, int64_t batchSize, facebook::velox::memory::MemoryPool* pool);
@@ -32,4 +33,5 @@ class VeloxArrowWriter : public ArrowWriter {
   facebook::velox::memory::MemoryPool* pool_;
   std::unique_ptr<ParquetStreamReaderIterator> reader_{nullptr};
 };
+
 } // namespace gluten

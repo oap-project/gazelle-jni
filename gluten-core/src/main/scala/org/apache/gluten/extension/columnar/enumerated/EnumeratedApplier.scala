@@ -21,7 +21,6 @@ import org.apache.gluten.extension.columnar.ColumnarRuleApplier.ColumnarRuleCall
 import org.apache.gluten.extension.util.AdaptiveContext
 import org.apache.gluten.logging.LogLevelUtil
 
-import org.apache.spark.annotation.Experimental
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -31,11 +30,9 @@ import org.apache.spark.sql.execution.SparkPlan
  * Columnar rule applier that optimizes, implements Spark plan into Gluten plan by enumerating on
  * all the possibilities of executable Gluten plans, then choose the best plan among them.
  *
- * NOTE: This is still working in progress. We still have a bunch of heuristic rules in this
- * implementation's rule list. Future work will include removing them from the list then
- * implementing them in EnumeratedTransform.
+ * NOTE: We still have a bunch of heuristic rules in this implementation's rule list. Future work
+ * will include removing them from the list then implementing them in EnumeratedTransform.
  */
-@Experimental
 class EnumeratedApplier(
     session: SparkSession,
     ruleBuilders: Seq[ColumnarRuleCall => Rule[SparkPlan]])

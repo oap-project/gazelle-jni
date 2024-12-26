@@ -39,6 +39,8 @@ extern const int LOGICAL_ERROR;
 
 namespace local_engine
 {
+using namespace DB;
+
 RelParser::RelParser(ParserContextPtr parser_context_) : parser_context(parser_context_)
 {
     expression_parser = std::make_unique<ExpressionParser>(parser_context);

@@ -95,9 +95,12 @@ FormatFile::InputFormatPtr ParquetFormatFile::createInputFormat(const DB::Block 
 
     const DB::Settings & settings = context->getSettingsRef();
 
-    if (use_pageindex_reader && pageindex_reader_support(header))
+    if (use_pageindex_reader && supportPageindexReader(header))
+    {
         res->input = std::make_shared<VectorizedParquetBlockInputFormat>(*(res->read_buffer), header, format_settings);
+    }
     else
+    {
         res->input = std::make_shared<DB::ParquetBlockInputFormat>(
             *(res->read_buffer),
             header,
@@ -105,6 +108,7 @@ FormatFile::InputFormatPtr ParquetFormatFile::createInputFormat(const DB::Block 
             settings[DB::Setting::max_parsing_threads],
             settings[DB::Setting::max_download_threads],
             8192);
+    }
     return res;
 }
 
@@ -128,7 +132,8 @@ std::optional<size_t> ParquetFormatFile::getTotalRows()
         return total_rows;
     }
 }
-bool ParquetFormatFile::pageindex_reader_support(const DB::Block & header)
+
+bool ParquetFormatFile::supportPageindexReader(const DB::Block & header)
 {
     const auto result = std::ranges::find_if(
         header,

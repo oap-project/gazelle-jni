@@ -20,9 +20,10 @@
 #include <unordered_set>
 #include <utility>
 #include <Columns/IColumn.h>
-#include <Core/ColumnsWithTypeAndName.h>
 #include <Core/Settings.h>
+#include <DataTypes/DataTypeString.h>
 #include <DataTypes/DataTypeTuple.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <DataTypes/IDataType.h>
 #include <DataTypes/Serializations/ISerialization.h>
 #include <IO/WriteBufferFromString.h>
@@ -35,18 +36,13 @@
 #include <Parser/AdvancedParametersParseUtil.h>
 #include <Parser/RelParsers/SortParsingUtils.h>
 #include <Parser/RelParsers/SortRelParser.h>
-#include <Processors/IProcessor.h>
-#include <Processors/Port.h>
-#include <Processors/QueryPlan/BuildQueryPipelineSettings.h>
 #include <Processors/QueryPlan/ExpressionStep.h>
 #include <Processors/QueryPlan/FilterStep.h>
-#include <Processors/QueryPlan/Optimizations/QueryPlanOptimizationSettings.h>
 #include <Processors/QueryPlan/QueryPlan.h>
 #include <Processors/QueryPlan/ReadFromPreparedSource.h>
 #include <Processors/QueryPlan/SortingStep.h>
 #include <Processors/QueryPlan/WindowStep.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
-#include <QueryPipeline/QueryPlanResourceHolder.h>
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/wrappers.pb.h>
 #include <Common/AggregateUtil.h>
@@ -72,6 +68,7 @@ extern const SettingsMaxThreads max_threads;
 
 namespace local_engine
 {
+using namespace DB;
 GroupLimitRelParser::GroupLimitRelParser(ParserContextPtr parser_context_) : RelParser(parser_context_)
 {
 }

@@ -29,13 +29,13 @@ using SparkStorageMergeTreePtr = std::shared_ptr<SparkStorageMergeTree>;
 class DataPartStorageHolder
 {
 public:
-    DataPartStorageHolder(const DataPartPtr& data_part, const SparkStorageMergeTreePtr& storage)
-        : data_part_(data_part),
-          storage_(storage)
+    DataPartStorageHolder(const DB::DataPartPtr& data_part, const SparkStorageMergeTreePtr& storage)
+        : storage_(storage),
+          data_part_(data_part)
     {
     }
 
-    [[nodiscard]] DataPartPtr dataPart() const
+    [[nodiscard]] DB::DataPartPtr dataPart() const
     {
         return data_part_;
     }
@@ -48,12 +48,11 @@ public:
     ~DataPartStorageHolder()
     {
         storage_->removePartFromMemory(*data_part_);
-        // std::cerr << fmt::format("clean part {}", data_part_->name) << std::endl;
     }
 
 private:
-    DataPartPtr data_part_;
     SparkStorageMergeTreePtr storage_;
+    DB::DataPartPtr data_part_;
 };
 
 using DataPartStorageHolderPtr = std::shared_ptr<DataPartStorageHolder>;
@@ -64,11 +63,11 @@ class StorageMergeTreeFactory
 {
 public:
     static StorageMergeTreeFactory & instance();
-    static void freeStorage(const StorageID & id, const String & snapshot_id = "");
+    static void freeStorage(const DB::StorageID & id, const String & snapshot_id = "");
     static SparkStorageMergeTreePtr
-    getStorage(const StorageID& id, const String & snapshot_id, MergeTreeTable merge_tree_table,
+    getStorage(const DB::StorageID& id, const String & snapshot_id, MergeTreeTable merge_tree_table,
         const std::function<SparkStorageMergeTreePtr()> & creator);
-    static DataPartsVector getDataPartsByNames(const StorageID & id, const String & snapshot_id, std::unordered_set<String> part_name);
+    static DB::DataPartsVector getDataPartsByNames(const DB::StorageID & id, const String & snapshot_id, std::unordered_set<String> part_name);
     static void init_cache_map()
     {
         auto config = MergeTreeConfig::loadFromContext(QueryContext::globalContext());
@@ -97,7 +96,7 @@ public:
         if (datapart_map) datapart_map->clear();
     }
 
-    static String getTableName(const StorageID & id, const String & snapshot_id);
+    static String getTableName(const DB::StorageID & id, const String & snapshot_id);
 
 private:
     static std::unique_ptr<storage_map_cache> storage_map;

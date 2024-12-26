@@ -37,9 +37,9 @@ private:
     {
         const substrait::AggregateRel::Measure * measure = nullptr;
         String measure_column_name;
-        Strings arg_column_names;
+        DB::Strings arg_column_names;
         DB::DataTypes arg_column_types;
-        Array params;
+        DB::Array params;
         String signature_function_name;
         String function_name;
         // If no combinator be applied on it, same as function_name
@@ -60,7 +60,7 @@ private:
     DB::QueryPlanPtr plan = nullptr;
     const substrait::AggregateRel * aggregate_rel = nullptr;
     std::vector<AggregateInfo> aggregates;
-    Names grouping_keys;
+    DB::Names grouping_keys;
 
     void setup(DB::QueryPlanPtr query_plan, const substrait::Rel & rel);
     void addPreProjection();
@@ -69,6 +69,6 @@ private:
     void addAggregatingStep();
     void addPostProjection();
 
-    void buildAggregateDescriptions(AggregateDescriptions & descriptions);
+    void buildAggregateDescriptions(DB::AggregateDescriptions & descriptions);
 };
 }

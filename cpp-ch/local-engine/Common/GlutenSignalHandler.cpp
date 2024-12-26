@@ -16,6 +16,7 @@
  */
 #include <cstring>
 #include <vector>
+#include <thread>
 #include <Core/Settings.h>
 #include <IO/ReadBufferFromFileDescriptor.h>
 #include <IO/ReadHelpers.h>
@@ -104,7 +105,7 @@ static void writeSignalIDtoSignalPipe(int sig)
     char buf[signal_pipe_buf_size];
     WriteBufferFromFileDescriptor out(writeFD(), signal_pipe_buf_size, buf);
     writeBinary(sig, out);
-    out.next();
+    out.finalize();
     errno = saved_errno;
 }
 
@@ -251,9 +252,7 @@ private:
             query = thread_ptr->getQueryForLog();
 
             if (auto logs_queue = thread_ptr->getInternalTextLogsQueue())
-            {
                 CurrentThread::attachInternalTextLogsQueue(logs_queue, LogsLevel::trace);
-            }
         }
         std::string signal_description = "Unknown signal";
 
@@ -377,8 +376,6 @@ private:
 
 namespace local_engine
 {
-SignalHandler::SignalHandler() = default;
-SignalHandler::~SignalHandler() = default;
 
 struct SignalHandler::Impl
 {
@@ -447,4 +444,7 @@ void SignalHandler::init()
         LOG_WARNING(log, "LD_PRELOAD is not set, SignalHandler is disabled");
     }
 }
+
+SignalHandler::SignalHandler() = default;
+SignalHandler::~SignalHandler() = default;
 }

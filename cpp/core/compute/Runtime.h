@@ -80,11 +80,17 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
     return kind_;
   }
 
-  virtual void parsePlan(const uint8_t* data, int32_t size, std::optional<std::string> dumpFile) = 0;
+  virtual void parsePlan(const uint8_t* data, int32_t size, std::optional<std::string> dumpFile) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual void parseSplitInfo(const uint8_t* data, int32_t size, std::optional<std::string> dumpFile) = 0;
+  virtual void parseSplitInfo(const uint8_t* data, int32_t size, std::optional<std::string> dumpFile) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual std::string planString(bool details, const std::unordered_map<std::string, std::string>& sessionConf) = 0;
+  virtual std::string planString(bool details, const std::unordered_map<std::string, std::string>& sessionConf) {
+    throw GlutenException("Not implemented");
+  }
 
   // Just for benchmark
   ::substrait::Plan& getPlan() {
@@ -94,11 +100,17 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
   virtual std::shared_ptr<ResultIterator> createResultIterator(
       const std::string& spillDir,
       const std::vector<std::shared_ptr<ResultIterator>>& inputs,
-      const std::unordered_map<std::string, std::string>& sessionConf) = 0;
+      const std::unordered_map<std::string, std::string>& sessionConf) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual std::shared_ptr<ColumnarBatch> createOrGetEmptySchemaBatch(int32_t numRows) = 0;
+  virtual std::shared_ptr<ColumnarBatch> createOrGetEmptySchemaBatch(int32_t numRows) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual std::shared_ptr<ColumnarBatch> select(std::shared_ptr<ColumnarBatch>, const std::vector<int32_t>&) = 0;
+  virtual std::shared_ptr<ColumnarBatch> select(std::shared_ptr<ColumnarBatch>, const std::vector<int32_t>&) {
+    throw GlutenException("Not implemented");
+  }
 
   virtual MemoryManager* memoryManager() {
     return memoryManager_;
@@ -106,26 +118,42 @@ class Runtime : public std::enable_shared_from_this<Runtime> {
 
   /// This function is used to create certain converter from the format used by
   /// the backend to Spark unsafe row.
-  virtual std::shared_ptr<ColumnarToRowConverter> createColumnar2RowConverter(int64_t column2RowMemThreshold) = 0;
+  virtual std::shared_ptr<ColumnarToRowConverter> createColumnar2RowConverter(int64_t column2RowMemThreshold) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual std::shared_ptr<RowToColumnarConverter> createRow2ColumnarConverter(struct ArrowSchema* cSchema) = 0;
+  virtual std::shared_ptr<RowToColumnarConverter> createRow2ColumnarConverter(struct ArrowSchema* cSchema) {
+    throw GlutenException("Not implemented");
+  }
 
   virtual std::shared_ptr<ShuffleWriter> createShuffleWriter(
       int numPartitions,
       std::unique_ptr<PartitionWriter> partitionWriter,
-      ShuffleWriterOptions options) = 0;
+      ShuffleWriterOptions options) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual Metrics* getMetrics(ColumnarBatchIterator* rawIter, int64_t exportNanos) = 0;
+  virtual Metrics* getMetrics(ColumnarBatchIterator* rawIter, int64_t exportNanos) {
+    throw GlutenException("Not implemented");
+  }
 
   virtual std::shared_ptr<ShuffleReader> createShuffleReader(
       std::shared_ptr<arrow::Schema> schema,
-      ShuffleReaderOptions options) = 0;
+      ShuffleReaderOptions options) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual std::unique_ptr<ColumnarBatchSerializer> createColumnarBatchSerializer(struct ArrowSchema* cSchema) = 0;
+  virtual std::unique_ptr<ColumnarBatchSerializer> createColumnarBatchSerializer(struct ArrowSchema* cSchema) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual void dumpConf(const std::string& path) = 0;
+  virtual void dumpConf(const std::string& path) {
+    throw GlutenException("Not implemented");
+  }
 
-  virtual std::shared_ptr<ArrowWriter> createArrowWriter(const std::string& path) = 0;
+  virtual std::shared_ptr<ArrowWriter> createArrowWriter(const std::string& path) {
+    throw GlutenException("Not implemented");
+  };
 
   const std::unordered_map<std::string, std::string>& getConfMap() {
     return confMap_;

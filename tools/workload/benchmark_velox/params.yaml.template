@@ -20,22 +20,10 @@ disk_dev:
 nic_dev:
   - ens787f0
 
-# Hostname or IP to server for perf analysis. Able to connect via ssh.
-server: ''
-
-# Specify the directory on perf analysis server. Usually a codename for this run.
-base_dir: emr
-
-# Proxy used to connect to server for perf analysis.
-proxy: ''
-
-# Whether to upload profile to perf analysis server and run perf analysis scripts. Only takes effect if server is set.
-analyze_perf: True
-
 # Select workload. Can be either 'tpch' or 'tpcds'.
 workload: tpch
 
-# Run with gluten. If False, run vanilla Spark.
+# Run with gluten. If False, run Spark.
 run_gluten: True
 
 # TPC tables
@@ -48,24 +36,48 @@ cores_per_executor: 8
 
 gluten_tpch_task_per_core: 2
 gluten_tpcds_task_per_core: 2
-vanilla_tpch_task_per_core: 4
-vanilla_tpcds_task_per_core: 4
+spark_tpch_task_per_core: 4
+spark_tpcds_task_per_core: 4
 
 # Physical memory on each worker node.
 memory_per_node: 1000g
 
-# Offheap ratio. 0 to disable offheap for vanilla Spark.
+# Offheap ratio. 0 to disable offheap for Spark.
 # onheap:offheap = 1:2
-vanilla_offheap_ratio: 2.0
+spark_offheap_ratio: 2.0
 # onheap:offheap = 1:7
 gluten_offheap_ratio: 7.0
 
 # spark.io.compression.codec
-vanilla_codec: lz4
+spark_codec: lz4
 # spark.gluten.sql.columnar.shuffle.codec
 gluten_codec: lz4
 # spark.gluten.sql.columnar.shuffle.codecBackend
 gluten_codec_backend: ''
 # spark.gluten.sql.columnar.maxBatchSize
 max_batch_size: 4096
+# spark.app.name, empty to use default name.
+app_name: ''
 
+# Hostname or IP to server for perf analysis. Able to connect via ssh.
+server: ''
+
+# Specify the directory on perf analysis server. Usually a codename for this run.
+base_dir: test
+
+# Proxy used to connect to server for perf analysis.
+proxy: ''
+
+# Emon event file for `emon -i`. Set to emptry string '' if emon is unavailable.
+# Supported emon events on platform can be verified via `emon -i emon.list`
+emon_list: /home/sparkuser/ipython/emon.list
+
+# Whether to run perf analysis scripts. Only takes effect if server is set.
+analyze_perf: True
+
+# List of email to receive perf analysis results.
+emails:
+  -
+
+# Pull request number.
+pr: ''

@@ -49,10 +49,10 @@ namespace gluten {
 
 void UdfLoader::loadUdfLibraries(const std::string& libPaths) {
   const auto& paths = splitPaths(libPaths, /*checkExists=*/true);
-  loadUdfLibraries0(paths);
+  loadUdfLibrariesInternal(paths);
 }
 
-void UdfLoader::loadUdfLibraries0(const std::vector<std::string>& libPaths) {
+void UdfLoader::loadUdfLibrariesInternal(const std::vector<std::string>& libPaths) {
   for (const auto& libPath : libPaths) {
     if (handles_.find(libPath) == handles_.end()) {
       void* handle = dlopen(libPath.c_str(), RTLD_LAZY);

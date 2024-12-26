@@ -107,7 +107,6 @@ case class ConvEnforcerRule(reqConv: Conv) extends RasRule[SparkPlan] {
     }
     val transition = Conv.findTransition(conv, reqConv)
     val after = transition.apply(node)
-    after.copyTagsFrom(node)
     List(after)
   }
 

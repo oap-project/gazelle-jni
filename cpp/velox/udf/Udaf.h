@@ -39,4 +39,5 @@ struct UdafEntry {
 
 #define GLUTEN_REGISTER_UDAF registerUdf
 #define DEFINE_REGISTER_UDAF extern "C" void GLUTEN_REGISTER_UDAF()
+
 } // namespace gluten

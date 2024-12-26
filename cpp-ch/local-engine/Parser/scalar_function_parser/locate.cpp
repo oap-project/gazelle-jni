@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
+#include <DataTypes/DataTypeNullable.h>
+#include <Parser/ExpressionParser.h>
 #include <Parser/FunctionParser.h>
 #include <Common/BlockTypeUtils.h>
 #include <Common/CHUtil.h>
-#include <Parser/ExpressionParser.h>
 
 namespace DB
 {
@@ -31,7 +32,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 class FunctionParserLocate : public FunctionParser
 {
 public:

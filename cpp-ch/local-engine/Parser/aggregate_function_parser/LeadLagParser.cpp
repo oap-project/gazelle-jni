@@ -23,6 +23,7 @@
 
 namespace local_engine
 {
+using namespace DB;
 DB::ActionsDAG::NodeRawConstPtrs
 LeadParser::parseFunctionArguments(const CommonFunctionInfo & func_info, DB::ActionsDAG & actions_dag) const
 {

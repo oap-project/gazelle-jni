@@ -86,6 +86,8 @@ class GlutenConfig(conf: SQLConf) extends Logging {
 
   def enableColumnarUnion: Boolean = conf.getConf(COLUMNAR_UNION_ENABLED)
 
+  def enableNativeUnion: Boolean = conf.getConf(NATIVE_UNION_ENABLED)
+
   def enableColumnarExpand: Boolean = conf.getConf(COLUMNAR_EXPAND_ENABLED)
 
   def enableColumnarBroadcastExchange: Boolean = conf.getConf(COLUMNAR_BROADCAST_EXCHANGE_ENABLED)
@@ -318,8 +320,6 @@ class GlutenConfig(conf: SQLConf) extends Logging {
   def veloxMaxSpillRunRows: Long = conf.getConf(COLUMNAR_VELOX_MAX_SPILL_RUN_ROWS)
 
   def veloxMaxSpillBytes: Long = conf.getConf(COLUMNAR_VELOX_MAX_SPILL_BYTES)
-
-  def veloxMaxWriteBufferSize: Long = conf.getConf(COLUMNAR_VELOX_MAX_SPILL_WRITE_BUFFER_SIZE)
 
   def veloxBloomFilterExpectedNumItems: Long =
     conf.getConf(COLUMNAR_VELOX_BLOOM_FILTER_EXPECTED_NUM_ITEMS)
@@ -569,6 +569,12 @@ object GlutenConfig {
   val SPARK_OFFHEAP_ENABLED = "spark.memory.offHeap.enabled"
   val SPARK_REDACTION_REGEX = "spark.redaction.regex"
   val SPARK_SHUFFLE_FILE_BUFFER = "spark.shuffle.file.buffer"
+  val SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE = "spark.unsafe.sorter.spill.reader.buffer.size"
+  val SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE_DEFAULT: Int = 1024 * 1024
+  val SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE = "spark.shuffle.spill.diskWriteBufferSize"
+  val SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE_DEFAULT: Int = 1024 * 1024
+  val SPARK_SHUFFLE_SPILL_COMPRESS = "spark.shuffle.spill.compress"
+  val SPARK_SHUFFLE_SPILL_COMPRESS_DEFAULT: Boolean = true
 
   // For Soft Affinity Scheduling
   // Enable Soft Affinity Scheduling, default value is false
@@ -617,7 +623,6 @@ object GlutenConfig {
   // Shuffle Writer buffer size.
   val GLUTEN_SHUFFLE_WRITER_BUFFER_SIZE = "spark.gluten.shuffleWriter.bufferSize"
   val GLUTEN_SHUFFLE_WRITER_MERGE_THRESHOLD = "spark.gluten.sql.columnar.shuffle.merge.threshold"
-  val GLUTEN_SHUFFLE_DEFUALT_COMPRESSION_BUFFER_SIZE = 32 * 1024
 
   // Shuffle reader buffer size.
   val GLUTEN_SHUFFLE_READER_BUFFER_SIZE = "spark.gluten.sql.columnar.shuffle.readerBufferSize"
@@ -733,7 +738,14 @@ object GlutenConfig {
         COLUMNAR_MEMORY_BACKTRACE_ALLOCATION.defaultValueString),
       (
         GLUTEN_COLUMNAR_TO_ROW_MEM_THRESHOLD.key,
-        GLUTEN_COLUMNAR_TO_ROW_MEM_THRESHOLD.defaultValue.get.toString)
+        GLUTEN_COLUMNAR_TO_ROW_MEM_THRESHOLD.defaultValue.get.toString),
+      (
+        SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE,
+        SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE_DEFAULT.toString),
+      (
+        SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE,
+        SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE_DEFAULT.toString),
+      (SPARK_SHUFFLE_SPILL_COMPRESS, SPARK_SHUFFLE_SPILL_COMPRESS_DEFAULT.toString)
     )
     keyWithDefault.forEach(e => nativeConfMap.put(e._1, conf.getOrElse(e._1, e._2)))
 
@@ -1021,6 +1033,13 @@ object GlutenConfig {
       .doc("Enable or disable columnar union.")
       .booleanConf
       .createWithDefault(true)
+
+  val NATIVE_UNION_ENABLED =
+    buildConf("spark.gluten.sql.native.union")
+      .internal()
+      .doc("Enable or disable native union where computation is completely offloaded to backend.")
+      .booleanConf
+      .createWithDefault(false)
 
   val COLUMNAR_EXPAND_ENABLED =
     buildConf("spark.gluten.sql.columnar.expand")
@@ -1407,9 +1426,10 @@ object GlutenConfig {
   val RAS_ENABLED =
     buildConf("spark.gluten.ras.enabled")
       .doc(
-        "Experimental: Enables RAS (relational algebra selector) during physical " +
-          "planning to generate more efficient query plan. Note, this feature is still in " +
-          "development and may not bring performance profits.")
+        "Enables RAS (relational algebra selector) during physical " +
+          "planning to generate more efficient query plan. Note, this feature doesn't bring " +
+          "performance profits by default. Try exploring option `spark.gluten.ras.costModel` " +
+          "for advanced usage.")
       .booleanConf
       .createWithDefault(false)
 
@@ -1595,13 +1615,6 @@ object GlutenConfig {
       .doc("The maximum file size of a query")
       .bytesConf(ByteUnit.BYTE)
       .createWithDefaultString("100G")
-
-  val COLUMNAR_VELOX_MAX_SPILL_WRITE_BUFFER_SIZE =
-    buildConf("spark.gluten.sql.columnar.backend.velox.spillWriteBufferSize")
-      .internal()
-      .doc("The maximum write buffer size")
-      .bytesConf(ByteUnit.BYTE)
-      .createWithDefaultString("4M")
 
   val MAX_PARTITION_PER_WRITERS_SESSION =
     buildConf("spark.gluten.sql.columnar.backend.velox.maxPartitionsPerWritersSession")
@@ -2090,7 +2103,8 @@ object GlutenConfig {
   val LOAD_QUANTUM =
     buildStaticConf("spark.gluten.sql.columnar.backend.velox.loadQuantum")
       .internal()
-      .doc("Set the load quantum for velox file scan")
+      .doc("Set the load quantum for velox file scan, recommend to use the default value (256MB) " +
+        "for performance consideration. If Velox cache is enabled, it can be 8MB at most.")
       .bytesConf(ByteUnit.BYTE)
       .createWithDefaultString("256MB")
 

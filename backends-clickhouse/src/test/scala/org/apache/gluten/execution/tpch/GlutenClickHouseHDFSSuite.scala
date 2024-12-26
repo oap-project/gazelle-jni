@@ -144,7 +144,7 @@ class GlutenClickHouseHDFSSuite
 
   test("GLUTEN-7542: Fix cache refresh") {
     withSQLConf("spark.sql.hive.manageFilesourcePartitions" -> "false") {
-      val filePath = s"$tablesPath/issue_7542/"
+      val filePath = s"$tablesPath/$SPARK_DIR_NAME/issue_7542/"
       val targetDirs = new Path(filePath)
       val fs = targetDirs.getFileSystem(spark.sessionState.newHadoopConf())
       fs.mkdirs(targetDirs)

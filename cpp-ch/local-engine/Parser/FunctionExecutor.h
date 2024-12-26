@@ -20,9 +20,9 @@
 #include <DataTypes/IDataType.h>
 #include <Interpreters/Context.h>
 #include <Interpreters/ExpressionActions.h>
-#include <Parser/SerializedPlanParser.h>
-#include <Parser/ParserContext.h>
 #include <Parser/ExpressionParser.h>
+#include <Parser/ParserContext.h>
+#include <Parser/SerializedPlanParser.h>
 #include <base/types.h>
 #include <substrait/algebra.pb.h>
 #include <substrait/extensions/extensions.pb.h>
@@ -59,7 +59,7 @@ public:
 
     bool executeAndCompare(const std::vector<TestCase> & cases);
 
-    Block getHeader() const;
+    DB::Block getHeader() const;
 
     String getResultName() const;
 
@@ -81,7 +81,7 @@ private:
     substrait::Expression expression;
     DB::Block header;
     String result_name;
-    std::unique_ptr<ExpressionActions> expression_actions;
+    std::unique_ptr<DB::ExpressionActions> expression_actions;
 
     Poco::Logger * log;
 };

@@ -80,7 +80,8 @@ abstract class BackendTestSettings {
       return !isExcluded
     }
 
-    throw new IllegalStateException("Unreachable code")
+    throw new IllegalStateException(
+      "Unreachable code from org.apache.gluten.utils.BackendTestSettings.shouldRun")
   }
 
   final protected class SuiteSettings {

@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.utils
 
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.{ColumnarBatches, VeloxColumnarBatches}
 import org.apache.gluten.iterator.Iterators
 import org.apache.gluten.memory.arrow.alloc.ArrowBufferAllocators
@@ -41,10 +42,11 @@ import org.apache.spark.util.MutablePair
 object ExecUtil {
 
   def convertColumnarToRow(batch: ColumnarBatch): Iterator[InternalRow] = {
-    val runtime = Runtimes.contextInstance("ExecUtil#ColumnarToRow")
+    val runtime =
+      Runtimes.contextInstance(BackendsApiManager.getBackendName, "ExecUtil#ColumnarToRow")
     val jniWrapper = NativeColumnarToRowJniWrapper.create(runtime)
     var info: NativeColumnarToRowInfo = null
-    val batchHandle = ColumnarBatches.getNativeHandle(batch)
+    val batchHandle = ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName, batch)
     val c2rHandle = jniWrapper.nativeColumnarToRowInit()
     info = jniWrapper.nativeColumnarToRowConvert(c2rHandle, batchHandle, 0)
 

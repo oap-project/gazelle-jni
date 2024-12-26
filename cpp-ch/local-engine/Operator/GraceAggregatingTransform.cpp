@@ -56,7 +56,9 @@ GraceAggregatingTransform::GraceAggregatingTransform(
     max_allowed_memory_usage_ratio = config.max_allowed_memory_usage_ratio_for_aggregate_merging;
     // bucket 0 is for in-memory data, it's just a placeholder.
     buckets.emplace(0, BufferFileStream());
-
+    enable_spill_test = config.enable_spill_test;
+    if (enable_spill_test)
+        buckets.emplace(1, BufferFileStream());
     current_data_variants = std::make_shared<DB::AggregatedDataVariants>();
 }
 
@@ -289,7 +291,7 @@ void GraceAggregatingTransform::addBlockIntoFileBucket(size_t bucket_index, cons
         file_stream.original_blocks.push_back(block);
     else
         file_stream.intermediate_blocks.push_back(block);
-    if (file_stream.pending_bytes > max_pending_flush_blocks_per_bucket)
+    if (file_stream.pending_bytes > max_pending_flush_blocks_per_bucket || (file_stream.pending_bytes && enable_spill_test))
     {
         flushBucket(bucket_index);
         file_stream.pending_bytes = 0;
@@ -349,7 +351,7 @@ size_t GraceAggregatingTransform::flushBucket(size_t bucket_index)
         if (!file_stream.intermediate_file_stream)
         {
             auto intermediate_header = params->aggregator.getHeader(false);
-            file_stream.intermediate_file_stream = DB::TemporaryBlockStreamHolder(header, tmp_data_disk.get());
+            file_stream.intermediate_file_stream = DB::TemporaryBlockStreamHolder(intermediate_header, tmp_data_disk.get());
         }
         flush_bytes += flushBlocksInfoDisk(file_stream.intermediate_file_stream, file_stream.intermediate_blocks);
     }

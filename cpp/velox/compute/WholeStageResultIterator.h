@@ -120,7 +120,7 @@ class WholeStageResultIterator : public ColumnarBatchIterator {
   /// All the children plan node ids with postorder traversal.
   std::vector<facebook::velox::core::PlanNodeId> orderedNodeIds_;
 
-  /// Node ids should be ommited in metrics.
+  /// Node ids should be omitted in metrics.
   std::unordered_set<facebook::velox::core::PlanNodeId> omittedNodeIds_;
   std::vector<facebook::velox::core::PlanNodeId> scanNodeIds_;
   std::vector<std::shared_ptr<SplitInfo>> scanInfos_;

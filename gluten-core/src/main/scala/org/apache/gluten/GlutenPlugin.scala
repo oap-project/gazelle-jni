@@ -18,7 +18,7 @@ package org.apache.gluten
 
 import org.apache.gluten.GlutenBuildInfo._
 import org.apache.gluten.GlutenConfig._
-import org.apache.gluten.backend.Backend
+import org.apache.gluten.component.Component
 import org.apache.gluten.events.GlutenBuildInfoEvent
 import org.apache.gluten.exception.GlutenException
 import org.apache.gluten.extension.GlutenSessionExtensions
@@ -68,7 +68,7 @@ private[gluten] class GlutenDriverPlugin extends DriverPlugin with Logging {
     setPredefinedConfigs(conf)
 
     // Initialize Backend.
-    Backend.get().onDriverStart(sc, pluginContext)
+    Component.sorted().foreach(_.onDriverStart(sc, pluginContext))
 
     Collections.emptyMap()
   }
@@ -84,16 +84,25 @@ private[gluten] class GlutenDriverPlugin extends DriverPlugin with Logging {
   }
 
   override def shutdown(): Unit = {
-    Backend.get().onDriverShutdown()
+    Component.sorted().reverse.foreach(_.onDriverShutdown())
   }
 
   private def postBuildInfoEvent(sc: SparkContext): Unit = {
-    val buildInfo = Backend.get().buildInfo()
-
     // export gluten version to property to spark
     System.setProperty("gluten.version", VERSION)
 
-    val glutenBuildInfo = new mutable.HashMap[String, String]()
+    val glutenBuildInfo = new mutable.LinkedHashMap[String, String]()
+
+    val components = Component.sorted()
+    glutenBuildInfo.put("Components", components.map(_.buildInfo().name).mkString(", "))
+    components.foreach {
+      comp =>
+        val buildInfo = comp.buildInfo()
+        glutenBuildInfo.put(s"Component ${buildInfo.name} Branch", buildInfo.branch)
+        glutenBuildInfo.put(s"Component ${buildInfo.name} Revision", buildInfo.revision)
+        glutenBuildInfo.put(s"Component ${buildInfo.name} Revision Time", buildInfo.revisionTime)
+    }
+
     glutenBuildInfo.put("Gluten Version", VERSION)
     glutenBuildInfo.put("GCC Version", GCC_VERSION)
     glutenBuildInfo.put("Java Version", JAVA_COMPILE_VERSION)
@@ -105,13 +114,8 @@ private[gluten] class GlutenDriverPlugin extends DriverPlugin with Logging {
     glutenBuildInfo.put("Gluten Revision Time", REVISION_TIME)
     glutenBuildInfo.put("Gluten Build Time", BUILD_DATE)
     glutenBuildInfo.put("Gluten Repo URL", REPO_URL)
-    glutenBuildInfo.put("Backend", buildInfo.name)
-    glutenBuildInfo.put("Backend Branch", buildInfo.branch)
-    glutenBuildInfo.put("Backend Revision", buildInfo.revision)
-    glutenBuildInfo.put("Backend Revision Time", buildInfo.revisionTime)
-    val infoMap = glutenBuildInfo.toMap
-    val loggingInfo = infoMap.toSeq
-      .sortBy(_._1)
+
+    val loggingInfo = glutenBuildInfo
       .map { case (name, value) => s"$name: $value" }
       .mkString(
         "Gluten build info:\n==============================================================\n",
@@ -119,7 +123,7 @@ private[gluten] class GlutenDriverPlugin extends DriverPlugin with Logging {
         "\n=============================================================="
       )
     logInfo(loggingInfo)
-    val event = GlutenBuildInfoEvent(infoMap)
+    val event = GlutenBuildInfoEvent(glutenBuildInfo.toMap)
     GlutenEventUtils.post(sc, event)
   }
 
@@ -245,6 +249,16 @@ private[gluten] class GlutenDriverPlugin extends DriverPlugin with Logging {
         s"${COLUMNAR_VELOX_CACHE_ENABLED.key} and " +
           s"${COLUMNAR_VELOX_FILE_HANDLE_CACHE_ENABLED.key} should be enabled together.")
     }
+
+    if (
+      conf.getBoolean(COLUMNAR_VELOX_CACHE_ENABLED.key, false) &&
+      conf.getSizeAsBytes(LOAD_QUANTUM.key, LOAD_QUANTUM.defaultValueString) > 8 * 1024 * 1024
+    ) {
+      throw new IllegalArgumentException(
+        s"Velox currently only support up to 8MB load quantum size " +
+          s"on SSD cache enabled by ${COLUMNAR_VELOX_CACHE_ENABLED.key}, " +
+          s"User can set ${LOAD_QUANTUM.key} <= 8MB skip this error.")
+    }
   }
 }
 
@@ -254,12 +268,12 @@ private[gluten] class GlutenExecutorPlugin extends ExecutorPlugin {
   /** Initialize the executor plugin. */
   override def init(ctx: PluginContext, extraConf: util.Map[String, String]): Unit = {
     // Initialize Backend.
-    Backend.get().onExecutorStart(ctx)
+    Component.sorted().foreach(_.onExecutorStart(ctx))
   }
 
   /** Clean up and terminate this plugin. For example: close the native engine. */
   override def shutdown(): Unit = {
-    Backend.get().onExecutorShutdown()
+    Component.sorted().reverse.foreach(_.onExecutorShutdown())
     super.shutdown()
   }
 

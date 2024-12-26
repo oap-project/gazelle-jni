@@ -15,6 +15,13 @@ RUN wget --no-check-certificate https://downloads.apache.org/maven/maven-3/3.8.8
     mv apache-maven-3.8.8 /usr/lib/maven
 ENV PATH=${PATH}:/usr/lib/maven/bin
 
+RUN wget -nv https://archive.apache.org/dist/celeborn/celeborn-0.3.2-incubating/apache-celeborn-0.3.2-incubating-bin.tgz -P /opt/
+RUN wget -nv https://archive.apache.org/dist/celeborn/celeborn-0.4.2/apache-celeborn-0.4.2-bin.tgz -P /opt/
+RUN wget -nv https://archive.apache.org/dist/celeborn/celeborn-0.5.2/apache-celeborn-0.5.2-bin.tgz -P /opt/
+
 RUN git clone --depth=1 https://github.com/apache/incubator-gluten /opt/gluten
+
+RUN cd /opt/gluten/.github/workflows/util/ && ./install_spark_resources.sh 3.2 && ./install_spark_resources.sh 3.3 \
+    && ./install_spark_resources.sh 3.4 && ./install_spark_resources.sh 3.5 && ./install_spark_resources.sh 3.5-scala2.13
 
 RUN cd /opt/gluten && source /opt/rh/gcc-toolset-11/enable && ./dev/builddeps-veloxbe.sh --run_setup_script=ON build_arrow && rm -rf /opt/gluten

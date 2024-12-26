@@ -261,7 +261,7 @@ class VeloxShuffleWriterTest : public ::testing::TestWithParam<ShuffleTestParams
 
     ShuffleTestParams params = GetParam();
     shuffleWriterOptions_.useRadixSort = params.useRadixSort;
-    shuffleWriterOptions_.compressionBufferSize = params.compressionBufferSize;
+    shuffleWriterOptions_.sortEvictBufferSize = params.compressionBufferSize;
     partitionWriterOptions_.compressionType = params.compressionType;
     switch (partitionWriterOptions_.compressionType) {
       case arrow::Compression::UNCOMPRESSED:

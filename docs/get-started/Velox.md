@@ -61,11 +61,11 @@ First time build for all supported spark versions.
 ./dev/buildbundle-veloxbe.sh
 ```
 
-After a complete build, if only some gluten code is changed, you can use the following command to skip building velox/arrow and
+After a complete build, if only some gluten code is changed, you can use the following command to skip building arrow and
 setting up build dependencies.
 
 ```bash
-./dev/buildbundle-veloxbe.sh --enable_ep_cache=ON --build_arrow=OFF --run_setup_script=OFF
+./dev/buildbundle-veloxbe.sh --build_arrow=OFF --run_setup_script=OFF
 ```
 
 **For aarch64 build**
@@ -217,7 +217,7 @@ cd /path/to/gluten
 ./dev/buildbundle-veloxbe.sh --enable_s3=ON
 ```
 
-Currently there are several ways to asscess S3 in Spark. Please refer [Velox S3](VeloxS3.md) part for more detailed configurations
+Currently there are several ways to access S3 in Spark. Please refer [Velox S3](VeloxS3.md) part for more detailed configurations
 
 ## Celeborn support
 
@@ -272,7 +272,7 @@ spark.dynamicAllocation.enabled false
 
 ## Uniffle support
 
-Uniffle with velox backend supports [Uniffle](https://github.com/apache/incubator-uniffle) as remote shuffle service. Currently, the supported Uniffle versions are `0.9.0`.
+Uniffle with velox backend supports [Uniffle](https://github.com/apache/incubator-uniffle) as remote shuffle service. Currently, the supported Uniffle versions are `0.9.1`.
 
 First refer to this URL(https://uniffle.apache.org/docs/intro) to get start with uniffle.
 

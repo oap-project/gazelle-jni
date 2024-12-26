@@ -41,32 +41,33 @@
 
 using namespace gluten;
 
-static jclass javaReservationListenerClass;
+namespace {
+jclass javaReservationListenerClass;
 
-static jmethodID reserveMemoryMethod;
-static jmethodID unreserveMemoryMethod;
+jmethodID reserveMemoryMethod;
+jmethodID unreserveMemoryMethod;
 
-static jclass byteArrayClass;
+jclass byteArrayClass;
 
-static jclass jniByteInputStreamClass;
-static jmethodID jniByteInputStreamRead;
-static jmethodID jniByteInputStreamTell;
-static jmethodID jniByteInputStreamClose;
+jclass jniByteInputStreamClass;
+jmethodID jniByteInputStreamRead;
+jmethodID jniByteInputStreamTell;
+jmethodID jniByteInputStreamClose;
 
-static jclass splitResultClass;
-static jmethodID splitResultConstructor;
+jclass splitResultClass;
+jmethodID splitResultConstructor;
 
-static jclass columnarBatchSerializeResultClass;
-static jmethodID columnarBatchSerializeResultConstructor;
+jclass columnarBatchSerializeResultClass;
+jmethodID columnarBatchSerializeResultConstructor;
 
-static jclass metricsBuilderClass;
-static jmethodID metricsBuilderConstructor;
-static jclass nativeColumnarToRowInfoClass;
-static jmethodID nativeColumnarToRowInfoConstructor;
+jclass metricsBuilderClass;
+jmethodID metricsBuilderConstructor;
+jclass nativeColumnarToRowInfoClass;
+jmethodID nativeColumnarToRowInfoConstructor;
 
-static jclass shuffleReaderMetricsClass;
-static jmethodID shuffleReaderMetricsSetDecompressTime;
-static jmethodID shuffleReaderMetricsSetDeserializeTime;
+jclass shuffleReaderMetricsClass;
+jmethodID shuffleReaderMetricsSetDecompressTime;
+jmethodID shuffleReaderMetricsSetDeserializeTime;
 
 class JavaInputStreamAdaptor final : public arrow::io::InputStream {
  public:
@@ -140,6 +141,61 @@ class JavaInputStreamAdaptor final : public arrow::io::InputStream {
   bool closed_ = false;
 };
 
+/// Internal backend consists of empty implementations of Runtime API and MemoryManager API.
+/// The backend is used for saving contextual objects only.
+///
+/// It's also possible to extend the implementation for handling Arrow-based requests either in the future.
+inline static const std::string kInternalBackendKind{"internal"};
+
+class InternalMemoryManager : public MemoryManager {
+ public:
+  InternalMemoryManager(const std::string& kind) : MemoryManager(kind) {}
+
+  arrow::MemoryPool* getArrowMemoryPool() override {
+    throw GlutenException("Not implemented");
+  }
+
+  const MemoryUsageStats collectMemoryUsageStats() const override {
+    return MemoryUsageStats();
+  }
+
+  const int64_t shrink(int64_t size) override {
+    return 0;
+  }
+
+  void hold() override {}
+};
+
+class InternalRuntime : public Runtime {
+ public:
+  InternalRuntime(
+      const std::string& kind,
+      MemoryManager* memoryManager,
+      const std::unordered_map<std::string, std::string>& confMap)
+      : Runtime(kind, memoryManager, confMap) {}
+};
+
+MemoryManager* internalMemoryManagerFactory(const std::string& kind, std::unique_ptr<AllocationListener> listener) {
+  return new InternalMemoryManager(kind);
+}
+
+void internalMemoryManagerReleaser(MemoryManager* memoryManager) {
+  delete memoryManager;
+}
+
+Runtime* internalRuntimeFactory(
+    const std::string& kind,
+    MemoryManager* memoryManager,
+    const std::unordered_map<std::string, std::string>& sessionConf) {
+  return new InternalRuntime(kind, memoryManager, sessionConf);
+}
+
+void internalRuntimeReleaser(Runtime* runtime) {
+  delete runtime;
+}
+
+} // namespace
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -151,6 +207,9 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
   }
   getJniCommonState()->ensureInitialized(env);
   getJniErrorState()->ensureInitialized(env);
+
+  MemoryManager::registerFactory(kInternalBackendKind, internalMemoryManagerFactory, internalMemoryManagerReleaser);
+  Runtime::registerFactory(kInternalBackendKind, internalRuntimeFactory, internalRuntimeReleaser);
 
   byteArrayClass = createGlobalClassReferenceOrError(env, "[B");
 
@@ -170,7 +229,10 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
   metricsBuilderClass = createGlobalClassReferenceOrError(env, "Lorg/apache/gluten/metrics/Metrics;");
 
   metricsBuilderConstructor = getMethodIdOrError(
-      env, metricsBuilderClass, "<init>", "([J[J[J[J[J[J[J[J[J[JJ[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J)V");
+      env,
+      metricsBuilderClass,
+      "<init>",
+      "([J[J[J[J[J[J[J[J[J[JJ[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J[J)V");
 
   nativeColumnarToRowInfoClass =
       createGlobalClassReferenceOrError(env, "Lorg/apache/gluten/vectorized/NativeColumnarToRowInfo;");
@@ -275,11 +337,11 @@ JNIEXPORT jbyteArray JNICALL Java_org_apache_gluten_memory_NativeMemoryManagerJn
   const MemoryUsageStats& stats = memoryManager->collectMemoryUsageStats();
   auto size = stats.ByteSizeLong();
   jbyteArray out = env->NewByteArray(size);
-  uint8_t buffer[size];
+  std::vector<uint8_t> buffer(size);
   GLUTEN_CHECK(
-      stats.SerializeToArray(reinterpret_cast<void*>(buffer), size),
+      stats.SerializeToArray(reinterpret_cast<void*>(buffer.data()), size),
       "Serialization failed when collecting memory usage stats");
-  env->SetByteArrayRegion(out, 0, size, reinterpret_cast<jbyte*>(buffer));
+  env->SetByteArrayRegion(out, 0, size, reinterpret_cast<jbyte*>(buffer.data()));
   return out;
   JNI_METHOD_END(nullptr)
 }
@@ -475,7 +537,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_gluten_metrics_IteratorMetricsJniWrapp
   }
 
   jlongArray longArray[Metrics::kNum];
-  for (auto i = (int)Metrics::kBegin; i != (int)Metrics::kEnd; ++i) {
+  for (auto i = static_cast<int>(Metrics::kBegin); i != static_cast<int>(Metrics::kEnd); ++i) {
     longArray[i] = env->NewLongArray(numMetrics);
     if (metrics) {
       env->SetLongArrayRegion(longArray[i], 0, numMetrics, metrics->get((Metrics::TYPE)i));
@@ -515,6 +577,9 @@ JNIEXPORT jobject JNICALL Java_org_apache_gluten_metrics_IteratorMetricsJniWrapp
       longArray[Metrics::kProcessedStrides],
       longArray[Metrics::kRemainingFilterTime],
       longArray[Metrics::kIoWaitTime],
+      longArray[Metrics::kStorageReadBytes],
+      longArray[Metrics::kLocalReadBytes],
+      longArray[Metrics::kRamReadBytes],
       longArray[Metrics::kPreloadSplits],
       longArray[Metrics::kPhysicalWrittenBytes],
       longArray[Metrics::kWriteIOTime],
@@ -650,7 +715,7 @@ JNIEXPORT void JNICALL Java_org_apache_gluten_vectorized_NativeRowToColumnarJniW
 
 JNIEXPORT jstring JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrapper_getType( // NOLINT
     JNIEnv* env,
-    jobject wrapper,
+    jclass,
     jlong batchHandle) {
   JNI_METHOD_START
   auto batch = ObjectStore::retrieve<ColumnarBatch>(batchHandle);
@@ -660,7 +725,7 @@ JNIEXPORT jstring JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniW
 
 JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrapper_numBytes( // NOLINT
     JNIEnv* env,
-    jobject wrapper,
+    jclass,
     jlong batchHandle) {
   JNI_METHOD_START
   auto batch = ObjectStore::retrieve<ColumnarBatch>(batchHandle);
@@ -670,7 +735,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWra
 
 JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrapper_numColumns( // NOLINT
     JNIEnv* env,
-    jobject wrapper,
+    jclass,
     jlong batchHandle) {
   JNI_METHOD_START
   auto batch = ObjectStore::retrieve<ColumnarBatch>(batchHandle);
@@ -680,7 +745,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWra
 
 JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrapper_numRows( // NOLINT
     JNIEnv* env,
-    jobject wrapper,
+    jclass,
     jlong batchHandle) {
   JNI_METHOD_START
   auto batch = ObjectStore::retrieve<ColumnarBatch>(batchHandle);
@@ -690,7 +755,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWra
 
 JNIEXPORT void JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrapper_exportToArrow( // NOLINT
     JNIEnv* env,
-    jobject wrapper,
+    jclass,
     jlong batchHandle,
     jlong cSchema,
     jlong cArray) {
@@ -700,6 +765,15 @@ JNIEXPORT void JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrap
   std::shared_ptr<ArrowArray> exportedArray = batch->exportArrowArray();
   ArrowSchemaMove(exportedSchema.get(), reinterpret_cast<struct ArrowSchema*>(cSchema));
   ArrowArrayMove(exportedArray.get(), reinterpret_cast<struct ArrowArray*>(cArray));
+  JNI_METHOD_END()
+}
+
+JNIEXPORT void JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrapper_close( // NOLINT
+    JNIEnv* env,
+    jclass,
+    jlong batchHandle) {
+  JNI_METHOD_START
+  ObjectStore::release(batchHandle);
   JNI_METHOD_END()
 }
 
@@ -752,15 +826,6 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWra
   JNI_METHOD_END(kInvalidObjectHandle)
 }
 
-JNIEXPORT void JNICALL Java_org_apache_gluten_columnarbatch_ColumnarBatchJniWrapper_close( // NOLINT
-    JNIEnv* env,
-    jobject wrapper,
-    jlong batchHandle) {
-  JNI_METHOD_START
-  ObjectStore::release(batchHandle);
-  JNI_METHOD_END()
-}
-
 // Shuffle
 JNIEXPORT jlong JNICALL Java_org_apache_gluten_vectorized_ShuffleWriterJniWrapper_nativeMake( // NOLINT
     JNIEnv* env,
@@ -773,7 +838,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_vectorized_ShuffleWriterJniWrappe
     jstring codecJstr,
     jstring codecBackendJstr,
     jint compressionLevel,
-    jint compressionBufferSize,
+    jint sortEvictBufferSize,
     jint compressionThreshold,
     jstring compressionModeJstr,
     jint sortBufferInitialSize,
@@ -801,11 +866,11 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_vectorized_ShuffleWriterJniWrappe
       .bufferSize = bufferSize,
       .bufferReallocThreshold = reallocThreshold,
       .partitioning = toPartitioning(jStringToCString(env, partitioningNameJstr)),
-      .taskAttemptId = (int64_t)taskAttemptId,
+      .taskAttemptId = static_cast<int64_t>(taskAttemptId),
       .startPartitionId = startPartitionId,
       .shuffleWriterType = ShuffleWriter::stringToType(jStringToCString(env, shuffleWriterTypeJstr)),
       .sortBufferInitialSize = sortBufferInitialSize,
-      .compressionBufferSize = compressionBufferSize,
+      .sortEvictBufferSize = sortEvictBufferSize,
       .useRadixSort = static_cast<bool>(useRadixSort)};
 
   // Build PartitionWriterOptions.

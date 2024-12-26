@@ -17,7 +17,7 @@
 package org.apache.gluten.backendsapi.clickhouse
 
 import org.apache.gluten.backendsapi.TransformerApi
-import org.apache.gluten.execution.CHHashAggregateExecTransformer
+import org.apache.gluten.execution.{CHHashAggregateExecTransformer, WriteFilesExecTransformer}
 import org.apache.gluten.expression.ConverterUtils
 import org.apache.gluten.substrait.expression.{BooleanLiteralNode, ExpressionBuilder, ExpressionNode}
 import org.apache.gluten.utils.{CHInputPartitionsUtil, ExpressionDocUtil}
@@ -31,7 +31,7 @@ import org.apache.spark.sql.delta.catalog.ClickHouseTableV2
 import org.apache.spark.sql.delta.files.TahoeFileIndex
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.aggregate.HashAggregateExec
-import org.apache.spark.sql.execution.datasources.{FileFormat, HadoopFsRelation, PartitionDirectory}
+import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, PartitionDirectory}
 import org.apache.spark.sql.execution.datasources.orc.OrcFileFormat
 import org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat
 import org.apache.spark.sql.execution.datasources.v1.Write
@@ -243,24 +243,31 @@ class CHTransformerApi extends TransformerApi with Logging {
     GlutenDriverEndpoint.invalidateResourceRelation(executionId)
   }
 
-  override def genWriteParameters(
-      fileFormat: FileFormat,
-      writeOptions: Map[String, String]): Any = {
-    val fileFormatStr = fileFormat match {
+  override def genWriteParameters(writeExec: WriteFilesExecTransformer): Any = {
+    val fileFormatStr = writeExec.fileFormat match {
       case register: DataSourceRegister =>
         register.shortName
       case _ => "UnknownFileFormat"
     }
-    val write = Write
-      .newBuilder()
-      .setCommon(
-        Write.Common
-          .newBuilder()
-          .setFormat(fileFormatStr)
-          .setJobTaskAttemptId("") // we can get job and task id at the driver side
-          .build())
+    val childOutput = writeExec.child.output
 
-    fileFormat match {
+    val partitionIndexes =
+      writeExec.partitionColumns.map(p => childOutput.indexWhere(_.exprId == p.exprId))
+    require(partitionIndexes.forall(_ >= 0))
+
+    val common = Write.Common
+      .newBuilder()
+      .setFormat(s"$fileFormatStr")
+      .setJobTaskAttemptId("") // we cannot get job and task id at the driver side)
+    partitionIndexes.foreach {
+      idx =>
+        require(idx >= 0)
+        common.addPartitionColIndex(idx)
+    }
+
+    val write = Write.newBuilder().setCommon(common.build())
+
+    writeExec.fileFormat match {
       case d: MergeTreeFileFormat =>
         write.setMergetree(MergeTreeFileFormat.createWrite(d.metadata))
       case _: ParquetFileFormat =>
@@ -273,5 +280,5 @@ class CHTransformerApi extends TransformerApi with Logging {
 
   /** use Hadoop Path class to encode the file path */
   override def encodeFilePathIfNeed(filePath: String): String =
-    (new Path(filePath)).toUri.toASCIIString
+    new Path(filePath).toUri.toASCIIString
 }

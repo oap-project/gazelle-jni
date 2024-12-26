@@ -16,6 +16,7 @@
  */
 #include <Core/Field.h>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypeString.h>
 #include <DataTypes/IDataType.h>
 #include <Parser/FunctionParser.h>
 
@@ -40,15 +41,15 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, ActionsDAG & actions_dag) const override
+    const DB::ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, DB::ActionsDAG & actions_dag) const override
     {
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 1)
-            throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires exactly one arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Function {} requires exactly one arguments", getName());
         if (parsed_args.at(0)->result_type->getName() != "Nullable(String)")
-            throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {}'s argument has to be Nullable(String)", getName());
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Function {}'s argument has to be Nullable(String)", getName());
 
-        const auto * null_node = addColumnToActionsDAG(actions_dag, makeNullableSafe(std::make_shared<DataTypeString>()), Field());
+        const auto * null_node = addColumnToActionsDAG(actions_dag, makeNullableSafe(std::make_shared<DB::DataTypeString>()), DB::Field());
 
         auto cond = toFunctionNode(actions_dag, "empty", {parsed_args.at(0)});
         auto * if_function = toFunctionNode(actions_dag, "if", {cond, null_node, parsed_args.at(0)});

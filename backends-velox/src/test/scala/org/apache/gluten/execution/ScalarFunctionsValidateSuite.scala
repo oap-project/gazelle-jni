@@ -1357,6 +1357,26 @@ abstract class ScalarFunctionsValidateSuite extends FunctionsValidateSuite {
     }
   }
 
+  test("concat_ws") {
+    runQueryAndCompare("SELECT concat_ws('~~', c_comment, c_address) FROM customer LIMIT 50") {
+      checkGlutenOperatorMatch[ProjectExecTransformer]
+    }
+
+    withTempPath {
+      path =>
+        Seq[Seq[String]](Seq("ab", null, "cd", "", "ef"), Seq(null, "x", "", "y"), Seq.empty, null)
+          .toDF("col")
+          .write
+          .parquet(path.getCanonicalPath)
+
+        spark.read.parquet(path.getCanonicalPath).createOrReplaceTempView("array_tbl")
+
+        runQueryAndCompare("SELECT concat_ws('~~', col, 'end') AS res from array_tbl;") {
+          checkGlutenOperatorMatch[ProjectExecTransformer]
+        }
+    }
+  }
+
   test("Test input_file_name function") {
     runQueryAndCompare("""SELECT input_file_name(), l_orderkey
                          | from lineitem limit 100""".stripMargin) {
@@ -1455,6 +1475,44 @@ abstract class ScalarFunctionsValidateSuite extends FunctionsValidateSuite {
         val df = spark.read.parquet(path.getCanonicalPath).na.drop(2, Seq("age", "height"))
         checkAnswer(df, rows(0) :: Nil)
         checkGlutenOperatorMatch[FilterExecTransformer](df)
+    }
+  }
+
+  testWithSpecifiedSparkVersion("Test try_cast", Some("3.4")) {
+    withTempView("try_cast_table") {
+      withTempPath {
+        path =>
+          Seq[(String)](("123456"), ("000A1234"))
+            .toDF("str")
+            .write
+            .parquet(path.getCanonicalPath)
+          spark.read.parquet(path.getCanonicalPath).createOrReplaceTempView("try_cast_table")
+          runQueryAndCompare("select try_cast(str as bigint) from try_cast_table") {
+            checkGlutenOperatorMatch[ProjectExecTransformer]
+          }
+          runQueryAndCompare("select try_cast(str as double) from try_cast_table") {
+            checkGlutenOperatorMatch[ProjectExecTransformer]
+          }
+      }
+    }
+  }
+
+  test("Test cast") {
+    withTempView("cast_table") {
+      withTempPath {
+        path =>
+          Seq[(String)](("123456"), ("000A1234"))
+            .toDF("str")
+            .write
+            .parquet(path.getCanonicalPath)
+          spark.read.parquet(path.getCanonicalPath).createOrReplaceTempView("cast_table")
+          runQueryAndCompare("select cast(str as bigint) from cast_table") {
+            checkGlutenOperatorMatch[ProjectExecTransformer]
+          }
+          runQueryAndCompare("select cast(str as double) from cast_table") {
+            checkGlutenOperatorMatch[ProjectExecTransformer]
+          }
+      }
     }
   }
 }

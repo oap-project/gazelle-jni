@@ -30,7 +30,6 @@ case class LogicalLink(plan: LogicalPlan) {
     case LogicalLink(otherPlan) => plan eq otherPlan
     case _ => false
   }
-
   override def toString: String = s"${plan.nodeName}[${plan.stats.simpleString}]"
 }
 

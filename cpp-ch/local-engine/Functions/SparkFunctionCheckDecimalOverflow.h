@@ -35,10 +35,9 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-using namespace DB;
 
 template <typename From, typename To>
-Field convertNumericTypeImpl(From from)
+DB::Field convertNumericTypeImpl(From from)
 {
     To result;
     if (!accurate::convertNumeric(from, result))
@@ -47,39 +46,39 @@ Field convertNumericTypeImpl(From from)
 }
 
 template <typename To>
-Field convertNumericType(const Field & from)
+DB::Field convertNumericType(const DB::Field & from)
 {
-    if (from.getType() == Field::Types::UInt64)
+    if (from.getType() == DB::Field::Types::UInt64)
         return convertNumericTypeImpl<UInt64, To>(from.safeGet<UInt64>());
-    if (from.getType() == Field::Types::Int64)
+    if (from.getType() == DB::Field::Types::Int64)
         return convertNumericTypeImpl<Int64, To>(from.safeGet<Int64>());
-    if (from.getType() == Field::Types::UInt128)
+    if (from.getType() == DB::Field::Types::UInt128)
         return convertNumericTypeImpl<UInt128, To>(from.safeGet<UInt128>());
-    if (from.getType() == Field::Types::Int128)
+    if (from.getType() == DB::Field::Types::Int128)
         return convertNumericTypeImpl<Int128, To>(from.safeGet<Int128>());
-    if (from.getType() == Field::Types::UInt256)
+    if (from.getType() == DB::Field::Types::UInt256)
         return convertNumericTypeImpl<UInt256, To>(from.safeGet<UInt256>());
-    if (from.getType() == Field::Types::Int256)
+    if (from.getType() == DB::Field::Types::Int256)
         return convertNumericTypeImpl<Int256, To>(from.safeGet<Int256>());
 
-    throw Exception(ErrorCodes::TYPE_MISMATCH, "Type mismatch. Expected: Integer. Got: {}", from.getType());
+    throw DB::Exception(DB::ErrorCodes::TYPE_MISMATCH, "Type mismatch. Expected: Integer. Got: {}", from.getType());
 }
 
-inline UInt32 extractArgument(const ColumnWithTypeAndName & named_column)
+inline UInt32 extractArgument(const DB::ColumnWithTypeAndName & named_column)
 {
     if (!isColumnConst(*named_column.column.get()))
     {
-        throw Exception(
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Illegal type {} of argument, column type must be const", named_column.type->getName());
+        throw DB::Exception(
+            DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Illegal type {} of argument, column type must be const", named_column.type->getName());
     }
 
-    Field from;
+    DB::Field from;
     named_column.column->get(0, from);
-    Field to = convertNumericType<UInt32>(from);
+    DB::Field to = convertNumericType<UInt32>(from);
     if (to.isNull())
     {
-        throw Exception(
-            ErrorCodes::DECIMAL_OVERFLOW, "{} convert overflow, precision/scale value must in UInt32", named_column.type->getName());
+        throw DB::Exception(
+            DB::ErrorCodes::DECIMAL_OVERFLOW, "{} convert overflow, precision/scale value must in UInt32", named_column.type->getName());
     }
     return static_cast<UInt32>(to.safeGet<UInt32>());
 }

@@ -62,12 +62,14 @@ struct GraceMergingAggregateConfig
         = "max_pending_flush_blocks_per_grace_aggregate_merging_bucket";
     inline static const String MAX_ALLOWED_MEMORY_USAGE_RATIO_FOR_AGGREGATE_MERGING
         = "max_allowed_memory_usage_ratio_for_aggregate_merging";
+    inline static const String ENABLE_SPILL_TEST = "enable_grace_aggregate_spill_test";
 
     size_t max_grace_aggregate_merging_buckets = 32;
     bool throw_on_overflow_grace_aggregate_merging_buckets = false;
     size_t aggregated_keys_before_extend_grace_aggregate_merging_buckets = 8192;
     size_t max_pending_flush_blocks_per_grace_aggregate_merging_bucket = 1_MiB;
     double max_allowed_memory_usage_ratio_for_aggregate_merging = 0.9;
+    bool enable_spill_test = false;
 
     static GraceMergingAggregateConfig loadFromContext(const DB::ContextPtr & context);
 };

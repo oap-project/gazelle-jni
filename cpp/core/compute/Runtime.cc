@@ -19,8 +19,8 @@
 #include "utils/Registry.h"
 
 namespace gluten {
-
 namespace {
+
 Registry<Runtime::Factory>& runtimeFactories() {
   static Registry<Runtime::Factory> registry;
   return registry;
@@ -29,6 +29,7 @@ Registry<Runtime::Releaser>& runtimeReleasers() {
   static Registry<Runtime::Releaser> registry;
   return registry;
 }
+
 } // namespace
 
 void Runtime::registerFactory(const std::string& kind, Runtime::Factory factory, Runtime::Releaser releaser) {

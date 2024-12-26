@@ -17,6 +17,7 @@
 package org.apache.gluten.execution
 
 import org.apache.gluten.GlutenConfig
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.ColumnarBatches
 import org.apache.gluten.iterator.Iterators
 import org.apache.gluten.memory.arrow.alloc.ArrowBufferAllocators
@@ -121,7 +122,7 @@ object RowToVeloxColumnarExec {
 
     val arrowSchema =
       SparkArrowUtil.toArrowSchema(schema, SQLConf.get.sessionLocalTimeZone)
-    val runtime = Runtimes.contextInstance("RowToColumnar")
+    val runtime = Runtimes.contextInstance(BackendsApiManager.getBackendName, "RowToColumnar")
     val jniWrapper = NativeRowToColumnarJniWrapper.create(runtime)
     val arrowAllocator = ArrowBufferAllocators.contextInstance()
     val cSchema = ArrowSchema.allocateNew(arrowAllocator)

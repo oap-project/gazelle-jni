@@ -41,7 +41,7 @@ import org.apache.spark.sql.execution.joins.BuildSideRelation
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.python.ArrowEvalPythonExec
 import org.apache.spark.sql.execution.window._
-import org.apache.spark.sql.hive.{HiveTableScanExecTransformer, HiveUDFTransformer}
+import org.apache.spark.sql.hive.HiveUDFTransformer
 import org.apache.spark.sql.types.{DecimalType, LongType, NullType, StructType}
 import org.apache.spark.sql.vectorized.ColumnarBatch
 
@@ -63,9 +63,6 @@ trait SparkPlanExecApi {
    *   the transformer of FilterExec
    */
   def genFilterExecTransformer(condition: Expression, child: SparkPlan): FilterExecTransformerBase
-
-  def genHiveTableScanExecTransformer(plan: SparkPlan): HiveTableScanExecTransformer =
-    HiveTableScanExecTransformer(plan)
 
   def genProjectExecTransformer(
       projectList: Seq[NamedExpression],
@@ -368,7 +365,7 @@ trait SparkPlanExecApi {
 
   /** Create ColumnarWriteFilesExec */
   def createColumnarWriteFilesExec(
-      child: SparkPlan,
+      child: WriteFilesExecTransformer,
       noop: SparkPlan,
       fileFormat: FileFormat,
       partitionColumns: Seq[Attribute],

@@ -46,7 +46,7 @@ protected:
 
     /// Get argument indexes in first stage substrait function which should be treated as parameters in CH aggregate function.
     /// Note: the indexes are 0-based, and we must guarantee the order of returned parameters matches the order of parameters in CH aggregate function
-    virtual ColumnNumbers getArgumentsThatAreParameters() const = 0;
+    virtual DB::ColumnNumbers getArgumentsThatAreParameters() const = 0;
 
     virtual DB::Array getDefaultFunctionParametersImpl() const = 0;
 

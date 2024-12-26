@@ -16,15 +16,15 @@
  */
 #include "SparkExchangeSink.h"
 
-#include <Processors/Transforms/AggregatingTransform.h>
-#include <Shuffle/PartitionWriter.h>
-#include <jni/jni_common.h>
-#include <jni/CelebornClient.h>
-#include <Poco/StringTokenizer.h>
 #include <Processors/Sinks/NullSink.h>
+#include <Processors/Transforms/AggregatingTransform.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
-#include <boost/algorithm/string/case_conv.hpp>
+#include <Shuffle/PartitionWriter.h>
 #include <Storages/IO/AggregateSerializationUtils.h>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <jni/CelebornClient.h>
+#include <jni/jni_common.h>
+#include <Poco/StringTokenizer.h>
 
 
 namespace DB
@@ -74,7 +74,7 @@ void SparkExchangeSink::consume(Chunk chunk)
 void SparkExchangeSink::onFinish()
 {
     Stopwatch wall_time;
-    if (!dynamic_cast<LocalPartitionWriter*>(partition_writer.get()))
+    if (!dynamic_cast<LocalPartitionWriter *>(partition_writer.get()))
     {
         partition_writer->evictPartitions();
     }
@@ -222,8 +222,7 @@ void SparkExchangeManager::finish()
         std::vector<Spillable::ExtraData> extra_datas;
         for (const auto & writer : partition_writers)
         {
-            LocalPartitionWriter * local_partition_writer = dynamic_cast<LocalPartitionWriter *>(writer.get());
-            if (local_partition_writer)
+            if (LocalPartitionWriter * local_partition_writer = dynamic_cast<LocalPartitionWriter *>(writer.get()))
             {
                 extra_datas.emplace_back(local_partition_writer->getExtraData());
             }
@@ -232,12 +231,13 @@ void SparkExchangeManager::finish()
             chassert(extra_datas.size() == partition_writers.size());
         WriteBufferFromFile output(options.data_file, options.io_buffer_size);
         split_result.partition_lengths = mergeSpills(output, infos, extra_datas);
+        output.finalize();
     }
 
     split_result.wall_time += wall_time.elapsedNanoseconds();
 }
 
-void checkPartitionLengths(const std::vector<UInt64> & partition_length,size_t partition_num)
+void checkPartitionLengths(const std::vector<UInt64> & partition_length, size_t partition_num)
 {
     if (partition_num != partition_length.size())
     {
@@ -284,7 +284,7 @@ void SparkExchangeManager::mergeSplitResult()
 std::vector<SpillInfo> SparkExchangeManager::gatherAllSpillInfo() const
 {
     std::vector<SpillInfo> res;
-    for (const auto& writer : partition_writers)
+    for (const auto & writer : partition_writers)
     {
         if (Spillable * spillable = dynamic_cast<Spillable *>(writer.get()))
         {

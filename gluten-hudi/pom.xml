@@ -14,10 +14,6 @@
   <packaging>jar</packaging>
   <name>Gluten Hudi</name>
 
-  <properties>
-    <resource.dir>${project.basedir}/src/main/resources</resource.dir>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.gluten</groupId>
@@ -46,19 +42,6 @@
     <dependency>
       <groupId>org.apache.gluten</groupId>
       <artifactId>gluten-substrait</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.gluten</groupId>
-      <artifactId>backends-velox</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.gluten</groupId>
-      <artifactId>backends-velox</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -107,11 +90,6 @@
   <build>
     <outputDirectory>target/scala-${scala.binary.version}/classes</outputDirectory>
     <testOutputDirectory>target/scala-${scala.binary.version}/test-classes</testOutputDirectory>
-    <resources>
-      <resource>
-        <directory>${resource.dir}</directory>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>net.alchim31.maven</groupId>

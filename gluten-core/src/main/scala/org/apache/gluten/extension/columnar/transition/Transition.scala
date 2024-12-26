@@ -29,6 +29,7 @@ import org.apache.spark.sql.execution.SparkPlan
 trait Transition {
   final def apply(plan: SparkPlan): SparkPlan = {
     val out = apply0(plan)
+    out.copyTagsFrom(plan)
     out
   }
 

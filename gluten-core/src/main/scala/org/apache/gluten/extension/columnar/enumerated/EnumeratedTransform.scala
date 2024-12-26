@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.extension.columnar.enumerated
 
-import org.apache.gluten.backend.Backend
+import org.apache.gluten.component.Component
 import org.apache.gluten.exception.GlutenException
 import org.apache.gluten.extension.columnar.ColumnarRuleApplier.ColumnarRuleCall
 import org.apache.gluten.extension.columnar.enumerated.planner.GlutenOptimization
@@ -74,7 +74,8 @@ object EnumeratedTransform {
   def static(): EnumeratedTransform = {
     val exts = new SparkSessionExtensions()
     val dummyInjector = new Injector(exts)
-    Backend.get().injectRules(dummyInjector)
+    // Components should override Backend's rules. Hence, reversed injection order is applied.
+    Component.sorted().reverse.foreach(_.injectRules(dummyInjector))
     val session = SparkSession.getActiveSession.getOrElse(
       throw new GlutenException(
         "HeuristicTransform#static can only be called when an active Spark session exists"))

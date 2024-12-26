@@ -18,6 +18,7 @@ package org.apache.gluten.expression
 
 import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.exception.GlutenNotSupportException
+import org.apache.gluten.sql.shims.SparkShimLoader
 import org.apache.gluten.substrait.`type`.ListNode
 import org.apache.gluten.substrait.`type`.MapNode
 import org.apache.gluten.substrait.expression.{ExpressionBuilder, ExpressionNode, StructLiteralNode}
@@ -43,7 +44,10 @@ case class CastTransformer(substraitExprName: String, child: ExpressionTransform
   extends UnaryExpressionTransformer {
   override def doTransform(args: java.lang.Object): ExpressionNode = {
     val typeNode = ConverterUtils.getTypeNode(dataType, original.nullable)
-    ExpressionBuilder.makeCast(typeNode, child.doTransform(args), original.ansiEnabled)
+    ExpressionBuilder.makeCast(
+      typeNode,
+      child.doTransform(args),
+      SparkShimLoader.getSparkShims.withAnsiEvalMode(original))
   }
 }
 

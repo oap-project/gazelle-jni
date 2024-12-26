@@ -29,7 +29,7 @@ public:
 
     String getName() const override { return name; }
     String getCHFunctionName() const override { return name; }
-    const DB::ActionsDAG::Node * getParameterLowerBound(ActionsDAG & actions_dag, const DataTypePtr & data_type) const override
+    const DB::ActionsDAG::Node * getParameterLowerBound(DB::ActionsDAG & actions_dag, const DB::DataTypePtr & data_type) const override
     {
         return addColumnToActionsDAG(actions_dag, data_type, -1.0);
     }

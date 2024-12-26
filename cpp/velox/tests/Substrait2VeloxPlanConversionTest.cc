@@ -35,6 +35,7 @@ using namespace facebook::velox::connector::hive;
 using namespace facebook::velox::exec;
 
 namespace gluten {
+
 class Substrait2VeloxPlanConversionTest : public exec::test::HiveConnectorTestBase {
  protected:
   std::vector<std::shared_ptr<facebook::velox::connector::ConnectorSplit>> makeSplits(
@@ -275,4 +276,5 @@ TEST_F(Substrait2VeloxPlanConversionTest, filterUpper) {
       "-- Project[1][expressions: ] -> \n  -- TableScan[0][table: hive_table, remaining filter: (and(isnotnull(\"key\"),lessthan(\"key\",3)))] -> n0_0:INTEGER\n",
       planNode->toString(true, true));
 }
+
 } // namespace gluten

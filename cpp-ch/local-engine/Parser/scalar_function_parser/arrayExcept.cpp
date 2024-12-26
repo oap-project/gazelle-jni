@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include <DataTypes/DataTypeArray.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <Functions/FunctionsMiscellaneous.h>
 #include <Parser/FunctionParser.h>
 #include <Common/Exception.h>
@@ -30,6 +31,7 @@ extern const int SIZES_OF_COLUMNS_DOESNT_MATCH;
 
 namespace local_engine
 {
+using namespace DB;
 class FunctionParserArrayExcept : public FunctionParser
 {
 public:
@@ -68,16 +70,14 @@ public:
         const auto * lambda_output = toFunctionNode(lambda_actions_dag, "not", {has_in_lambda});
         lambda_actions_dag.getOutputs().push_back(lambda_output);
         lambda_actions_dag.removeUnusedActions(Names(1, lambda_output->result_name));
-
-        auto expression_actions_settings = DB::ExpressionActionsSettings::fromContext(getContext(), DB::CompileExpressions::yes);
-        auto lambda_actions = std::make_shared<DB::ExpressionActions>(std::move(lambda_actions_dag), expression_actions_settings);
-
         DB::Names captured_column_names{arr2_in_lambda->result_name};
         NamesAndTypesList lambda_arguments_names_and_types;
         lambda_arguments_names_and_types.emplace_back(x_in_lambda->result_name, x_in_lambda->result_type);
-        DB::Names required_column_names = lambda_actions->getRequiredColumns();
+        DB::Names required_column_names = lambda_actions_dag.getRequiredColumnsNames();
+        auto expression_actions_settings = DB::ExpressionActionsSettings::fromContext(getContext(), DB::CompileExpressions::yes);
         auto function_capture = std::make_shared<FunctionCaptureOverloadResolver>(
-            lambda_actions,
+            std::move(lambda_actions_dag),
+            expression_actions_settings,
             captured_column_names,
             lambda_arguments_names_and_types,
             lambda_output->result_type,
@@ -96,13 +96,16 @@ public:
         const auto * arr2_is_null_node = toFunctionNode(actions_dag, "isNull", {arr2_arg});
         const auto * null_array_node
             = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeNullable>(array_distinct_node->result_type), {});
-        const auto * multi_if_node = toFunctionNode(actions_dag, "multiIf", {
-            arr1_is_null_node,
-            null_array_node,
-            arr2_is_null_node,
-            null_array_node,
-            array_distinct_node,
-        });
+        const auto * multi_if_node = toFunctionNode(
+            actions_dag,
+            "multiIf",
+            {
+                arr1_is_null_node,
+                null_array_node,
+                arr2_is_null_node,
+                null_array_node,
+                array_distinct_node,
+            });
         return convertNodeTypeIfNeeded(substrait_func, multi_if_node, actions_dag);
     }
 };

@@ -19,6 +19,7 @@
 #include "velox/common/memory/ByteStream.h"
 
 namespace facebook::velox {
+
 class GlutenByteInputStream : public ByteInputStream {
  protected:
   /// TODO Remove after refactoring SpillInput.
@@ -264,4 +265,5 @@ inline int128_t GlutenByteInputStream::read<int128_t>() {
   readBytes(reinterpret_cast<uint8_t*>(&value), sizeof(value));
   return value;
 }
+
 } // namespace facebook::velox

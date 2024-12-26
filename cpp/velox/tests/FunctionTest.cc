@@ -34,6 +34,7 @@ using namespace facebook::velox;
 using namespace facebook::velox::test;
 
 namespace gluten {
+
 class FunctionTest : public ::testing::Test, public test::VectorTestBase {
  protected:
   static void SetUpTestCase() {
@@ -212,4 +213,5 @@ TEST_F(FunctionTest, sigToTypes) {
   ASSERT_TRUE(types[0]->childAt(2)->isDecimal());
   ASSERT_EQ(types[0]->childAt(3)->kind(), TypeKind::BOOLEAN);
 }
+
 } // namespace gluten

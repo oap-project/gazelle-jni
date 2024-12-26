@@ -90,7 +90,8 @@
       "description": "Velox ABFS Support",
       "dependencies": [
         "azure-storage-blobs-cpp",
-        "azure-storage-files-datalake-cpp"
+        "azure-storage-files-datalake-cpp",
+        "azure-identity-cpp"
       ]
     },
     "duckdb": {

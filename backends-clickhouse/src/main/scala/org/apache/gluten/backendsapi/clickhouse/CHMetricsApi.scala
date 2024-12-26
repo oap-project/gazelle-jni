@@ -450,6 +450,14 @@ class CHMetricsApi extends MetricsApi with Logging with LogLevelUtil {
       s"SampleTransformer metrics update is not supported in CH backend")
   }
 
+  override def genUnionTransformerMetrics(sparkContext: SparkContext): Map[String, SQLMetric] =
+    throw new UnsupportedOperationException(
+      "UnionExecTransformer metrics update is not supported in CH backend")
+
+  override def genUnionTransformerMetricsUpdater(metrics: Map[String, SQLMetric]): MetricsUpdater =
+    throw new UnsupportedOperationException(
+      "UnionExecTransformer metrics update is not supported in CH backend")
+
   def genWriteFilesTransformerMetrics(sparkContext: SparkContext): Map[String, SQLMetric] =
     Map(
       "physicalWrittenBytes" -> SQLMetrics.createMetric(sparkContext, "number of written bytes"),

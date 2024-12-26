@@ -55,7 +55,7 @@ spark.executor.extraJavaOptions=-Dio.netty.tryReflectionSetAccessible=true
 
 ## Maven 3.6.3 or above
 
-[Maven Dowload Page](https://maven.apache.org/docs/history.html)
+[Maven Download Page](https://maven.apache.org/docs/history.html)
 And then set the environment setting.
 
 ## GCC 11 or above
@@ -247,7 +247,7 @@ Then you can create breakpoint and debug in `Run and Debug` section.
 ### Velox debug
 
 For some velox tests such as `ParquetReaderTest`, tests need to read the parquet file in `<velox_home>/velox/dwio/parquet/tests/examples`, 
-you should let the screen on `ParquetReaderTest.cpp`, then click `Start Debuging`, otherwise `No such file or directory` exception will be raised.
+you should let the screen on `ParquetReaderTest.cpp`, then click `Start Debugging`, otherwise `No such file or directory` exception will be raised.
 
 ## Useful notes
 

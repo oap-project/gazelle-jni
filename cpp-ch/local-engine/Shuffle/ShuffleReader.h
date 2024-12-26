@@ -18,6 +18,7 @@
 #include <jni.h>
 #include <Formats/NativeReader.h>
 #include <IO/BufferWithOwnMemory.h>
+#include <IO/ReadBuffer.h>
 #include <Storages/IO/NativeReader.h>
 #include <Common/BlockIterator.h>
 

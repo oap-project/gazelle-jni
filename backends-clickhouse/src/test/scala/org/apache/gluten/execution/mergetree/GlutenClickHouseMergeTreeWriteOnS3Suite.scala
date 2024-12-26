@@ -16,7 +16,8 @@
  */
 package org.apache.gluten.execution.mergetree
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf._
+import org.apache.gluten.GlutenConfig
+import org.apache.gluten.backendsapi.clickhouse.{CHConf, RuntimeConfig}
 import org.apache.gluten.execution.{BasicScanExecTransformer, FileSourceScanExecTransformer, GlutenClickHouseTPCHAbstractSuite}
 
 import org.apache.spark.SparkConf
@@ -62,7 +63,9 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
       .set("spark.sql.shuffle.partitions", "5")
       .set("spark.sql.autoBroadcastJoinThreshold", "10MB")
       .set("spark.sql.adaptive.enabled", "true")
-      .setCHConfig("logger.level", "error")
+      .set(RuntimeConfig.LOGGER_LEVEL.key, "error")
+      .set(GlutenConfig.NATIVE_WRITER_ENABLED.key, "true")
+      .set(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
   }
 
   override protected def beforeEach(): Unit = {
@@ -420,7 +423,7 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
 
   }
 
-  test("test mergetree write with bucket table") {
+  testSparkVersionLE33("test mergetree write with bucket table") {
     spark.sql(s"""
                  |DROP TABLE IF EXISTS lineitem_mergetree_bucket_s3;
                  |""".stripMargin)
@@ -496,7 +499,7 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
     spark.sql("drop table lineitem_mergetree_bucket_s3")
   }
 
-  test("test mergetree write with the path based") {
+  testSparkVersionLE33("test mergetree write with the path based") {
     val dataPath = s"s3a://$BUCKET_NAME/lineitem_mergetree_bucket_s3"
 
     val sourceDF = spark.sql(s"""
@@ -559,8 +562,8 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
 
     withSQLConf(
       "spark.databricks.delta.optimize.minFileSize" -> "200000000",
-      runtimeSettings("mergetree.insert_without_local_storage") -> "true",
-      runtimeSettings("mergetree.merge_after_insert") -> "true"
+      CHConf.runtimeSettings("mergetree.insert_without_local_storage") -> "true",
+      CHConf.runtimeSettings("mergetree.merge_after_insert") -> "true"
     ) {
       spark.sql(s"""
                    |DROP TABLE IF EXISTS $tableName;
@@ -619,7 +622,7 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
 
     FileUtils.forceDelete(new File(S3_METADATA_PATH))
 
-    withSQLConf(runtimeSettings("enabled_driver_filter_mergetree_index") -> "true") {
+    withSQLConf(CHConf.runtimeSettings("enabled_driver_filter_mergetree_index") -> "true") {
       runTPCHQueryBySQL(6, q6(tableName)) {
         df =>
           val scanExec = collect(df.queryExecution.executedPlan) {
@@ -634,7 +637,7 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
             case scanExec: BasicScanExecTransformer => scanExec
           }
           assertResult(1)(plans.size)
-          assertResult(1)(plans.head.getSplitInfos.size)
+          assertResult(1)(plans.head.getSplitInfos().size)
       }
     }
   }

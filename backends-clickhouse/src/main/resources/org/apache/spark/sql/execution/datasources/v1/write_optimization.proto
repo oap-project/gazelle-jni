@@ -12,6 +12,9 @@ message Write {
   message Common {
     string format = 1;
     string job_task_attempt_id = 2; // currently used in mergetree format
+
+    // Describes the partition index in the WriteRel.table_schema.
+    repeated int32 partition_col_index = 3;
   }
   message ParquetWrite{}
   message OrcWrite{}

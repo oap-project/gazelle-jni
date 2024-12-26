@@ -19,7 +19,7 @@
 
 namespace local_engine
 {
-
+using namespace DB;
 /*
 spark: percentile(col, percentage, [, frequency])
 1. When percentage is an array literal, spark returns an array of percentiles, corresponding to CH: quantilesExact(percentage[0], ...)(col)

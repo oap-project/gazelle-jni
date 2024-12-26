@@ -14,19 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <Common/LocalDate.h>
-#include <Common/DateLUT.h>
-#include <Common/DateLUTImpl.h>
+#pragma once
+#include <Columns/ColumnNullable.h>
 #include <Columns/ColumnString.h>
 #include <Columns/ColumnVector.h>
-#include <Columns/ColumnNullable.h>
-#include <DataTypes/DataTypeNullable.h>
 #include <Functions/FunctionFactory.h>
 #include <IO/ReadBufferFromMemory.h>
 #include <IO/ReadHelpers.h>
 #include <IO/parseDateTimeBestEffort.h>
-
-using namespace DB;
+#include <Common/DateLUT.h>
+#include <Common/DateLUTImpl.h>
 
 namespace DB
 {
@@ -55,7 +52,7 @@ public:
         const auto * src_col = checkAndGetColumn<DB::ColumnString>(arg1.column.get());
         size_t size = src_col->size();
         
-        using ColVecTo = ColumnVector<T>;
+        using ColVecTo = DB::ColumnVector<T>;
         typename ColVecTo::MutablePtr result_column = ColVecTo::create(size, 0);
         typename ColVecTo::Container & result_container = result_column->getData();
         DB::ColumnUInt8::MutablePtr null_map = DB::ColumnUInt8::create(size, 0);

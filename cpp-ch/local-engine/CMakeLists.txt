@@ -174,6 +174,26 @@ else()
   set(LOCALENGINE_SHARED_LIB_NAME "libch.so")
 endif()
 
+option(ENABLE_SEPARATE_SYMBOLS "support separate debug symbols from so" OFF)
+if(ENABLE_SEPARATE_SYMBOLS)
+  set(SYMBOL_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/debug_symbols)
+  file(MAKE_DIRECTORY ${SYMBOL_OUTPUT_DIRECTORY})
+  function(separate_symbols target)
+    add_custom_command(
+      TARGET ${target}
+      POST_BUILD
+      COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:${target}>
+              ${SYMBOL_OUTPUT_DIRECTORY}/$<TARGET_FILE_NAME:${target}>.debug
+      COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:${target}>
+      COMMAND
+        ${CMAKE_OBJCOPY}
+        --add-gnu-debuglink=${SYMBOL_OUTPUT_DIRECTORY}/$<TARGET_FILE_NAME:${target}>.debug
+        $<TARGET_FILE:${target}>
+      COMMENT "Separating debug symbols for target: ${target}")
+  endfunction()
+  separate_symbols(${LOCALENGINE_SHARED_LIB})
+endif()
+
 add_custom_command(
   OUTPUT ${LOCALENGINE_SHARED_LIB_NAME}
   COMMAND ${CMAKE_COMMAND} -E rename $<TARGET_FILE:${LOCALENGINE_SHARED_LIB}>

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <DataTypes/DataTypesNumber.h>
 #include <Parser/FunctionParser.h>
 #include <Parser/TypeParser.h>
 #include <Common/Exception.h>
@@ -46,7 +47,7 @@ namespace local_engine
             if (!DB::WhichDataType(data_type).isInt32()) \
                 throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "{}'s second argument must be i32", #substrait_name); \
             Int32 field_index = static_cast<Int32>(field.safeGet<Int32>() + 1); \
-            const auto * index_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeUInt32>(), field_index); \
+            const auto * index_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeUInt32>(), field_index); \
             parsed_args.emplace_back(index_node); \
             const auto * func_node = toFunctionNode(actions_dag, ch_function_name, parsed_args); \
             return convertNodeTypeIfNeeded(substrait_func, func_node, actions_dag); \
@@ -57,4 +58,3 @@ namespace local_engine
 REGISTER_TUPLE_ELEMENT_PARSER(GetStructField, get_struct_field, sparkTupleElement);
 REGISTER_TUPLE_ELEMENT_PARSER(GetArrayStructFields, get_array_struct_fields, sparkTupleElement);
 }
-

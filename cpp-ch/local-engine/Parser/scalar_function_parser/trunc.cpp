@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <Parser/FunctionParser.h>
 #include <DataTypes/DataTypesNumber.h>
 #include <Interpreters/ActionsDAG.h>
+#include <Parser/FunctionParser.h>
 #include <Poco/String.h>
 
 namespace DB
@@ -43,20 +43,20 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires two arguments", getName());
 
         const auto * date_arg = parsed_args[0];
         const auto & fmt_field = substrait_func.arguments().at(1);
         if (!fmt_field.value().has_literal() || !fmt_field.value().literal().has_string())
-            throw Exception(ErrorCodes::BAD_ARGUMENTS, "Unsupported fmt argument, should be a string literal, but: {}", fmt_field.DebugString());
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Unsupported fmt argument, should be a string literal, but: {}", fmt_field.DebugString());
 
-        const ActionsDAG::Node * result_node = nullptr;
+        const DB::ActionsDAG::Node * result_node = nullptr;
         const auto & field_value = Poco::toUpper(fmt_field.value().literal().string());
         if (field_value == "YEAR" || field_value == "YYYY" || field_value == "YY")
             result_node = toFunctionNode(actions_dag, "toStartOfYear", {date_arg});
@@ -66,11 +66,11 @@ public:
             result_node = toFunctionNode(actions_dag, "toStartOfMonth", {date_arg});
         else if (field_value == "WEEK")
         {
-            const auto * mode_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeUInt8>(), 1);
+            const auto * mode_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeUInt8>(), 1);
             result_node = toFunctionNode(actions_dag, "toStartOfWeek", {date_arg, mode_node});
         }
         else
-            throw Exception(ErrorCodes::BAD_ARGUMENTS, "Unsupported fmt argument: {}", field_value);
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Unsupported fmt argument: {}", field_value);
         return convertNodeTypeIfNeeded(substrait_func, result_node, actions_dag);
     }
 };

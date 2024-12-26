@@ -27,12 +27,12 @@ case class PartialProjectRule(spark: SparkSession) extends Rule[SparkPlan] {
     plan.transformUp {
       case plan: ProjectExec =>
         val transformer = ColumnarPartialProjectExec.create(plan)
-        if (transformer.doValidate().ok()) {
-          if (transformer.child.asInstanceOf[ColumnarPartialProjectExec].doValidate().ok()) {
-            transformer
-          } else plan
+        if (
+          transformer.doValidate().ok() &&
+          transformer.child.asInstanceOf[ColumnarPartialProjectExec].doValidate().ok()
+        ) {
+          transformer
         } else plan
-      case p => p
     }
   }
 }

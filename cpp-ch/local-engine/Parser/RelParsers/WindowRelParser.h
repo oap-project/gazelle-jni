@@ -42,7 +42,7 @@ private:
     {
         const substrait::WindowRel::Measure * measure = nullptr;
         String result_column_name;
-        Strings arg_column_names;
+        DB::Strings arg_column_names;
         DB::DataTypes arg_column_types;
         DB::Array params;
         String signature_function_name;
@@ -64,7 +64,7 @@ private:
     std::vector<WindowInfo> win_infos;
 
     /// There will be window descrptions generated for different window frame type;
-    std::unordered_map<DB::String, WindowDescription> parseWindowDescriptions();
+    std::unordered_map<String, DB::WindowDescription> parseWindowDescriptions();
 
     // Build a window description in CH with respect to a window function, since the same
     // function may have different window frame in CH and spark.
@@ -76,7 +76,7 @@ private:
         const substrait::Expression::WindowFunction::Bound & bound,
         bool is_begin_or_end,
         DB::WindowFrame::BoundaryType & bound_type,
-        Field & offset,
+        DB::Field & offset,
         bool & preceding);
     DB::WindowFunctionDescription parseWindowFunctionDescription(
         const String & ch_function_name,

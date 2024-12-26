@@ -725,7 +725,9 @@ arrow::Status VeloxHashShuffleWriter::splitComplexType(const facebook::velox::Ro
 
   for (auto& pid : partitionUsed_) {
     if (rowIndexs[pid].size() != 0) {
+      auto old = arenas_[pid]->size();
       complexTypeData_[pid]->append(rowVector, folly::Range(rowIndexs[pid].data(), rowIndexs[pid].size()));
+      complexTotalSizeBytes_ += arenas_[pid]->size() - old;
     }
   }
 
@@ -852,6 +854,10 @@ uint32_t VeloxHashShuffleWriter::calculatePartitionBufferSize(const facebook::ve
   }
 
   VS_PRINT_VECTOR_MAPPING(binaryArrayAvgBytesPerRow);
+
+  if (totalInputNumRows_ > 0) {
+    bytesPerRow += complexTotalSizeBytes_ / totalInputNumRows_;
+  }
 
   VS_PRINTLF(bytesPerRow);
 

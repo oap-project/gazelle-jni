@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.extension.columnar.transition
 
-import org.apache.gluten.backend.Backend
+import org.apache.gluten.component.Component
 import org.apache.gluten.extension.columnar.transition.ConventionReq.KnownChildConvention
 import org.apache.gluten.sql.shims.SparkShimLoader
 
@@ -24,6 +24,7 @@ import org.apache.spark.sql.execution.{ColumnarToRowExec, SparkPlan, UnionExec}
 import org.apache.spark.sql.execution.adaptive.QueryStageExec
 import org.apache.spark.sql.execution.command.DataWritingCommandExec
 import org.apache.spark.sql.execution.exchange.ReusedExchangeExec
+import org.apache.spark.util.SparkTestUtil
 
 /** ConventionFunc is a utility to derive [[Convention]] or [[ConventionReq]] from a query plan. */
 sealed trait ConventionFunc {
@@ -45,8 +46,9 @@ object ConventionFunc {
   // For testing, to make things work without a backend loaded.
   private var ignoreBackend: Boolean = false
 
-  // Visible for testing
+  // Visible for testing.
   def ignoreBackend[T](body: => T): T = synchronized {
+    assert(SparkTestUtil.isTesting)
     assert(!ignoreBackend)
     ignoreBackend = true
     try {
@@ -68,7 +70,20 @@ object ConventionFunc {
         return Override.Empty
       }
     }
-    Backend.get().convFuncOverride()
+    // Components should override Backend's convention function. Hence, reversed injection order
+    // is applied.
+    val overrides = Component.sorted().reverse.map(_.convFuncOverride())
+    new Override {
+      override val rowTypeOf: PartialFunction[SparkPlan, Convention.RowType] = {
+        overrides.map(_.rowTypeOf).reduce((l, r) => l.orElse(r))
+      }
+      override val batchTypeOf: PartialFunction[SparkPlan, Convention.BatchType] = {
+        overrides.map(_.batchTypeOf).reduce((l, r) => l.orElse(r))
+      }
+      override val conventionReqOf: PartialFunction[SparkPlan, Seq[ConventionReq]] = {
+        overrides.map(_.conventionReqOf).reduce((l, r) => l.orElse(r))
+      }
+    }
   }
 
   private class BuiltinFunc(o: Override) extends ConventionFunc {

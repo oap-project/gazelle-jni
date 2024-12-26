@@ -16,11 +16,13 @@
  */
 package org.apache.gluten.execution.mergetree
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.GlutenConfig
+import org.apache.gluten.backendsapi.clickhouse.{CHConf, RuntimeConfig, RuntimeSettings}
 import org.apache.gluten.execution.{FileSourceScanExecTransformer, GlutenClickHouseTPCHAbstractSuite}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.delta.MergeTreeConf
 import org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanHelper
 
 import io.delta.tables.ClickhouseTable
@@ -49,14 +51,33 @@ class GlutenClickHouseMergeTreeOptimizeSuite
       .set("spark.sql.shuffle.partitions", "5")
       .set("spark.sql.autoBroadcastJoinThreshold", "10MB")
       .set("spark.sql.adaptive.enabled", "true")
-      .setCHConfig("logger.level", "error")
-      .setCHSettings("min_insert_block_size_rows", 10000)
+      .set(RuntimeConfig.LOGGER_LEVEL.key, "error")
+      .set(GlutenConfig.NATIVE_WRITER_ENABLED.key, "true")
+      .set(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
+      .set(RuntimeSettings.MIN_INSERT_BLOCK_SIZE_ROWS.key, "10000")
       .set(
         "spark.databricks.delta.retentionDurationCheck.enabled",
         "false"
       ) // otherwise, RETAIN 0 HOURS will fail
       .setCHSettings("mergetree.merge_after_insert", false)
       .setCHSettings("input_format_parquet_max_block_size", 8192)
+  }
+
+  private def with_ut_conf(f: => Unit): Unit = {
+    val defaultBlockSize = RuntimeSettings.MIN_INSERT_BLOCK_SIZE_ROWS.key -> "1048449"
+
+    /** The old merge-path will create uuid.txt by default, so we need to enable it for UT. */
+    val assign_part_uuids = MergeTreeConf.ASSIGN_PART_UUIDS.key -> true.toString
+
+    /**
+     * The old merge-path uses uncompressed bytes to choose wide or compaction mode, which is more
+     * accurate. By Using min_rows_for_wide_part, we can more accurately control the choosing of the
+     * mergetree table mode.
+     */
+    val min_rows_for_wide_part = MergeTreeConf.MIN_ROWS_FOR_WIDE_PART.key -> "65536"
+
+    val optimized = MergeTreeConf.OPTIMIZE_TASK.key -> true.toString
+    withSQLConf(defaultBlockSize, assign_part_uuids, optimized, min_rows_for_wide_part)(f)
   }
 
   override protected def createTPCHNotNullTables(): Unit = {
@@ -76,7 +97,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
                    | as select * from lineitem
                    |""".stripMargin)
 
-      spark.sql("optimize lineitem_mergetree_optimize")
+      with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize"))
       val ret = spark.sql("select count(*) from lineitem_mergetree_optimize").collect()
       assertResult(600572)(ret.apply(0).get(0))
 
@@ -112,7 +133,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
                  |""".stripMargin)
 
     spark.sparkContext.setJobGroup("test", "test")
-    spark.sql("optimize lineitem_mergetree_optimize_p")
+    with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize_p"))
     val job_ids = spark.sparkContext.statusTracker.getJobIdsForGroup("test")
     if (spark35) {
       assertResult(4)(job_ids.length)
@@ -151,7 +172,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
                  |""".stripMargin)
 
     spark.sparkContext.setJobGroup("test2", "test2")
-    spark.sql("optimize lineitem_mergetree_optimize_p2")
+    with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize_p2"))
     val job_ids = spark.sparkContext.statusTracker.getJobIdsForGroup("test2")
     if (spark32) {
       assertResult(7)(job_ids.length) // WILL trigger actual merge job
@@ -197,7 +218,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
                    | as select * from lineitem
                    |""".stripMargin)
 
-      spark.sql("optimize lineitem_mergetree_optimize_p3")
+      with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize_p3"))
       val ret = spark.sql("select count(*) from lineitem_mergetree_optimize_p3").collect()
       assertResult(600572)(ret.apply(0).get(0))
 
@@ -234,7 +255,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
                    | as select * from lineitem
                    |""".stripMargin)
 
-      spark.sql("optimize lineitem_mergetree_optimize_p4")
+      with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize_p4"))
       val ret = spark.sql("select count(*) from lineitem_mergetree_optimize_p4").collect()
       assertResult(600572)(ret.apply(0).get(0))
 
@@ -272,7 +293,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
                    | as select * from lineitem
                    |""".stripMargin)
 
-      spark.sql("optimize lineitem_mergetree_optimize_p5")
+      with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize_p5"))
 
       spark.sql("VACUUM lineitem_mergetree_optimize_p5 RETAIN 0 HOURS")
       spark.sql("VACUUM lineitem_mergetree_optimize_p5 RETAIN 0 HOURS")
@@ -296,7 +317,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
       // 1 merged part from 2 original parts, 1 merged part from 34 original parts
       // and 1 original part (size 838255)
 
-      spark.sql("optimize lineitem_mergetree_optimize_p5")
+      with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize_p5"))
 
       spark.sql("VACUUM lineitem_mergetree_optimize_p5 RETAIN 0 HOURS")
       spark.sql("VACUUM lineitem_mergetree_optimize_p5 RETAIN 0 HOURS")
@@ -312,7 +333,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
     }
 
     // now merge all parts (testing merging from merged parts)
-    spark.sql("optimize lineitem_mergetree_optimize_p5")
+    with_ut_conf(spark.sql("optimize lineitem_mergetree_optimize_p5"))
 
     spark.sql("VACUUM lineitem_mergetree_optimize_p5 RETAIN 0 HOURS")
     spark.sql("VACUUM lineitem_mergetree_optimize_p5 RETAIN 0 HOURS")
@@ -327,7 +348,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
     assertResult(600572)(ret.apply(0).get(0))
   }
 
-  test("test mergetree optimize table with partition and bucket") {
+  testSparkVersionLE33("test mergetree optimize table with partition and bucket") {
     spark.sql(s"""
                  |DROP TABLE IF EXISTS lineitem_mergetree_optimize_p6;
                  |""".stripMargin)
@@ -374,7 +395,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
                    | as select * from lineitem
                    |""".stripMargin)
 
-      spark.sql("optimize lineitem_mergetree_index")
+      with_ut_conf(spark.sql("optimize lineitem_mergetree_index"))
       spark.sql("vacuum lineitem_mergetree_index")
 
       val df = spark
@@ -417,7 +438,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
         .save(dataPath)
 
       val clickhouseTable = ClickhouseTable.forPath(spark, dataPath)
-      clickhouseTable.optimize().executeCompaction()
+      with_ut_conf(clickhouseTable.optimize().executeCompaction())
 
       clickhouseTable.vacuum(0.0)
       clickhouseTable.vacuum(0.0)
@@ -440,7 +461,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
       // and 1 original part (size 838255)
 
       val clickhouseTable = ClickhouseTable.forPath(spark, dataPath)
-      clickhouseTable.optimize().executeCompaction()
+      with_ut_conf(clickhouseTable.optimize().executeCompaction())
 
       clickhouseTable.vacuum(0.0)
       clickhouseTable.vacuum(0.0)
@@ -456,7 +477,7 @@ class GlutenClickHouseMergeTreeOptimizeSuite
 
     // now merge all parts (testing merging from merged parts)
     val clickhouseTable = ClickhouseTable.forPath(spark, dataPath)
-    clickhouseTable.optimize().executeCompaction()
+    with_ut_conf(clickhouseTable.optimize().executeCompaction())
 
     clickhouseTable.vacuum(0.0)
     clickhouseTable.vacuum(0.0)

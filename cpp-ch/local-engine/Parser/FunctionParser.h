@@ -20,11 +20,10 @@
 #include <DataTypes/IDataType.h>
 #include <Functions/FunctionFactory.h>
 #include <Interpreters/ActionsDAG.h>
+#include <Parser/ExpressionParser.h>
 #include <Parser/ParserContext.h>
 #include <Parser/SerializedPlanParser.h>
-#include <Parser/ExpressionParser.h>
 #include <base/types.h>
-#include <boost/noncopyable.hpp>
 #include <substrait/algebra.pb.h>
 #include <Common/IFactoryWithAliases.h>
 
@@ -85,12 +84,12 @@ protected:
         const String & result_name,
         const DB::ActionsDAG::NodeRawConstPtrs & args) const;
 
-    const ActionsDAG::Node * parseFunctionWithDAG(
+    const DB::ActionsDAG::Node * parseFunctionWithDAG(
         const substrait::Expression & rel, std::string & result_name, DB::ActionsDAG & actions_dag, bool keep_result = false) const;
 
     const DB::ActionsDAG::Node * parseExpression(DB::ActionsDAG & actions_dag, const substrait::Expression & rel) const;
 
-    std::pair<DataTypePtr, Field> parseLiteral(const substrait::Expression_Literal & literal) const;
+    std::pair<DB::DataTypePtr, DB::Field> parseLiteral(const substrait::Expression_Literal & literal) const;
 
     ParserContextPtr parser_context;
     std::unique_ptr<ExpressionParser> expression_parser;

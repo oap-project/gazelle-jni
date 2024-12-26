@@ -1,0 +1,10 @@
+-q -c -experimental -t0.5 -l100000 -u
+-C (
+
+INST_RETIRED.ANY
+CPU_CLK_UNHALTED.REF_TSC
+CPU_CLK_UNHALTED.THREAD
+MSR_EVENT:msr=0x611:type=FREERUN:scope=PACKAGE
+
+)
+

@@ -19,6 +19,7 @@
 #include <format>
 #include <memory>
 #include <vector>
+#include <Columns/ColumnsNumber.h>
 #include <IO/ReadBufferFromFile.h>
 #include <IO/WriteBufferFromFile.h>
 #include <IO/WriteBufferFromString.h>
@@ -172,6 +173,8 @@ size_t LocalPartitionWriter::evictPartitions()
         split_result->total_compress_time += compressed_output.getCompressTime();
         split_result->total_write_time += compressed_output.getWriteTime();
         split_result->total_serialize_time += serialization_time_watch.elapsedNanoseconds();
+        compressed_output.finalize();
+        output.finalize();
     };
 
     Stopwatch spill_time_watch;
@@ -342,6 +345,8 @@ size_t MemorySortLocalPartitionWriter::evictPartitions()
         split_result->total_compress_time += compressed_output.getCompressTime();
         split_result->total_io_time += compressed_output.getWriteTime();
         split_result->total_serialize_time += serialization_time_watch.elapsedNanoseconds();
+        compressed_output.finalize();
+        output.finalize();
     };
 
     Stopwatch spill_time_watch;
@@ -428,6 +433,8 @@ size_t MemorySortCelebornPartitionWriter::evictPartitions()
         split_result->total_compress_time += compressed_output.getCompressTime();
         split_result->total_io_time += compressed_output.getWriteTime();
         split_result->total_serialize_time += serialization_time_watch.elapsedNanoseconds();
+        compressed_output.finalize();
+        output.finalize();
     };
 
     Stopwatch spill_time_watch;

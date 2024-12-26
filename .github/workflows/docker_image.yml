@@ -28,6 +28,7 @@ on:
 
 jobs:
   build-vcpkg-centos-7:
+    if: ${{ startsWith(github.repository, 'apache/') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -52,6 +53,7 @@ jobs:
           tags: apache/gluten:vcpkg-centos-7
 
   build-centos-8:
+    if: ${{ startsWith(github.repository, 'apache/') }}
     runs-on: ubuntu-latest
 
     steps:

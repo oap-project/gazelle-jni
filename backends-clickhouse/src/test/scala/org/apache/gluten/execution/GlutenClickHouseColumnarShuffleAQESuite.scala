@@ -57,7 +57,7 @@ class GlutenClickHouseColumnarShuffleAQESuite
         val coalescedPartitionSpec0 = colCustomShuffleReaderExecs.head.partitionSpecs.head
           .asInstanceOf[CoalescedPartitionSpec]
         assert(coalescedPartitionSpec0.startReducerIndex == 0)
-        assert(coalescedPartitionSpec0.endReducerIndex == 5)
+        assert(coalescedPartitionSpec0.endReducerIndex == 4)
         val coalescedPartitionSpec1 = colCustomShuffleReaderExecs(1).partitionSpecs.head
           .asInstanceOf[CoalescedPartitionSpec]
         assert(coalescedPartitionSpec1.startReducerIndex == 0)

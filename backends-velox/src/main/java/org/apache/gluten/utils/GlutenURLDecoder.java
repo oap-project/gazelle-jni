@@ -31,7 +31,7 @@ public class GlutenURLDecoder {
    * <p><em><strong>Note:</strong> The <a href=
    * "http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars"> World Wide Web Consortium
    * Recommendation</a> states that UTF-8 should be used. Not doing so may introduce
-   * incompatibilites.</em>
+   * incompatibilities.</em>
    *
    * @param s the <code>String</code> to decode
    * @param enc The name of a supported <a href="../lang/package-summary.html#charenc">character

@@ -263,8 +263,8 @@ public class ExpressionBuilder {
   }
 
   public static CastNode makeCast(
-      TypeNode typeNode, ExpressionNode expressionNode, boolean ansiEnabled) {
-    return new CastNode(typeNode, expressionNode, ansiEnabled);
+      TypeNode typeNode, ExpressionNode expressionNode, boolean throwOnFailure) {
+    return new CastNode(typeNode, expressionNode, throwOnFailure);
   }
 
   public static StringMapNode makeStringMap(Map<String, String> values) {

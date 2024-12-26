@@ -148,7 +148,7 @@ class ForwardMemoTable[T <: AnyRef] private (override val ras: Ras[T])
 
   override def getGroup(id: Int): RasGroup[T] = {
     if (id < 0) {
-      val out = dummyGroupBuffer((-id - 1))
+      val out = dummyGroupBuffer(-id - 1)
       assert(out.id() == id)
       return out
     }

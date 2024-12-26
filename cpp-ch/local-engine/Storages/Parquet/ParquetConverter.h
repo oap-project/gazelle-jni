@@ -248,7 +248,6 @@ std::shared_ptr<ParquetConverter<DType>> ParquetConverter<DType>::Make(const DB:
 {
     std::shared_ptr<BaseConverter> result;
 
-    using namespace DB;
     switch (DType::type_num)
     {
         case parquet::Type::BOOLEAN:
@@ -256,25 +255,25 @@ std::shared_ptr<ParquetConverter<DType>> ParquetConverter<DType>::Make(const DB:
         case parquet::Type::INT32:
             switch (c->getDataType())
             {
-                case TypeIndex::Int8:
+                case DB::TypeIndex::Int8:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int32Type, ConverterInt32_8>>(ConverterInt32_8(c));
                     break;
-                case TypeIndex::Int16:
+                case DB::TypeIndex::Int16:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int32Type, ConverterInt32_16>>(ConverterInt32_16(c));
                     break;
-                case TypeIndex::Int32:
+                case DB::TypeIndex::Int32:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int32Type, ConverterInt32>>(ConverterInt32(c));
                     break;
-                case TypeIndex::UInt8:
+                case DB::TypeIndex::UInt8:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int32Type, ConverterInt32_u8>>(ConverterInt32_u8(c));
                     break;
-                case TypeIndex::UInt16:
+                case DB::TypeIndex::UInt16:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int32Type, ConverterInt32_u16>>(ConverterInt32_u16(c));
                     break;
-                case TypeIndex::UInt32:
+                case DB::TypeIndex::UInt32:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int32Type, ConverterInt32_u>>(ConverterInt32_u(c));
                     break;
-                case TypeIndex::Decimal32:
+                case DB::TypeIndex::Decimal32:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int32Type, ConverterDecimal32>>(ConverterDecimal32(c));
                 default:
                     break;
@@ -282,13 +281,13 @@ std::shared_ptr<ParquetConverter<DType>> ParquetConverter<DType>::Make(const DB:
         case parquet::Type::INT64:
             switch (c->getDataType())
             {
-                case TypeIndex::Int64:
+                case DB::TypeIndex::Int64:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int64Type, ConverterInt64>>(ConverterInt64(c));
                     break;
-                case TypeIndex::UInt64:
+                case DB::TypeIndex::UInt64:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int64Type, ConverterInt64_u>>(ConverterInt64_u(c));
                     break;
-                case TypeIndex::Decimal64:
+                case DB::TypeIndex::Decimal64:
                     result = std::make_shared<ParquetConverterImpl<parquet::Int64Type, ConverterDecimal64>>(ConverterDecimal64(c));
                 default:
                     break;
@@ -299,7 +298,7 @@ std::shared_ptr<ParquetConverter<DType>> ParquetConverter<DType>::Make(const DB:
         case parquet::Type::FLOAT:
             switch (c->getDataType())
             {
-                case TypeIndex::Float32:
+                case DB::TypeIndex::Float32:
                     result = std::make_shared<ParquetConverterImpl<parquet::FloatType, ConverterFloat>>(ConverterFloat(c));
                     break;
                 default:
@@ -309,7 +308,7 @@ std::shared_ptr<ParquetConverter<DType>> ParquetConverter<DType>::Make(const DB:
         case parquet::Type::DOUBLE:
             switch (c->getDataType())
             {
-                case TypeIndex::Float64:
+                case DB::TypeIndex::Float64:
                     result = std::make_shared<ParquetConverterImpl<parquet::DoubleType, ConverterDouble>>(ConverterDouble(c));
                     break;
                 default:
@@ -319,7 +318,7 @@ std::shared_ptr<ParquetConverter<DType>> ParquetConverter<DType>::Make(const DB:
         case parquet::Type::BYTE_ARRAY:
             switch (c->getDataType())
             {
-                case TypeIndex::String:
+                case DB::TypeIndex::String:
                     result = std::make_shared<ParquetConverterImpl<parquet::ByteArrayType, ConverterString>>(ConverterString(c));
                     break;
                 default:
@@ -329,13 +328,13 @@ std::shared_ptr<ParquetConverter<DType>> ParquetConverter<DType>::Make(const DB:
         case parquet::Type::FIXED_LEN_BYTE_ARRAY:
             switch (c->getDataType())
             {
-                case TypeIndex::Decimal128:
+                case DB::TypeIndex::Decimal128:
                     result = std::make_shared<ParquetConverterImpl<parquet::FLBAType, Decimal128ToFLB>>(Decimal128ToFLB(c, desc));
                     break;
-                case TypeIndex::Decimal64:
+                case DB::TypeIndex::Decimal64:
                     result = std::make_shared<ParquetConverterImpl<parquet::FLBAType, Decimal64ToFLB>>(Decimal64ToFLB(c, desc));
                     break;
-                case TypeIndex::Decimal32:
+                case DB::TypeIndex::Decimal32:
                     result = std::make_shared<ParquetConverterImpl<parquet::FLBAType, Decimal32ToFLB>>(Decimal32ToFLB(c, desc));
                     break;
                 default:

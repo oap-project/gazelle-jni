@@ -152,4 +152,5 @@ arrow::Status SelfEvictedMemoryPool::ensureCapacity(int64_t size) {
   }
   return arrow::Status::OK();
 }
+
 } // namespace gluten

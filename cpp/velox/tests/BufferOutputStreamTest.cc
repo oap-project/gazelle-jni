@@ -24,6 +24,7 @@
 using namespace facebook::velox;
 
 namespace gluten {
+
 class BufferOutputStreamTest : public ::testing::Test, public test::VectorTestBase {
  protected:
   // Velox requires the mem manager to be instanced.
@@ -69,4 +70,5 @@ TEST_F(BufferOutputStreamTest, outputStream) {
   // We expect dropping the stream frees the backing memory.
   EXPECT_EQ(0, veloxPool_->usedBytes());
 }
+
 } // namespace gluten

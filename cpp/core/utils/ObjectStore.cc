@@ -42,7 +42,7 @@ gluten::ObjectHandle gluten::ObjectStore::save(std::shared_ptr<void> obj) {
   return toObjHandle(handle);
 }
 
-void gluten::ObjectStore::release0(gluten::ResourceHandle handle) {
+void gluten::ObjectStore::releaseInternal(gluten::ResourceHandle handle) {
   const std::lock_guard<std::mutex> lock(mtx_);
   store_.erase(handle);
   aliveObjects_.erase(handle);

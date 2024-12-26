@@ -22,6 +22,7 @@
 #include "velox/common/memory/MemoryPool.h"
 
 namespace gluten {
+
 enum FileReaderType { kBuffered, kStream, kNone };
 
 class FileReaderIterator : public ColumnarBatchIterator {

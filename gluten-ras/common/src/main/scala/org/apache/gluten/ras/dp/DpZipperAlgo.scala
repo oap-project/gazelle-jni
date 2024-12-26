@@ -19,17 +19,17 @@ package org.apache.gluten.ras.dp
 import org.apache.gluten.ras.util.CycleDetector
 
 import scala.collection.mutable
-
+// format: off
 /**
  * Dynamic programming algorithm to solve problem that can be broken down to sub-problems on 2
  * individual different element types.
  *
- * The elements types here are X, Y. Programming starts from Y, respectively traverses down to X, Y,
+ * The element types here are X, Y. Programming starts from Y, respectively traverses down to X, Y,
  * X..., util reaching to a leaf.
  *
  * Two major issues are handled by the base algo internally:
  *
- *   1. Cycle exclusion:
+ * 1. Cycle exclusion:
  *
  * The algo will withdraw the recursive call when found a cycle. Cycle is detected via the
  * comparison function passed by DpZipperAlgoDef#idOfX and DpZipperAlgoDef#idOfY. When a cycle is
@@ -68,11 +68,12 @@ import scala.collection.mutable
  * survived.
  *
  * One of the possible corner cases is, for example, when B just gets solved, and is getting
- * adjusted, during which one of B's sub-tree gets invalidated. Since we apply the adjustment right
+ * adjusted, during which one of B's subtree gets invalidated. Since we apply the adjustment right
  * after the back-dependency (B -> A) is established, algo can still recognize (B -> A)'s removal
  * and recompute B. So this corner case is also handled correctly. The above is a simplified example
  * either. The real program will handle the invalidation for any depth of recursions.
  */
+// format: on
 trait DpZipperAlgoDef[X <: AnyRef, Y <: AnyRef, XOutput <: AnyRef, YOutput <: AnyRef] {
   def idOfX(x: X): Any
   def idOfY(y: Y): Any
@@ -105,6 +106,16 @@ object DpZipperAlgo {
   }
 
   object Adjustment {
+    def none[X <: AnyRef, Y <: AnyRef](): Adjustment[X, Y] = new None()
+
+    private class None[X <: AnyRef, Y <: AnyRef] extends Adjustment[X, Y] {
+      // IDEA complains if simply using `panel: Panel[X, Y]` as parameter. Not sure why.
+      override def exploreChildX(panel: Adjustment.Panel[X, Y], x: X): Unit = {}
+      override def exploreParentY(panel: Adjustment.Panel[X, Y], y: Y): Unit = {}
+      override def exploreChildY(panel: Adjustment.Panel[X, Y], y: Y): Unit = {}
+      override def exploreParentX(panel: Adjustment.Panel[X, Y], x: X): Unit = {}
+    }
+
     trait Panel[X <: AnyRef, Y <: AnyRef] {
       def invalidateXSolution(x: X): Unit
       def invalidateYSolution(y: Y): Unit
@@ -133,14 +144,6 @@ object DpZipperAlgo {
         }
       }
     }
-
-    private class None[X <: AnyRef, Y <: AnyRef] extends Adjustment[X, Y] {
-      override def exploreChildX(panel: Panel[X, Y], x: X): Unit = {}
-      override def exploreParentY(panel: Panel[X, Y], y: Y): Unit = {}
-      override def exploreChildY(panel: Panel[X, Y], y: Y): Unit = {}
-      override def exploreParentX(panel: Panel[X, Y], x: X): Unit = {}
-    }
-    def none[X <: AnyRef, Y <: AnyRef](): Adjustment[X, Y] = new None()
   }
 
   private class DpZipperAlgoResolver[

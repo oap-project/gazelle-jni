@@ -16,8 +16,11 @@
  */
 #pragma once
 
-#include <memory>
+#include "config.h"
 
+
+#if USE_HIVE
+#include <memory>
 #include <Storages/SubstraitSource/FormatFile.h>
 
 namespace local_engine
@@ -43,3 +46,4 @@ public:
 };
 
 }
+#endif

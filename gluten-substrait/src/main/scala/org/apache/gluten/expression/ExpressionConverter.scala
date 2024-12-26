@@ -55,6 +55,25 @@ object ExpressionConverter extends SQLConfHelper with Logging {
     replaceWithExpressionTransformer0(expr, attributeSeq, expressionsMap)
   }
 
+  def canReplaceWithExpressionTransformer(
+      expr: Expression,
+      attributeSeq: Seq[Attribute]): Boolean = {
+    try {
+      replaceWithExpressionTransformer(expr, attributeSeq)
+      true
+    } catch {
+      case e: Exception =>
+        logInfo(e.getMessage)
+        false
+    }
+  }
+
+  def replaceAttributeReference(expr: Expression): Expression = expr match {
+    case ar: AttributeReference if ar.dataType == BooleanType =>
+      EqualNullSafe(ar, Literal.TrueLiteral)
+    case e => e
+  }
+
   private def replacePythonUDFWithExpressionTransformer(
       udf: PythonUDF,
       attributeSeq: Seq[Attribute],

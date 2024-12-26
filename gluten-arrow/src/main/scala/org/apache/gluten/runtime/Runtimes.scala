@@ -21,15 +21,16 @@ import org.apache.spark.task.{TaskResource, TaskResources}
 object Runtimes {
 
   /** Get or create the runtime which bound with Spark TaskContext. */
-  def contextInstance(name: String): Runtime = {
+  def contextInstance(backendName: String, name: String): Runtime = {
     if (!TaskResources.inSparkTask()) {
       throw new IllegalStateException("This method must be called in a Spark task.")
     }
 
-    TaskResources.addResourceIfNotRegistered(name, () => create(name))
+    val resourceName = String.format("%s:%s", backendName, name)
+    TaskResources.addResourceIfNotRegistered(resourceName, () => create(backendName, name))
   }
 
-  private def create(name: String): Runtime with TaskResource = {
-    Runtime(name)
+  private def create(backendName: String, name: String): Runtime with TaskResource = {
+    Runtime(backendName, name)
   }
 }

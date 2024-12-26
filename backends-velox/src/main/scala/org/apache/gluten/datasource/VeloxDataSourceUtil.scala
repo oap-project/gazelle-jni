@@ -16,6 +16,7 @@
  */
 package org.apache.gluten.datasource
 
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.memory.arrow.alloc.ArrowBufferAllocators
 import org.apache.gluten.runtime.Runtimes
 import org.apache.gluten.utils.ArrowAbiUtil
@@ -38,7 +39,7 @@ object VeloxDataSourceUtil {
 
   def readSchema(file: FileStatus): Option[StructType] = {
     val allocator = ArrowBufferAllocators.contextInstance()
-    val runtime = Runtimes.contextInstance("VeloxWriter")
+    val runtime = Runtimes.contextInstance(BackendsApiManager.getBackendName, "VeloxWriter")
     val datasourceJniWrapper = VeloxDataSourceJniWrapper.create(runtime)
     val dsHandle =
       datasourceJniWrapper.init(file.getPath.toString, -1, new util.HashMap[String, String]())

@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-#include <Parser/FunctionParser.h>
-#include <DataTypes/IDataType.h>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypesNumber.h>
+#include <Parser/FunctionParser.h>
 
 namespace DB
 {
@@ -41,19 +41,19 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /// parse factorial(x) as if (x > 20 || x < 0) null else factorial(x)
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 1)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
 
         const auto * x = parsed_args[0];
 
-        const auto * zero_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 0);
-        const auto * twenty_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 20);
+        const auto * zero_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 0);
+        const auto * twenty_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 20);
 
         const auto * greater_than_twenty_node = toFunctionNode(actions_dag, "greater", {x, twenty_const_node});
         const auto * less_than_zero_node = toFunctionNode(actions_dag, "less", {x, zero_const_node});
@@ -62,7 +62,7 @@ public:
         // tricky: use tricky_if_node instead of x node to avoid exception: The maximum value for the input argument of function factorial is 20
         const auto * tricky_if_node = toFunctionNode(actions_dag, "if", {or_node, zero_const_node, x});
         const auto * factorial_node = toFunctionNode(actions_dag, "factorial", {tricky_if_node});
-        const auto * null_const_node = addColumnToActionsDAG(actions_dag, makeNullable(factorial_node->result_type), Field());
+        const auto * null_const_node = addColumnToActionsDAG(actions_dag, makeNullable(factorial_node->result_type), DB::Field());
 
         const auto * result_node = toFunctionNode(actions_dag, "if", {or_node, null_const_node, factorial_node});
 

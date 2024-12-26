@@ -51,4 +51,5 @@ class VeloxParquetDataSourceABFS final : public VeloxParquetDataSource {
         abfsFileSystem->openFileForWrite(filePath_, {{}, sinkPool_.get()}), filePath_);
   }
 };
+
 } // namespace gluten

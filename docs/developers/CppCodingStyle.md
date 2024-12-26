@@ -73,7 +73,7 @@ cmake-format --first-comment-is-literal True --in-place cpp/velox/CMakeLists.txt
 	* Obvious exception: files used for defining various misc functions.
 * If a header file has a corresponding source file, they should have the same file
 	name with different suffix, such as `a.h vs a.cc`.
-* If a function is declared in the file `a.h`, ensure it's defined in the corrosponding
+* If a function is declared in the file `a.h`, ensure it's defined in the corresponding
 	source file `a.cc`, do not define it in other files.
 * No deep source directory for CPP files, not do it as JAVA.
 * Include header files should satisfy the following rules.
@@ -95,7 +95,7 @@ cmake-format --first-comment-is-literal True --in-place cpp/velox/CMakeLists.txt
 	* Ensure that public inheritance represent the relation of `is-a`.
 	* Ensure that private inheritance represent the relation of `implements-with`.
 * Don't make a function `virtual` without reason.
-* Ensure the polymorphic base class has a `virtual` deconstructor.
+* Ensure the polymorphic base class has a `virtual` destructor.
 * Use `override` to make overriding explicit and to make the compiler work.
 * Use `const` to mark the member function read-only as far as possible.
 * When you try to define a `copy constructor` or a `operator=` for a class, remember
@@ -113,8 +113,8 @@ cmake-format --first-comment-is-literal True --in-place cpp/velox/CMakeLists.txt
 		the function name. such as. use `get(size_t index)` instead of `getByIndex`.
 * A function should focus on a single logic operation.
 * A function should do as the name meaning.
-	* do everything converd by the function name
-	* don't do anything not convered by the function name
+	* do everything covered by the function name
+	* don't do anything not covered by the function name
 
 ## Variable
 
@@ -158,7 +158,7 @@ cmake-format --first-comment-is-literal True --in-place cpp/velox/CMakeLists.txt
 	* `unique_ptr` represents ownership, but not share ownership. `unique_ptr` is
 		equivalent to RAII, release the resource when the object is destructed.
 	* `shared_ptr` represents shared ownership by use-count. It is more expensive 
-		that `unqiue_ptr`.
+		that `unique_ptr`.
 	* `weak_ptr` models temporary ownership. It is useful in breaking reference cycles 
 		formed by objects managed by `shared_ptr`.
 * Use `unique_ptr` or `shared_ptr` to represent ownership.

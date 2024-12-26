@@ -17,7 +17,6 @@
 package org.apache.gluten.runtime
 
 import org.apache.gluten.GlutenConfig
-import org.apache.gluten.backend.Backend
 import org.apache.gluten.exception.GlutenException
 import org.apache.gluten.memory.NativeMemoryManager
 import org.apache.gluten.utils.ConfigUtil
@@ -35,21 +34,20 @@ trait Runtime {
 }
 
 object Runtime {
-  private[runtime] def apply(name: String): Runtime with TaskResource = {
-    new RuntimeImpl(name)
+  private[runtime] def apply(backendName: String, name: String): Runtime with TaskResource = {
+    new RuntimeImpl(backendName, name)
   }
 
-  private class RuntimeImpl(name: String) extends Runtime with TaskResource {
+  private class RuntimeImpl(backendName: String, name: String) extends Runtime with TaskResource {
     private val LOGGER = LoggerFactory.getLogger(classOf[Runtime])
 
-    private val nmm: NativeMemoryManager = NativeMemoryManager(name)
+    private val nmm: NativeMemoryManager = NativeMemoryManager(backendName, name)
     private val handle = RuntimeJniWrapper.createRuntime(
-      Backend.get().name(),
+      backendName,
       nmm.getHandle(),
       ConfigUtil.serialize(
-        GlutenConfig.getNativeSessionConf(
-          Backend.get().name(),
-          GlutenConfigUtil.parseConfig(SQLConf.get.getAllConfs)))
+        GlutenConfig
+          .getNativeSessionConf(backendName, GlutenConfigUtil.parseConfig(SQLConf.get.getAllConfs)))
     )
 
     private val released: AtomicBoolean = new AtomicBoolean(false)

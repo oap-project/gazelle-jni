@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <DataTypes/DataTypesNumber.h>
 #include <Parser/FunctionParser.h>
-#include <DataTypes/IDataType.h>
 
 namespace DB
 {
@@ -39,18 +39,18 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /// parse sec(x) as 1 / cos(x)
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 1)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
 
         const auto * x = parsed_args[0];
         const auto * cos_node = toFunctionNode(actions_dag, "cos", {x});
-        const auto * one_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeFloat64>(), 1.0);
+        const auto * one_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeFloat64>(), 1.0);
         const auto * result_node = toFunctionNode(actions_dag, "divide", {one_const_node, cos_node});
 
         return convertNodeTypeIfNeeded(substrait_func, result_node, actions_dag);;

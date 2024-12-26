@@ -16,7 +16,8 @@
  */
 package org.apache.gluten.execution.mergetree
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.GlutenConfig
+import org.apache.gluten.backendsapi.clickhouse.{CHConf, RuntimeConfig}
 import org.apache.gluten.execution.{FileSourceScanExecTransformer, GlutenClickHouseTPCHAbstractSuite}
 
 import org.apache.spark.SparkConf
@@ -55,8 +56,10 @@ class GlutenClickHouseMergeTreeCacheDataSuite
       .set("spark.sql.shuffle.partitions", "5")
       .set("spark.sql.autoBroadcastJoinThreshold", "10MB")
       .set("spark.sql.adaptive.enabled", "true")
-      .setCHConfig("logger.level", "error")
+      .set(RuntimeConfig.LOGGER_LEVEL.key, "error")
       .set("spark.gluten.soft-affinity.enabled", "true")
+      .set(GlutenConfig.NATIVE_WRITER_ENABLED.key, "true")
+      .set(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
       .setCHSettings("mergetree.merge_after_insert", false)
   }
 
@@ -134,7 +137,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
               |                aaa='ccc')""".stripMargin)
       .collect()
     assertResult(true)(res(0).getBoolean(0))
-    val metaPath = new File(HDFS_METADATA_PATH + s"$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
+    val metaPath = new File(s"$HDFS_METADATA_PATH/$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
     assertResult(true)(metaPath.exists() && metaPath.isDirectory)
     assertResult(22)(metaPath.list().length)
     assert(countFiles(dataPath) > initial_cache_files)
@@ -238,7 +241,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
               |                aaa='ccc')""".stripMargin)
       .collect()
     assertResult(true)(res(0).getBoolean(0))
-    val metaPath = new File(HDFS_METADATA_PATH + s"$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
+    val metaPath = new File(s"$HDFS_METADATA_PATH/$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
     assertResult(true)(metaPath.exists() && metaPath.isDirectory)
     eventually(timeout(60.seconds), interval(2.seconds)) {
       assertResult(22)(metaPath.list().length)
@@ -346,7 +349,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
               |                aaa='ccc')""".stripMargin)
       .collect()
     assertResult(true)(res(0).getBoolean(0))
-    val metaPath = new File(HDFS_METADATA_PATH + s"$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
+    val metaPath = new File(s"$HDFS_METADATA_PATH/$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
     assertResult(true)(metaPath.exists() && metaPath.isDirectory)
     assertResult(22)(metaPath.list().length)
     assert(countFiles(dataPath) > initial_cache_files)
@@ -398,7 +401,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
     spark.sql("drop table lineitem_mergetree_hdfs purge")
   }
 
-  test("test cache mergetree data no partition columns") {
+  testSparkVersionLE33("test cache mergetree data no partition columns") {
 
     spark.sql(s"""
                  |DROP TABLE IF EXISTS lineitem_mergetree_hdfs;
@@ -439,7 +442,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
     val dataPath = new File(HDFS_CACHE_PATH)
     val initial_cache_files = countFiles(dataPath)
 
-    val metaPath = new File(HDFS_METADATA_PATH + s"$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
+    val metaPath = new File(s"$HDFS_METADATA_PATH/$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
     val res1 = spark.sql(s"cache data select * from lineitem_mergetree_hdfs").collect()
     assertResult(true)(res1(0).getBoolean(0))
     assertResult(1)(metaPath.list().length)
@@ -487,7 +490,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
     spark.sql("drop table lineitem_mergetree_hdfs purge")
   }
 
-  test("test cache mergetree data with upper case column name") {
+  testSparkVersionLE33("test cache mergetree data with upper case column name") {
 
     spark.sql(s"""
                  |DROP TABLE IF EXISTS lineitem_mergetree_hdfs;
@@ -539,7 +542,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
               |                aaa='ccc')""".stripMargin)
       .collect()
     assertResult(true)(res(0).getBoolean(0))
-    val metaPath = new File(HDFS_METADATA_PATH + s"$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
+    val metaPath = new File(s"$HDFS_METADATA_PATH/$SPARK_DIR_NAME/test/lineitem_mergetree_hdfs")
     assertResult(true)(metaPath.exists() && metaPath.isDirectory)
     assertResult(22)(metaPath.list().length)
     assert(countFiles(dataPath) > initial_cache_files)

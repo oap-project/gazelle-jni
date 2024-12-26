@@ -22,10 +22,8 @@
 
 namespace gluten {
 
-/**
- * @tparam allNull If true, set struct as null when all of arguments are all, else will
- * set it null when one of its arguments is null.
- */
+///@tparam allNull If true, set struct as null when all of arguments are all, else will
+/// set it null when one of its arguments is null.
 template <bool allNull>
 class RowFunctionWithNull final : public facebook::velox::exec::VectorFunction {
  public:

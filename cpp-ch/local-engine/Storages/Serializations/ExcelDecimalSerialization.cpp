@@ -17,8 +17,8 @@
 #include "ExcelDecimalSerialization.h"
 #include <DataTypes/DataTypesDecimal.h>
 #include <DataTypes/Serializations/SerializationString.h>
-#include "ExcelDecimalReader.h"
-#include "ExcelStringReader.h"
+#include <Storages/Serializations/ExcelDecimalReader.h>
+#include <Storages/Serializations/ExcelStringReader.h>
 
 namespace DB
 {
@@ -31,7 +31,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 template <is_decimal T>
 void ExcelDecimalSerialization<T>::deserializeTextCSV(IColumn & column, ReadBuffer & istr, const FormatSettings & formatSettings) const
 {

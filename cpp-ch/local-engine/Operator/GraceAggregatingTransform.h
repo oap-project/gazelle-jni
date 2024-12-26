@@ -116,6 +116,7 @@ private:
     DB::BlocksList current_final_blocks;
     std::unique_ptr<AggregateDataBlockConverter> block_converter = nullptr;
     bool no_more_keys = false;
+    bool enable_spill_test = false;
 
     double per_key_memory_usage = 0;
 

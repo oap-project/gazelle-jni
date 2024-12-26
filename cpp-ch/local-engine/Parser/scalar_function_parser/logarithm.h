@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
 #include <Core/Field.h>
 #include <DataTypes/DataTypeNullable.h>
@@ -39,11 +40,11 @@ public:
     ~FunctionParserLogBase() override = default;
 
     virtual String getCHFunctionName() const = 0;
-    virtual const DB::ActionsDAG::Node * getParameterLowerBound(ActionsDAG &, const DataTypePtr &) const { return nullptr; }
+    virtual const DB::ActionsDAG::Node * getParameterLowerBound(DB::ActionsDAG &, const DB::DataTypePtr &) const { return nullptr; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /*
             parse log(x) as
@@ -54,7 +55,7 @@ public:
         */
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 1)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
 
         const auto * arg_node = parsed_args[0];
         
@@ -62,10 +63,10 @@ public:
         const auto * log_node = toFunctionNode(actions_dag, ch_function_name, {arg_node});
         auto nullable_result_type = makeNullable(log_node->result_type);
 
-        const auto * null_const_node = addColumnToActionsDAG(actions_dag, nullable_result_type, Field());
+        const auto * null_const_node = addColumnToActionsDAG(actions_dag, nullable_result_type, DB::Field());
         const auto * lower_bound_node = getParameterLowerBound(actions_dag, arg_node->result_type);
         if (!lower_bound_node)
-            throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Vritual function {} may not implement for {}", "getParameterLowerBound", getName());
+            throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Vritual function {} may not implement for {}", "getParameterLowerBound", getName());
         
         const auto * le_node = toFunctionNode(actions_dag, "lessOrEquals", {arg_node, lower_bound_node});
         const auto * result_node = toFunctionNode(actions_dag, "if", {le_node, null_const_node, log_node});

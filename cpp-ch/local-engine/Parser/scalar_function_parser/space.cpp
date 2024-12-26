@@ -18,8 +18,6 @@
 #include <Parser/FunctionParser.h>
 #include <Parser/TypeParser.h>
 
-#include <Common/Exception.h>
-
 namespace local_engine
 {
 class SparkFunctionSpaceParser : public FunctionParser

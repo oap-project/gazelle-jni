@@ -22,7 +22,7 @@
 
 namespace local_engine
 {
-
+using namespace DB;
 String StorageMergeTreeFactory::getTableName(const StorageID & id, const String & snapshot_id)
 {
     auto table_name = id.database_name + "." + id.table_name;

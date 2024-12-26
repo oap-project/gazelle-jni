@@ -16,6 +16,7 @@
  */
 package org.apache.gluten.utils;
 
+import org.apache.gluten.backendsapi.BackendsApiManager;
 import org.apache.gluten.runtime.Runtimes;
 
 import org.apache.commons.io.IOUtils;
@@ -30,7 +31,8 @@ import java.io.OutputStream;
 
 public class VeloxBloomFilter extends BloomFilter {
   private final VeloxBloomFilterJniWrapper jni =
-      VeloxBloomFilterJniWrapper.create(Runtimes.contextInstance("VeloxBloomFilter"));
+      VeloxBloomFilterJniWrapper.create(
+          Runtimes.contextInstance(BackendsApiManager.getBackendName(), "VeloxBloomFilter"));
   private final long handle;
 
   private VeloxBloomFilter(byte[] data) {

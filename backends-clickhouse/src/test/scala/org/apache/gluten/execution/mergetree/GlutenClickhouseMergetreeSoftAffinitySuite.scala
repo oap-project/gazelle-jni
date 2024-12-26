@@ -90,7 +90,7 @@ class GlutenClickhouseMergetreeSoftAffinitySuite
       locationDistinct
     )
 
-    assertResult(3)(partitions.size)
+    assertResult(2)(partitions.size)
 
     for (partition <- partitions) {
       val names =
@@ -100,7 +100,7 @@ class GlutenClickhouseMergetreeSoftAffinitySuite
           .map(_.name.toInt)
           .sorted
           .mkString(",")
-      assert(names == "1,4,7,10" | names == "2,5,8" || names == "3,6,9")
+      assert(names == "1,2,3,5,6,7" | names == "4,8,9,10")
     }
   }
 

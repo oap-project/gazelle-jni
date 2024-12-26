@@ -119,10 +119,7 @@ macro(find_awssdk)
 endmacro()
 
 macro(find_gcssdk)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES_BCK ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   find_package(google_cloud_cpp_storage CONFIG 2.22.0 REQUIRED)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_BCK})
 endmacro()
 
 macro(find_azure)
@@ -132,6 +129,7 @@ macro(find_azure)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
   find_package(azure-storage-files-datalake-cpp CONFIG REQUIRED)
+  find_package(azure-identity-cpp CONFIG REQUIRED)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_BCK})
 endmacro()
 
@@ -139,12 +137,12 @@ endmacro()
 set(VELOX_SRCS
     compute/VeloxBackend.cc
     compute/VeloxRuntime.cc
-    compute/WholeStageResultIterator.cc
     compute/VeloxPlanConverter.cc
+    compute/WholeStageResultIterator.cc
     compute/iceberg/IcebergPlanConverter.cc
-    jni/VeloxJniWrapper.cc
     jni/JniFileSystem.cc
     jni/JniUdf.cc
+    jni/VeloxJniWrapper.cc
     memory/BufferOutputStream.cc
     memory/VeloxColumnarBatch.cc
     memory/VeloxMemoryManager.cc
@@ -153,30 +151,30 @@ set(VELOX_SRCS
     operators/functions/SparkExprToSubfieldFilterParser.cc
     operators/reader/FileReaderIterator.cc
     operators/reader/ParquetReaderIterator.cc
-    operators/serializer/VeloxColumnarToRowConverter.cc
     operators/serializer/VeloxColumnarBatchSerializer.cc
+    operators/serializer/VeloxColumnarToRowConverter.cc
     operators/serializer/VeloxRowToColumnarConverter.cc
     operators/writer/VeloxArrowWriter.cc
     operators/writer/VeloxParquetDataSource.cc
+    shuffle/VeloxHashShuffleWriter.cc
+    shuffle/VeloxRssSortShuffleWriter.cc
     shuffle/VeloxShuffleReader.cc
     shuffle/VeloxShuffleWriter.cc
-    shuffle/VeloxHashShuffleWriter.cc
     shuffle/VeloxSortShuffleWriter.cc
-    shuffle/VeloxRssSortShuffleWriter.cc
+    substrait/SubstraitExtensionCollector.cc
     substrait/SubstraitParser.cc
     substrait/SubstraitToVeloxExpr.cc
     substrait/SubstraitToVeloxPlan.cc
     substrait/SubstraitToVeloxPlanValidator.cc
     substrait/VariantToVectorConverter.cc
-    substrait/SubstraitExtensionCollector.cc
     substrait/VeloxSubstraitSignature.cc
     substrait/VeloxToSubstraitExpr.cc
     substrait/VeloxToSubstraitPlan.cc
     substrait/VeloxToSubstraitType.cc
     udf/UdfLoader.cc
-    utils/VeloxArrowUtils.cc
-    utils/ConfigExtractor.cc
     utils/Common.cc
+    utils/ConfigExtractor.cc
+    utils/VeloxArrowUtils.cc
     utils/VeloxBatchResizer.cc)
 
 if(ENABLE_S3)
@@ -250,15 +248,12 @@ if(BUILD_TESTS)
   import_library(
     facebook::velox::exec_test_lib
     ${VELOX_COMPONENTS_PATH}/exec/tests/utils/libvelox_exec_test_lib.a)
-  import_library(facebook::velox::cursor
-                 ${VELOX_COMPONENTS_PATH}/exec/tests/utils/libvelox_cursor.a)
   target_link_libraries(
     facebook::velox::exec_test_lib
     INTERFACE facebook::velox::vector_test_lib
               facebook::velox::dwio_common_test
               facebook::velox::file_test_utils facebook::velox::temp_path)
   target_link_libraries(velox PUBLIC facebook::velox::exec_test_lib)
-  target_link_libraries(velox PUBLIC facebook::velox::cursor)
 endif()
 
 target_link_libraries(velox PUBLIC facebook::velox)
@@ -337,6 +332,7 @@ if(ENABLE_ABFS)
   find_azure()
   target_link_libraries(velox PUBLIC Azure::azure-storage-blobs)
   target_link_libraries(velox PUBLIC Azure::azure-storage-files-datalake)
+  target_link_libraries(velox PUBLIC Azure::azure-identity)
 endif()
 
 if(BUILD_EXAMPLES)

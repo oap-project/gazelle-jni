@@ -22,9 +22,8 @@ on:
       - '.github/workflows/clickhouse_be_trigger.yml'
       - 'pom.xml'
       - 'backends-clickhouse/**'
-      - 'gluten-celeborn/common/**'
-      - 'gluten-celeborn/package/**'
-      - 'gluten-celeborn/clickhouse/**'
+      - 'gluten-celeborn/**'
+      - 'gluten-iceberg/**'
       - 'gluten-core/**'
       - 'gluten-substrait/**'
       - 'gluten-ut/**'
@@ -49,11 +48,7 @@ jobs:
           script: |
             const issueNumber = context.payload.number;
             let body;
-            if (issueNumber % 10 === 0) {
-              body = "Run Gluten ClickHouse CI on ARM";
-            } else {
-              body = "Run Gluten Clickhouse CI on x86";
-            }
+            body = "Run Gluten Clickhouse CI on x86";
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

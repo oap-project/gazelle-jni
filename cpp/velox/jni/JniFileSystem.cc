@@ -74,7 +74,7 @@ class JniReadFile : public facebook::velox::ReadFile {
 
   ~JniReadFile() override {
     try {
-      close0();
+      closeInternal();
       JNIEnv* env = nullptr;
       attachCurrentThreadAsDaemonOrThrow(vm, &env);
       env->DeleteGlobalRef(obj_);
@@ -130,7 +130,7 @@ class JniReadFile : public facebook::velox::ReadFile {
   }
 
  private:
-  void close0() {
+  void closeInternal() {
     JNIEnv* env = nullptr;
     attachCurrentThreadAsDaemonOrThrow(vm, &env);
     env->CallVoidMethod(obj_, jniReadFileClose);
@@ -151,7 +151,7 @@ class JniWriteFile : public facebook::velox::WriteFile {
 
   ~JniWriteFile() override {
     try {
-      close0();
+      closeInternal();
       JNIEnv* env = nullptr;
       attachCurrentThreadAsDaemonOrThrow(vm, &env);
       env->DeleteGlobalRef(obj_);
@@ -178,7 +178,7 @@ class JniWriteFile : public facebook::velox::WriteFile {
   }
 
   void close() override {
-    close0();
+    closeInternal();
   }
 
   uint64_t size() const override {
@@ -190,7 +190,7 @@ class JniWriteFile : public facebook::velox::WriteFile {
   }
 
  private:
-  void close0() {
+  void closeInternal() {
     JNIEnv* env = nullptr;
     attachCurrentThreadAsDaemonOrThrow(vm, &env);
     env->CallVoidMethod(obj_, jniWriteFileClose);

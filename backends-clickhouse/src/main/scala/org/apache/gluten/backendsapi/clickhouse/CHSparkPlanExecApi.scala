@@ -164,11 +164,11 @@ class CHSparkPlanExecApi extends SparkPlanExecApi with Logging {
       resultExpressions)
     CHHashAggregateExecTransformer(
       requiredChildDistributionExpressions,
-      groupingExpressions.distinct,
+      groupingExpressions,
       aggregateExpressions,
       aggregateAttributes,
       initialInputBufferOffset,
-      replacedResultExpressions.distinct,
+      replacedResultExpressions,
       child
     )
   }
@@ -363,15 +363,10 @@ class CHSparkPlanExecApi extends SparkPlanExecApi with Logging {
       left: SparkPlan,
       right: SparkPlan,
       condition: Option[Expression]): CartesianProductExecTransformer =
-    if (!condition.isEmpty) {
-      throw new GlutenNotSupportException(
-        "CartesianProductExecTransformer with condition is not supported in ch backend.")
-    } else {
-      CartesianProductExecTransformer(
-        ColumnarCartesianProductBridge(left),
-        ColumnarCartesianProductBridge(right),
-        condition)
-    }
+    CartesianProductExecTransformer(
+      ColumnarCartesianProductBridge(left),
+      ColumnarCartesianProductBridge(right),
+      condition)
 
   override def genBroadcastNestedLoopJoinExecTransformer(
       left: SparkPlan,
@@ -661,7 +656,7 @@ class CHSparkPlanExecApi extends SparkPlanExecApi with Logging {
   }
 
   override def createColumnarWriteFilesExec(
-      child: SparkPlan,
+      child: WriteFilesExecTransformer,
       noop: SparkPlan,
       fileFormat: FileFormat,
       partitionColumns: Seq[Attribute],
@@ -671,6 +666,7 @@ class CHSparkPlanExecApi extends SparkPlanExecApi with Logging {
     CHColumnarWriteFilesExec(
       child,
       noop,
+      child,
       fileFormat,
       partitionColumns,
       bucketSpec,

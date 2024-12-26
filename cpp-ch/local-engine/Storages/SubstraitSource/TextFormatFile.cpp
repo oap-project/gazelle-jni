@@ -16,12 +16,14 @@
  */
 #include "TextFormatFile.h"
 
+#if USE_HIVE
 #include <memory>
-
 #include <Formats/FormatFactory.h>
 #include <Formats/FormatSettings.h>
+#include <Processors/Formats/IRowInputFormat.h>
 #include <Processors/Formats/Impl/HiveTextRowInputFormat.h>
 #include <Poco/URI.h>
+
 
 namespace local_engine
 {
@@ -73,3 +75,4 @@ FormatFile::InputFormatPtr TextFormatFile::createInputFormat(const DB::Block & h
 }
 
 }
+#endif

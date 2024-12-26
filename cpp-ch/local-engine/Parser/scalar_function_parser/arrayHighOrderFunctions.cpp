@@ -35,6 +35,8 @@ namespace DB::ErrorCodes
 
 namespace local_engine
 {
+using namespace DB;
+
 class FunctionParserArrayFilter : public FunctionParser
 {
 public:
@@ -218,14 +220,14 @@ private:
             const auto var_expr = expr.scalar_function().arguments()[0].value();
             if (!var_expr.has_literal())
                 return false;
-            auto [_, name] = LiteralParser().parse(var_expr.literal());
+            auto [_, name] = LiteralParser::parse(var_expr.literal());
             return var == name.safeGet<String>();
         };
 
         auto is_int_value = [&](const substrait::Expression & expr, Int32 val) {
             if (!expr.has_literal())
                 return false;
-            auto [_, x] = LiteralParser().parse(expr.literal());
+            auto [_, x] = LiteralParser::parse(expr.literal());
             return val == x.safeGet<Int32>();
         };
 

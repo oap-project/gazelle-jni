@@ -32,6 +32,7 @@
 #include "velox/dwio/common/Options.h"
 
 namespace gluten {
+
 class VeloxParquetDataSourceGCS final : public VeloxParquetDataSource {
  public:
   VeloxParquetDataSourceGCS(
@@ -48,4 +49,5 @@ class VeloxParquetDataSourceGCS final : public VeloxParquetDataSource {
         gcsFileSystem->openFileForWrite(filePath_, {{}, sinkPool_.get()}), filePath_);
   }
 };
+
 } // namespace gluten

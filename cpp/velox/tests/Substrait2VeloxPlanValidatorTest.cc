@@ -35,6 +35,7 @@ using namespace facebook::velox::connector::hive;
 using namespace facebook::velox::exec;
 
 namespace gluten {
+
 class Substrait2VeloxPlanValidatorTest : public exec::test::HiveConnectorTestBase {
  protected:
   bool validatePlan(std::string file) {
@@ -64,4 +65,5 @@ TEST_F(Substrait2VeloxPlanValidatorTest, group) {
 
   ASSERT_FALSE(validatePlan(substraitPlan));
 }
+
 } // namespace gluten

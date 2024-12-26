@@ -41,12 +41,14 @@
 using namespace gluten;
 using namespace facebook;
 
+namespace {
+jclass blockStripesClass;
+jmethodID blockStripesConstructor;
+} // namespace
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-static jclass blockStripesClass;
-static jmethodID blockStripesConstructor;
 
 jint JNI_OnLoad(JavaVM* vm, void*) {
   JNIEnv* env;

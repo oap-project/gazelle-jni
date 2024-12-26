@@ -85,7 +85,7 @@ arrow::Status RssPartitionWriter::doEvict(
       inMemoryPayload->toBlockPayload(
           payloadType, payloadPool_.get(), codec_ ? codec_.get() : nullptr, std::move(compressed)));
   // Copy payload to arrow buffered os.
-  ARROW_ASSIGN_OR_RAISE(auto rssBufferOs, arrow::io::BufferOutputStream::Create(options_.pushBufferMaxSize, pool_));
+  ARROW_ASSIGN_OR_RAISE(auto rssBufferOs, arrow::io::BufferOutputStream::Create(options_.pushBufferMaxSize));
   RETURN_NOT_OK(payload->serialize(rssBufferOs.get()));
   payload = nullptr; // Invalidate payload immediately.
 

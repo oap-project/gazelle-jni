@@ -22,6 +22,7 @@
 #include <DataTypes/DataTypeDateTime64.h>
 #include <DataTypes/DataTypeFactory.h>
 #include <DataTypes/DataTypeFixedString.h>
+#include <DataTypes/DataTypeLowCardinality.h>
 #include <DataTypes/DataTypeMap.h>
 #include <DataTypes/DataTypeNothing.h>
 #include <DataTypes/DataTypeNullable.h>
@@ -50,6 +51,7 @@ extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
 
 namespace local_engine
 {
+using namespace DB;
 std::unordered_map<String, String> TypeParser::type_names_mapping
     = {{"BooleanType", "UInt8"},
        {"ByteType", "Int8"},

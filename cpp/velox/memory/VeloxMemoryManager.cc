@@ -59,6 +59,7 @@ T getConfig(
   return defaultValue;
 }
 } // namespace
+
 /// We assume in a single Spark task. No thread-safety should be guaranteed.
 class ListenableArbitrator : public velox::memory::MemoryArbitrator {
  public:
@@ -118,7 +119,7 @@ class ListenableArbitrator : public velox::memory::MemoryArbitrator {
     }
     VELOX_CHECK(pool->root() == candidate, "Illegal state in ListenableArbitrator");
 
-    growCapacity0(pool->root(), targetBytes);
+    growCapacityInternal(pool->root(), targetBytes);
     return true;
   }
 
@@ -132,11 +133,11 @@ class ListenableArbitrator : public velox::memory::MemoryArbitrator {
       pool = candidates_.begin()->first;
     }
     pool->reclaim(targetBytes, memoryReclaimMaxWaitMs_, status); // ignore the output
-    return shrinkCapacity0(pool, 0);
+    return shrinkCapacityInternal(pool, 0);
   }
 
   uint64_t shrinkCapacity(velox::memory::MemoryPool* pool, uint64_t targetBytes) override {
-    return shrinkCapacity0(pool, targetBytes);
+    return shrinkCapacityInternal(pool, targetBytes);
   }
 
   Stats stats() const override {
@@ -149,7 +150,7 @@ class ListenableArbitrator : public velox::memory::MemoryArbitrator {
   }
 
  private:
-  void growCapacity0(velox::memory::MemoryPool* pool, uint64_t bytes) {
+  void growCapacityInternal(velox::memory::MemoryPool* pool, uint64_t bytes) {
     // Since
     // https://github.com/facebookincubator/velox/pull/9557/files#diff-436e44b7374032f8f5d7eb45869602add6f955162daa2798d01cc82f8725724dL812-L820,
     // We should pass bytes as parameter "reservationBytes" when calling ::grow.
@@ -171,7 +172,7 @@ class ListenableArbitrator : public velox::memory::MemoryArbitrator {
         pool->toString());
   }
 
-  uint64_t shrinkCapacity0(velox::memory::MemoryPool* pool, uint64_t bytes) {
+  uint64_t shrinkCapacityInternal(velox::memory::MemoryPool* pool, uint64_t bytes) {
     uint64_t freeBytes = shrinkPool(pool, bytes);
     listener_->allocationChanged(-freeBytes);
     return freeBytes;
@@ -334,17 +335,24 @@ bool VeloxMemoryManager::tryDestructSafe() {
 
   // Velox memory manager considered safe to destruct when no alive pools.
   if (veloxMemoryManager_) {
-    if (veloxMemoryManager_->numPools() > 2) {
+    if (veloxMemoryManager_->numPools() > 3) {
+      VLOG(2) << "Attempt to destruct VeloxMemoryManager failed because there are " << veloxMemoryManager_->numPools()
+              << " outstanding memory pools.";
       return false;
     }
-    if (veloxMemoryManager_->numPools() == 2) {
+    if (veloxMemoryManager_->numPools() == 3) {
       // Assert the pool is spill pool
       // See https://github.com/facebookincubator/velox/commit/e6f84e8ac9ef6721f527a2d552a13f7e79bdf72e
+      // https://github.com/facebookincubator/velox/commit/ac134400b5356c5ba3f19facee37884aa020afdc
       int32_t spillPoolCount = 0;
+      int32_t cachePoolCount = 0;
       int32_t tracePoolCount = 0;
       veloxMemoryManager_->testingDefaultRoot().visitChildren([&](velox::memory::MemoryPool* child) -> bool {
         if (child == veloxMemoryManager_->spillPool()) {
           spillPoolCount++;
+        }
+        if (child == veloxMemoryManager_->cachePool()) {
+          cachePoolCount++;
         }
         if (child == veloxMemoryManager_->tracePool()) {
           tracePoolCount++;
@@ -352,9 +360,10 @@ bool VeloxMemoryManager::tryDestructSafe() {
         return true;
       });
       GLUTEN_CHECK(spillPoolCount == 1, "Illegal pool count state: spillPoolCount: " + std::to_string(spillPoolCount));
+      GLUTEN_CHECK(cachePoolCount == 1, "Illegal pool count state: cachePoolCount: " + std::to_string(cachePoolCount));
       GLUTEN_CHECK(tracePoolCount == 1, "Illegal pool count state: tracePoolCount: " + std::to_string(tracePoolCount));
     }
-    if (veloxMemoryManager_->numPools() < 2) {
+    if (veloxMemoryManager_->numPools() < 3) {
       GLUTEN_CHECK(false, "Unreachable code");
     }
   }

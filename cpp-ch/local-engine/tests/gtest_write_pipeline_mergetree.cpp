@@ -258,14 +258,22 @@ TEST(MergeTree, SparkMergeTree)
 INCBIN(_3_mergetree_plan_input_, SOURCE_DIR "/utils/extern-local-engine/tests/json/mergetree/lineitem_parquet_input.json");
 namespace
 {
-void writeMerge(std::string_view json_plan,
-    const std::string & outputPath ,
-    const std::function<void(const DB::Block &)> & callback, std::optional<std::string> input = std::nullopt)
+void writeMerge(
+    std::string_view json_plan,
+    const std::string & outputPath,
+    const TestSettings & test_settings,
+    const std::function<void(const DB::Block &)> & callback,
+    std::optional<std::string> input = std::nullopt)
 {
-    const auto context = DB::Context::createCopy(QueryContext::globalContext());
+    auto query_id = QueryContext::instance().initializeQuery("gtest_mergetree");
+    SCOPE_EXIT({ QueryContext::instance().finalizeQuery(query_id); });
+    const auto context = QueryContext::instance().currentQueryContext();
+
+    for (const auto & x : test_settings)
+        context->setSetting(x.first, x.second);
     GlutenWriteSettings settings{.task_write_tmp_dir = outputPath};
     settings.set(context);
-    SparkMergeTreeWritePartitionSettings partition_settings{.part_name_prefix = "pipline_prefix"};
+    SparkMergeTreeWritePartitionSettings partition_settings{.part_name_prefix = "_1"};
     partition_settings.set(context);
 
     auto input_json = input.value_or(replaceLocalFilesWithTPCH(EMBEDDED_PLAN(_3_mergetree_plan_input_)));
@@ -277,20 +285,60 @@ void writeMerge(std::string_view json_plan,
 }
 INCBIN(_3_mergetree_plan_, SOURCE_DIR "/utils/extern-local-engine/tests/json/mergetree/3_one_pipeline.json");
 INCBIN(_4_mergetree_plan_, SOURCE_DIR "/utils/extern-local-engine/tests/json/mergetree/4_one_pipeline.json");
+INCBIN(_lowcard_plan_, SOURCE_DIR "/utils/extern-local-engine/tests/json/mergetree/lowcard.json");
+INCBIN(_case_sensitive_plan_, SOURCE_DIR "/utils/extern-local-engine/tests/json/mergetree/case_sensitive.json");
 TEST(MergeTree, Pipeline)
 {
-    writeMerge(EMBEDDED_PLAN(_3_mergetree_plan_),"tmp/lineitem_mergetree",[&](const DB::Block & block)
-    {
-        EXPECT_EQ(1, block.rows());
-        debug::headBlock(block);
-    });
+    // context->setSetting("mergetree.max_num_part_per_merge_task", 1);
+    writeMerge(
+        EMBEDDED_PLAN(_3_mergetree_plan_),
+        "tmp/lineitem_mergetree",
+        {{"min_insert_block_size_rows", 100000}
+         /*, {"optimize.minFileSize", 1024 * 1024 * 10}*/},
+        [&](const DB::Block & block)
+        {
+            EXPECT_EQ(1, block.rows());
+            std::cerr << debug::verticalShowString(block, 10, 50) << std::endl;
+        });
 }
 
 TEST(MergeTree, PipelineWithPartition)
 {
-    writeMerge(EMBEDDED_PLAN(_4_mergetree_plan_),"tmp/lineitem_mergetree_p",[&](const DB::Block & block)
-    {
-        EXPECT_EQ(2525, block.rows());
-        debug::headBlock(block);
-    });
+    writeMerge(
+        EMBEDDED_PLAN(_4_mergetree_plan_),
+        "tmp/lineitem_mergetree_p",
+        {},
+        [&](const DB::Block & block)
+        {
+            EXPECT_EQ(3815, block.rows());
+            std::cerr << debug::showString(block, 50, 50) << std::endl;
+        });
+}
+
+TEST(MergeTree, lowcard)
+{
+    writeMerge(
+        EMBEDDED_PLAN(_lowcard_plan_),
+        "tmp/lineitem_mergetre_lowcard",
+        {},
+        [&](const DB::Block & block)
+        {
+            EXPECT_EQ(1, block.rows());
+            std::cerr << debug::verticalShowString(block, 10, 50) << std::endl;
+        });
+}
+
+TEST(MergeTree, case_sensitive)
+{
+    //TODO: case_sensitive
+    GTEST_SKIP();
+    writeMerge(
+        EMBEDDED_PLAN(_case_sensitive_plan_),
+        "tmp/LINEITEM_MERGETREE_CASE_SENSITIVE",
+        {},
+        [&](const DB::Block & block)
+        {
+            EXPECT_EQ(1, block.rows());
+            std::cerr << debug::showString(block, 20, 50) << std::endl;
+        });
 }

@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 /**
  * A trivial memory consumer implementation used by Gluten.
  *
- * @deprecated Use {@link TreeMemoryConsumers#shared()} instead.
+ * @deprecated Use {@link TreeMemoryConsumers} instead.
  */
 @Deprecated
 public class RegularMemoryConsumer extends MemoryConsumer

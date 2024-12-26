@@ -80,7 +80,7 @@ class VeloxSortShuffleWriter final : public VeloxShuffleWriter {
 
   arrow::Status evictPartition(uint32_t partitionId, size_t begin, size_t end);
 
-  arrow::Status evictPartition0(uint32_t partitionId, int32_t numRows, uint8_t* buffer, int64_t rawLength);
+  arrow::Status evictPartitionInternal(uint32_t partitionId, int32_t numRows, uint8_t* buffer, int64_t rawLength);
 
   facebook::velox::vector_size_t maxRowsToInsert(
       facebook::velox::vector_size_t offset,
@@ -131,4 +131,5 @@ class VeloxSortShuffleWriter final : public VeloxShuffleWriter {
   int64_t sortTime_{0};
   bool stopped_{false};
 };
+
 } // namespace gluten

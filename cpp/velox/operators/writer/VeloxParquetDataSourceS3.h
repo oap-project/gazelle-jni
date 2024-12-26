@@ -48,4 +48,5 @@ class VeloxParquetDataSourceS3 final : public VeloxParquetDataSource {
     sink_ = dwio::common::FileSink::create(filePath_, {.connectorProperties = hiveConf, .pool = sinkPool_.get()});
   }
 };
+
 } // namespace gluten

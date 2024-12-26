@@ -51,14 +51,12 @@ extern const int ILLEGAL_TYPE_OF_ARGUMENT;
 
 namespace local_engine
 {
-using namespace DB;
-
-class FunctionBloomFilterContains : public IFunction
+class FunctionBloomFilterContains : public DB::IFunction
 {
 public:
     static constexpr auto name = "bloomFilterContains";
 
-    static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionBloomFilterContains>(); }
+    static DB::FunctionPtr create(DB::ContextPtr) { return std::make_shared<FunctionBloomFilterContains>(); }
 
     ~FunctionBloomFilterContains() override
     {
@@ -73,40 +71,40 @@ public:
 
     bool isVariadic() const override { return false; }
 
-    bool isSuitableForShortCircuitArgumentsExecution(const DataTypesWithConstInfo & /*arguments*/) const override { return true; }
+    bool isSuitableForShortCircuitArgumentsExecution(const DB::DataTypesWithConstInfo & /*arguments*/) const override { return true; }
 
     size_t getNumberOfArguments() const override { return 2; }
 
-    DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
+    DB::DataTypePtr getReturnTypeImpl(const DB::DataTypes & arguments) const override
     {
-        const auto * bloom_filter_type0 = typeid_cast<const DataTypeAggregateFunction *>(arguments[0].get());
+        const auto * bloom_filter_type0 = typeid_cast<const DB::DataTypeAggregateFunction *>(arguments[0].get());
         if (!(bloom_filter_type0 && bloom_filter_type0->getFunctionName() == "groupBloomFilter"))
         {
-            if (arguments[0]->getTypeId() != TypeIndex::String && arguments[0]->getTypeId() != TypeIndex::AggregateFunction)
-                throw Exception(
-                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+            if (arguments[0]->getTypeId() != DB::TypeIndex::String && arguments[0]->getTypeId() != DB::TypeIndex::AggregateFunction)
+                throw DB::Exception(
+                    DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
                     "First argument for function {} must be a groupBloomFilterState or its binary form, but it has type {}",
                     getName(),
                     arguments[0]->getName());
         }
 
-        WhichDataType which(arguments[1].get());
+        DB::WhichDataType which(arguments[1].get());
         if (!which.isInt64() && !which.isUInt64())
-            throw Exception(
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+            throw DB::Exception(
+                DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
                 "Second argument for function {} must be an INT64 or UINT64 type but it has type {}",
                 getName(),
                 arguments[1]->getName());
 
-        return std::make_shared<DataTypeNumber<UInt8>>();
+        return std::make_shared<DB::DataTypeNumber<UInt8>>();
     }
 
     bool useDefaultImplementationForConstants() const override { return true; }
 
-    ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr &, size_t input_rows_count) const override
+    DB::ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr &, size_t input_rows_count) const override
     {
-        auto col_to = ColumnVector<UInt8>::create(input_rows_count);
-        typename ColumnVector<UInt8>::Container & vec_to = col_to->getData();
+        auto col_to = DB::ColumnVector<UInt8>::create(input_rows_count);
+        typename DB::ColumnVector<UInt8>::Container & vec_to = col_to->getData();
         execute(arguments, input_rows_count, vec_to);
 
         return col_to;
@@ -117,22 +115,22 @@ private:
     mutable char * allocated_bytes_for_bloom_filter_state = nullptr;
     // For Gluten use.
     // Why not make it a static member? Because functions are registered prior to aggregate functions (groupBloomFilter), so static initialization of static agg_func will fail.
-    mutable AggregateFunctionPtr agg_func;
+    mutable DB::AggregateFunctionPtr agg_func;
 
     template <typename T>
     typename std::enable_if<std::is_same_v<T, Int64> || std::is_same_v<T, UInt64>, void>::type internalExecute(
-        const ColumnsWithTypeAndName & arguments,
+        const DB::ColumnsWithTypeAndName & arguments,
         size_t input_rows_count,
-        typename ColumnVector<UInt8>::Container & vec_to,
-        AggregateDataPtr bloom_filter_state) const
+        typename DB::ColumnVector<UInt8>::Container & vec_to,
+        DB::AggregateDataPtr bloom_filter_state) const
     {
-        using ColumnType = ColumnVector<T>;
+        using ColumnType = DB::ColumnVector<T>;
         const typename ColumnType::Container * container_of_int;
         const auto * column_ptr = arguments[1].column.get();
         auto second_arg_const = isColumnConst(*column_ptr);
 
         if (second_arg_const)
-            container_of_int = &typeid_cast<const ColumnType &>(typeid_cast<const ColumnConst &>(*column_ptr).getDataColumn()).getData();
+            container_of_int = &typeid_cast<const ColumnType &>(typeid_cast<const DB::ColumnConst &>(*column_ptr).getDataColumn()).getData();
         else
             container_of_int = &typeid_cast<const ColumnType &>(*column_ptr).getData();
 
@@ -145,42 +143,42 @@ private:
         }
     }
 
-    void execute(const ColumnsWithTypeAndName & arguments, size_t input_rows_count, typename ColumnVector<UInt8>::Container & vec_to) const
+    void execute(const DB::ColumnsWithTypeAndName & arguments, size_t input_rows_count, typename DB::ColumnVector<UInt8>::Container & vec_to) const
     {
-        AggregateDataPtr bloom_filter_state = nullptr;
+        DB::AggregateDataPtr bloom_filter_state = nullptr;
 
         const auto * first_column_ptr = arguments[0].column.get();
 
-        if (arguments[0].type->getTypeId() == TypeIndex::AggregateFunction)
+        if (arguments[0].type->getTypeId() == DB::TypeIndex::AggregateFunction)
         {
-            const auto & column_agg_function = typeid_cast<const ColumnAggregateFunction &>(*first_column_ptr);
+            const auto & column_agg_function = typeid_cast<const DB::ColumnAggregateFunction &>(*first_column_ptr);
             // When argument is nullable, AggregateFunctionNull is inserted in front of AggregateFunctionState.
             bool has_null_prefix = column_agg_function.getAggregateFunction()->getArgumentTypes().at(0)->isNullable();
             bloom_filter_state
                 = column_agg_function.getData()[0] + (has_null_prefix ? column_agg_function.getAggregateFunction()->alignOfData() : 0);
         }
-        else if (arguments[0].type->getTypeId() == TypeIndex::String)
+        else if (arguments[0].type->getTypeId() == DB::TypeIndex::String)
         {
             if (!agg_func)
             {
-                AggregateFunctionProperties properties;
-                auto action = NullsAction::EMPTY;
-                agg_func = AggregateFunctionFactory::instance().get(
-                    "groupBloomFilter", action, DataTypes{std::make_shared<DataTypeNullable>(std::make_shared<DataTypeInt64>())}, {}, properties);
+                DB::AggregateFunctionProperties properties;
+                auto action = DB::NullsAction::EMPTY;
+                agg_func = DB::AggregateFunctionFactory::instance().get(
+                    "groupBloomFilter", action, DB::DataTypes{std::make_shared<DB::DataTypeNullable>(std::make_shared<DB::DataTypeInt64>())}, {}, properties);
             }
             // Gluten serialized the AggregateFunction into a String.
             if (allocated_bytes_for_bloom_filter_state == nullptr)
             {
                 if (isColumnConst(*first_column_ptr))
-                    first_column_ptr = &typeid_cast<const ColumnConst &>(*first_column_ptr).getDataColumn();
-                StringRef sr = typeid_cast<const ColumnString &>(*first_column_ptr).getDataAt(0);
+                    first_column_ptr = &typeid_cast<const DB::ColumnConst &>(*first_column_ptr).getDataColumn();
+                StringRef sr = typeid_cast<const DB::ColumnString &>(*first_column_ptr).getDataAt(0);
 
                 size_t size_of_state = agg_func->sizeOfData();
                 allocated_bytes_for_bloom_filter_state = new char[size_of_state];
                 agg_func->create(allocated_bytes_for_bloom_filter_state);
                 if (!sr.empty())
                 {
-                    ReadBufferFromMemory read_buffer(sr.data, sr.size);
+                    DB::ReadBufferFromMemory read_buffer(sr.data, sr.size);
                     agg_func->deserialize((allocated_bytes_for_bloom_filter_state), read_buffer);
                 }
             }
@@ -190,32 +188,32 @@ private:
         }
         else
         {
-            throw Exception(
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+            throw DB::Exception(
+                DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
                 "First argument for function {} must be a groupBloomFilterState or its binary form, but it has type {}",
                 getName(),
                 arguments[0].type->getName());
         }
 
 
-        const IColumn * second_column_ptr = arguments[1].column.get();
+        const DB::IColumn * second_column_ptr = arguments[1].column.get();
         if (isColumnNullable(*second_column_ptr))
-            second_column_ptr = &typeid_cast<const ColumnNullable &>(*second_column_ptr).getNestedColumn();
+            second_column_ptr = &typeid_cast<const DB::ColumnNullable &>(*second_column_ptr).getNestedColumn();
         if (isColumnConst(*second_column_ptr))
-            second_column_ptr = &typeid_cast<const ColumnConst &>(*second_column_ptr).getDataColumn();
+            second_column_ptr = &typeid_cast<const DB::ColumnConst &>(*second_column_ptr).getDataColumn();
 
-        if (checkColumn<ColumnInt64>(second_column_ptr))
+        if (checkColumn<DB::ColumnInt64>(second_column_ptr))
         {
             internalExecute<Int64>(arguments, input_rows_count, vec_to, bloom_filter_state);
         }
-        else if (checkColumn<ColumnUInt64>(second_column_ptr))
+        else if (checkColumn<DB::ColumnUInt64>(second_column_ptr))
         {
             internalExecute<UInt64>(arguments, input_rows_count, vec_to, bloom_filter_state);
         }
         else
         {
-            throw Exception(
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+            throw DB::Exception(
+                DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
                 "Second argument for function {} must be an INT64 or UINT64 type but it has type {}",
                 getName(),
                 arguments[1].type->getName());

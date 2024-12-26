@@ -17,14 +17,19 @@
 
 #include <stack>
 
+#include <DataTypes/DataTypeString.h>
+#include <IO/ReadBufferFromString.h>
 #include <Parser/FunctionParser.h>
+#include <Poco/Logger.h>
+#include <Common/logger_useful.h>
+#include <Common/re2.h>
 
 namespace DB
 {
 namespace ErrorCodes
 {
-    extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
-    extern const int ILLEGAL_TYPE_OF_ARGUMENT;
+extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
+extern const int ILLEGAL_TYPE_OF_ARGUMENT;
 }
 }
 
@@ -35,29 +40,26 @@ namespace local_engine
 class FunctionParserRegexpExtract : public FunctionParser
 {
 public:
-    explicit FunctionParserRegexpExtract(ParserContextPtr parser_context_) : FunctionParser(parser_context_) {}
+    explicit FunctionParserRegexpExtract(ParserContextPtr parser_context_) : FunctionParser(parser_context_) { }
     ~FunctionParserRegexpExtract() override = default;
 
     static constexpr auto name = "regexp_extract";
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
-        const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+    const ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, ActionsDAG & actions_dag) const override
     {
         const auto & args = substrait_func.arguments();
         if (args.size() != 3)
             throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires 3 arguments", getName());
-        
-        if(args[1].value().has_literal())
+
+        if (args[1].value().has_literal())
         {
             const auto & literal_expr = args[1].value().literal();
             if (literal_expr.has_string())
             {
                 std::string expr_str = literal_expr.string();
-                size_t expr_size = expr_str.size();
-                if (expr_str.data()[expr_size - 1] == '$')
-                    expr_str.replace(expr_str.find_last_of("$"), 1, "(?:(\n)*)$");
+                /// FIXEDME:  This only works for RE2
+                expr_str = adaptPatternForRE2(expr_str);
 
                 String sparkRegexp = adjustSparkRegexpRule(expr_str);
                 const auto * regex_expr_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeString>(), sparkRegexp);
@@ -74,6 +76,21 @@ public:
     }
 
 private:
+    String adaptPatternForRE2(const String & pattern_) const
+    {
+        LOG_DEBUG(getLogger("FunctionParserRegexpExtract"), "xxx original pattern: {}", pattern_);
+        String res = pattern_;
+        // adaptation for $, see issue #8325. equal two cases in re2: $ and \n$, but not include strings which contains \n in middle.
+        static const std::string replaced_str = "($|\\\\n$)";
+        static const re2::RE2 replace_dollar_pattern("([^\\\\])(\\$)");
+        re2::RE2::GlobalReplace(&res, replace_dollar_pattern, "\\1" + replaced_str);
+        LOG_DEBUG(getLogger("FunctionParserRegexpExtract"), "xxx adaption for $: {}", res);
+
+        // adaption for `.` . Need to remove flag s.
+        res = "(?-s)" + res;
+        return res;
+    }
+
     String adjustSparkRegexpRule(String & str) const
     {
         const auto left_bracket_pos = str.find('[');
@@ -140,7 +157,6 @@ private:
             strs.pop();
             strs.top().append("[").append(back);
         }
-
         return strs.top();
     }
 };

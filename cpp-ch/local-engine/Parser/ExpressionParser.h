@@ -16,17 +16,16 @@
  */
 
 #pragma once
+#include <atomic>
 #include <DataTypes/IDataType.h>
 #include <Interpreters/ActionsDAG.h>
 #include <Interpreters/Context_fwd.h>
 #include <substrait/plan.pb.h>
-#include <atomic>
-#include "SerializedPlanParser.h"
 
 
 namespace local_engine
 {
-struct ParserContext;
+class ParserContext;
 class SerializedPlanParser;
 
 class LiteralParser
@@ -34,17 +33,17 @@ class LiteralParser
 public:
     /// Parse a substrait literal into a CH field
     /// returns are the type and field value.
-    std::pair<DB::DataTypePtr, DB::Field> parse(const substrait::Expression_Literal & literal) const;
+    static std::pair<DB::DataTypePtr, DB::Field> parse(const substrait::Expression_Literal & literal);
 };
 
 
 class ExpressionParser
 {
 public:
-    ExpressionParser(std::shared_ptr<const ParserContext> context_) : context(context_) { }
+    ExpressionParser(const std::shared_ptr<const ParserContext> & context_) : context(context_) { }
     ~ExpressionParser() = default;
 
-    /// Append a counter suffix to name
+    /// Append a counter-suffix to name
     String getUniqueName(const String & name) const;
 
     const DB::ActionsDAG::Node * addConstColumn(DB::ActionsDAG & actions_dag, const DB::DataTypePtr type, const DB::Field & field) const;
@@ -84,6 +83,5 @@ private:
         const substrait::Expression_ScalarFunction & func, DB::ActionsDAG & actions_dag, bool position, bool & is_map) const;
 
     DB::ActionsDAG::NodeRawConstPtrs parseJsonTuple(const substrait::Expression_ScalarFunction & func, DB::ActionsDAG & actions_dag) const;
-
 };
 }

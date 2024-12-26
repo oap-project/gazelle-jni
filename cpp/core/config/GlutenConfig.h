@@ -66,6 +66,7 @@ const std::string kUGITokens = "spark.gluten.ugi.tokens";
 
 const std::string kShuffleCompressionCodec = "spark.gluten.sql.columnar.shuffle.codec";
 const std::string kShuffleCompressionCodecBackend = "spark.gluten.sql.columnar.shuffle.codecBackend";
+const std::string kShuffleSpillDiskWriteBufferSize = "spark.shuffle.spill.diskWriteBufferSize";
 const std::string kQatBackendName = "qat";
 const std::string kIaaBackendName = "iaa";
 

@@ -27,7 +27,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 class FunctionParserMyMd5 : public FunctionParser
 {
 public:

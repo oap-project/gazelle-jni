@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-#include <Parser/FunctionParser.h>
 #include <DataTypes/IDataType.h>
-
+#include <Parser/FunctionParser.h>
 
 namespace DB
 {
@@ -41,7 +40,7 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, ActionsDAG & actions_dag) const override
+    const DB::ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, DB::ActionsDAG & actions_dag) const override
     {
         /// Parse sha2(str, 0) or sha2(str, 0) as lower(hex(SHA256(str)))
         /// Parse sha2(str, 224) as lower(hex(SHA224(str)))
@@ -49,12 +48,12 @@ public:
         /// Parse sha2(str, 512) as lower(hex(SHA512(str)))
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
 
         const auto * str_arg = parsed_args[0];
         const auto * bit_length_arg = parsed_args[1];
-        if (bit_length_arg->type != ActionsDAG::ActionType::COLUMN || !isColumnConst(*bit_length_arg->column))
-            throw Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Second argument of function {} must be a constant integer", getName());
+        if (bit_length_arg->type != DB::ActionsDAG::ActionType::COLUMN || !isColumnConst(*bit_length_arg->column))
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Second argument of function {} must be a constant integer", getName());
 
         Int32 bit_length = bit_length_arg->column->getInt(0);
         String ch_func_name;
@@ -74,7 +73,7 @@ public:
                 ch_func_name = "SHA512";
                 break;
             default:
-                throw Exception(
+                throw DB::Exception(
                     DB::ErrorCodes::BAD_ARGUMENTS, "Second argument of function {} must be one of 0, 224, 256, 384 or 512", getName());
         }
 

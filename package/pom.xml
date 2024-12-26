@@ -68,7 +68,7 @@
       <dependencies>
         <dependency>
           <groupId>org.apache.gluten</groupId>
-          <artifactId>gluten-celeborn-package</artifactId>
+          <artifactId>gluten-celeborn</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>
@@ -78,7 +78,7 @@
       <dependencies>
         <dependency>
           <groupId>org.apache.gluten</groupId>
-          <artifactId>gluten-uniffle-package</artifactId>
+          <artifactId>gluten-uniffle</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>
@@ -253,7 +253,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.3.0</version>
         <dependencies>
           <dependency>
             <groupId>org.codehaus.mojo</groupId>

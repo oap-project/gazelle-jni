@@ -54,6 +54,6 @@ private:
     bool is_input_iter_materialize;
     String split_info;
     DB::QueryPlanStepPtr parseReadRelWithJavaIter(const substrait::ReadRel & rel);
-    QueryPlanStepPtr parseReadRelWithLocalFile(const substrait::ReadRel & rel);
+    DB::QueryPlanStepPtr parseReadRelWithLocalFile(const substrait::ReadRel & rel);
 };
 }

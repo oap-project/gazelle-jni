@@ -29,8 +29,8 @@
 #include <IO/WriteBufferFromString.h>
 #include <Interpreters/ActionsDAG.h>
 #include <Interpreters/WindowDescription.h>
-#include <Parser/RelParsers/SortParsingUtils.h>
 #include <Parser/RelParsers/RelParser.h>
+#include <Parser/RelParsers/SortParsingUtils.h>
 #include <Parser/RelParsers/SortRelParser.h>
 #include <Parser/TypeParser.h>
 #include <Processors/QueryPlan/ExpressionStep.h>
@@ -51,6 +51,7 @@ extern const int BAD_ARGUMENTS;
 }
 namespace local_engine
 {
+using namespace DB;
 WindowRelParser::WindowRelParser(ParserContextPtr parser_context_) : RelParser(parser_context_)
 {
 }

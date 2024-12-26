@@ -31,6 +31,7 @@ import org.apache.spark.{HdfsConfGenerator, SparkConf, SparkContext}
 import org.apache.spark.api.plugin.PluginContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.network.util.ByteUnit
+import org.apache.spark.sql.execution.ColumnarCachedBatchSerializer
 import org.apache.spark.sql.execution.datasources.GlutenWriterColumnarRules
 import org.apache.spark.sql.execution.datasources.velox.{VeloxParquetWriterInjects, VeloxRowSplitter}
 import org.apache.spark.sql.expression.UDFResolver
@@ -75,7 +76,7 @@ class VeloxListenerApi extends ListenerApi with Logging {
     if (conf.getBoolean(GlutenConfig.COLUMNAR_TABLE_CACHE_ENABLED.key, defaultValue = false)) {
       conf.set(
         StaticSQLConf.SPARK_CACHE_SERIALIZER.key,
-        "org.apache.spark.sql.execution.ColumnarCachedBatchSerializer")
+        classOf[ColumnarCachedBatchSerializer].getName)
     }
 
     // Static initializers for driver.
@@ -163,7 +164,7 @@ class VeloxListenerApi extends ListenerApi with Logging {
     if (isDriver && !inLocalMode(conf)) {
       parsed += (GlutenConfig.COLUMNAR_VELOX_CACHE_ENABLED.key -> "false")
     }
-    NativeBackendInitializer.initializeBackend(parsed)
+    NativeBackendInitializer.forBackend(VeloxBackend.BACKEND_NAME).initialize(parsed)
 
     // Inject backend-specific implementations to override spark classes.
     GlutenFormatFactory.register(new VeloxParquetWriterInjects)

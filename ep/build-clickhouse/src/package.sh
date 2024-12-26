@@ -90,9 +90,8 @@ function build_gluten_by_spark_version() {
   sv=$(echo "$spark_profile" | tr -d '.')
   echo "build gluten with spark ${spark_profile}, scala ${scala_version}"
 
-  mvn clean install -Pbackends-clickhouse -Pspark-"${spark_profile}" -Pscala-"${scala_version}" -Pceleborn -DskipTests -Dcheckstyle.skip
+  mvn clean install -Pbackends-clickhouse -Pspark-"${spark_profile}" -Pscala-"${scala_version}" -Pceleborn -Piceberg -Pdelta -DskipTests -Dcheckstyle.skip
   cp "${GLUTEN_SOURCE}"/backends-clickhouse/target/gluten-*-spark-"${spark_profile}"-jar-with-dependencies.jar "${PACKAGE_DIR_PATH}"/jars/spark"${sv}"/gluten.jar
-  cp "${GLUTEN_SOURCE}"/gluten-celeborn/clickhouse/target/gluten-celeborn-clickhouse-"${PROJECT_VERSION}"-jar-with-dependencies.jar "${PACKAGE_DIR_PATH}"/jars/spark"${sv}"
   delta_version=$(mvn -q -Dexec.executable="echo" -Dexec.args='${delta.version}' -Pspark-"${spark_profile}" --non-recursive exec:exec)
   delta_package_name=$(mvn -q -Dexec.executable="echo" -Dexec.args='${delta.package.name}' -Pspark-"${spark_profile}" --non-recursive exec:exec)
   wget https://repo1.maven.org/maven2/io/delta/"${delta_package_name}"_${scala_version}/"${delta_version}"/"${delta_package_name}"_${scala_version}-"${delta_version}".jar -P "${PACKAGE_DIR_PATH}"/jars/spark"${sv}"

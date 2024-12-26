@@ -61,4 +61,5 @@ TEST_F(VeloxColumnarBatchTest, flattenTruncatedVector) {
   auto batchOfMap = std::make_shared<VeloxColumnarBatch>(inputOfMap);
   ASSERT_NO_THROW(batchOfMap->getFlattenedRowVector());
 }
+
 } // namespace gluten

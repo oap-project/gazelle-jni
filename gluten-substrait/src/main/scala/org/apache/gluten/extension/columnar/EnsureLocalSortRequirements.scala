@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.{SortExec, SparkPlan}
  * This rule is similar with `EnsureRequirements` but only handle local `SortExec`.
  *
  * The reason is that, during transform SparkPlan to GlutenPlan, some operators do not need local
- * sort any more, e.g., convert SortAggregate to HashAggregateTransformer, and we remove local sort
+ * sort anymore, e.g., convert SortAggregate to HashAggregateTransformer, and we remove local sort
  * eagerly. However, it may break the other operator's requirements, e.g., A SortMergeJoin on top of
  * SortAggregate with the same key. So, this rule adds local sort back if necessary.
  */

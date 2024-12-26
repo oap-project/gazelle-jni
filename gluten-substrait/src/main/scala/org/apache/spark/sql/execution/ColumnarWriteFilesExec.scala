@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.exception.GlutenException
-import org.apache.gluten.execution.GlutenPlan
+import org.apache.gluten.execution.{ValidatablePlan, WriteFilesExecTransformer}
 import org.apache.gluten.extension.columnar.transition.{Convention, ConventionReq}
 import org.apache.gluten.extension.columnar.transition.Convention.RowType
 import org.apache.gluten.sql.shims.SparkShimLoader
@@ -43,7 +43,7 @@ abstract class ColumnarWriteFilesExec protected (
     override val left: SparkPlan,
     override val right: SparkPlan)
   extends BinaryExecNode
-  with GlutenPlan
+  with ValidatablePlan
   with ColumnarWriteFilesExec.ExecuteWriteCompatible {
 
   val child: SparkPlan = left
@@ -118,7 +118,7 @@ abstract class ColumnarWriteFilesExec protected (
 object ColumnarWriteFilesExec {
 
   def apply(
-      child: SparkPlan,
+      child: WriteFilesExecTransformer,
       fileFormat: FileFormat,
       partitionColumns: Seq[Attribute],
       bucketSpec: Option[BucketSpec],

@@ -102,7 +102,7 @@ public:
 class JobScheduler
 {
 public:
-    static JobScheduler& instance()
+    static JobScheduler & instance()
     {
         static JobScheduler global_job_scheduler;
         return global_job_scheduler;
@@ -119,8 +119,9 @@ public:
     void addFinishedJob(const JobId& job_id);
 
     void cleanFinishedJobs();
+    ~JobScheduler();
 private:
-    JobScheduler() = default;
+    JobScheduler();
     std::unique_ptr<ThreadPool> thread_pool;
     std::unordered_map<JobId, JobContext> job_details;
     std::mutex job_details_mutex;

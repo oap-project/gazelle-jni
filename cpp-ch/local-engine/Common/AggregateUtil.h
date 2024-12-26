@@ -71,7 +71,7 @@ public:
 
     // for using grace aggregating, never enable ch spill, otherwise there will be data lost.
     static DB::Aggregator::Params buildParams(
-        DB::ContextPtr context,
+        const DB::ContextPtr & context,
         const DB::Names & grouping_keys,
         const DB::AggregateDescriptions & agg_descriptions,
         Mode mode,

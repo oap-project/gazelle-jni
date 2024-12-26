@@ -16,8 +16,6 @@
  */
 package org.apache.gluten.columnarbatch;
 
-import org.apache.gluten.runtime.Runtimes;
-
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Decimal;
 import org.apache.spark.sql.vectorized.ColumnVector;
@@ -26,26 +24,23 @@ import org.apache.spark.sql.vectorized.ColumnarMap;
 import org.apache.spark.unsafe.types.UTF8String;
 
 public abstract class IndicatorVectorBase extends ColumnVector {
-  protected final ColumnarBatchJniWrapper jniWrapper;
   protected final long handle;
 
   protected IndicatorVectorBase(long handle) {
     super(DataTypes.NullType);
-    this.jniWrapper =
-        ColumnarBatchJniWrapper.create(Runtimes.contextInstance("IndicatorVectorBase#init"));
     this.handle = handle;
   }
 
   public String getType() {
-    return jniWrapper.getType(handle);
+    return ColumnarBatchJniWrapper.getType(handle);
   }
 
   public long getNumColumns() {
-    return jniWrapper.numColumns(handle);
+    return ColumnarBatchJniWrapper.numColumns(handle);
   }
 
   public long getNumRows() {
-    return jniWrapper.numRows(handle);
+    return ColumnarBatchJniWrapper.numRows(handle);
   }
 
   abstract long refCnt();

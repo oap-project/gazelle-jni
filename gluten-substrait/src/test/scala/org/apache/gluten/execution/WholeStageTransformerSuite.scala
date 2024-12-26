@@ -176,25 +176,39 @@ abstract class WholeStageTransformerSuite
       result
   }
 
+  protected def compareResultsAgainstVanillaSpark(
+      sql: String,
+      compareResult: Boolean = true,
+      customCheck: DataFrame => Unit,
+      noFallBack: Boolean = true,
+      cache: Boolean = false): DataFrame = {
+    compareDfResultsAgainstVanillaSpark(
+      () => spark.sql(sql),
+      compareResult,
+      customCheck,
+      noFallBack,
+      cache)
+  }
+
   /**
    * run a query with native engine as well as vanilla spark then compare the result set for
    * correctness check
    */
-  protected def compareResultsAgainstVanillaSpark(
-      sqlStr: String,
+  protected def compareDfResultsAgainstVanillaSpark(
+      dataframe: () => DataFrame,
       compareResult: Boolean = true,
       customCheck: DataFrame => Unit,
       noFallBack: Boolean = true,
       cache: Boolean = false): DataFrame = {
     var expected: Seq[Row] = null
     withSQLConf(vanillaSparkConfs(): _*) {
-      val df = spark.sql(sqlStr)
+      val df = dataframe()
       expected = df.collect()
     }
-    // By default we will fallabck complex type scan but here we should allow
+    // By default, we will fallback complex type scan but here we should allow
     // to test support of complex type
     spark.conf.set("spark.gluten.sql.complexType.scan.fallback.enabled", "false");
-    val df = spark.sql(sqlStr)
+    val df = dataframe()
     if (cache) {
       df.cache()
     }
@@ -239,7 +253,12 @@ abstract class WholeStageTransformerSuite
       noFallBack: Boolean = true,
       cache: Boolean = false)(customCheck: DataFrame => Unit): DataFrame = {
 
-    compareResultsAgainstVanillaSpark(sqlStr, compareResult, customCheck, noFallBack, cache)
+    compareDfResultsAgainstVanillaSpark(
+      () => spark.sql(sqlStr),
+      compareResult,
+      customCheck,
+      noFallBack,
+      cache)
   }
 
   /**
@@ -256,8 +275,8 @@ abstract class WholeStageTransformerSuite
       customCheck: DataFrame => Unit,
       noFallBack: Boolean = true,
       compareResult: Boolean = true): Unit =
-    compareResultsAgainstVanillaSpark(
-      tpchSQL(queryNum, tpchQueries),
+    compareDfResultsAgainstVanillaSpark(
+      () => spark.sql(tpchSQL(queryNum, tpchQueries)),
       compareResult,
       customCheck,
       noFallBack)

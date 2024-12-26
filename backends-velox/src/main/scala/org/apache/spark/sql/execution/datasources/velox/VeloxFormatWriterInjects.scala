@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.datasources.velox
 
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.ColumnarBatches
 import org.apache.gluten.datasource.{VeloxDataSourceJniWrapper, VeloxDataSourceUtil}
 import org.apache.gluten.exception.GlutenException
@@ -57,7 +58,7 @@ trait VeloxFormatWriterInjects extends GlutenFormatWriterInjectsBase {
       SparkArrowUtil.toArrowSchema(dataSchema, SQLConf.get.sessionLocalTimeZone)
     val cSchema = ArrowSchema.allocateNew(ArrowBufferAllocators.contextInstance())
     var dsHandle = -1L
-    val runtime = Runtimes.contextInstance("VeloxWriter")
+    val runtime = Runtimes.contextInstance(BackendsApiManager.getBackendName, "VeloxWriter")
     val datasourceJniWrapper = VeloxDataSourceJniWrapper.create(runtime)
     val allocator = ArrowBufferAllocators.contextInstance()
     try {
@@ -77,7 +78,7 @@ trait VeloxFormatWriterInjects extends GlutenFormatWriterInjectsBase {
         ColumnarBatches.retain(batch)
         val batchHandle = {
           ColumnarBatches.checkOffloaded(batch)
-          ColumnarBatches.getNativeHandle(batch)
+          ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName, batch)
         }
         datasourceJniWrapper.writeBatch(dsHandle, batchHandle)
         batch.close()
@@ -108,8 +109,9 @@ class VeloxRowSplitter extends GlutenRowSplitter {
       partitionColIndice: Array[Int],
       hasBucket: Boolean,
       reserve_partition_columns: Boolean = false): BlockStripes = {
-    val handler = ColumnarBatches.getNativeHandle(row.batch)
-    val runtime = Runtimes.contextInstance("VeloxPartitionWriter")
+    val handler = ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName, row.batch)
+    val runtime =
+      Runtimes.contextInstance(BackendsApiManager.getBackendName, "VeloxPartitionWriter")
     val datasourceJniWrapper = VeloxDataSourceJniWrapper.create(runtime)
     val originalColumns: Array[Int] = Array.range(0, row.batch.numCols())
     val dataColIndice = originalColumns.filterNot(partitionColIndice.contains(_))

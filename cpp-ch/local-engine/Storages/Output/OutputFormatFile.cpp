@@ -61,7 +61,6 @@ Block OutputFormatFile::createHeaderWithPreferredSchema(const Block & header)
         ColumnWithTypeAndName column(preferred_column.type->createColumn(), preferred_column.type, preferred_column.name);
         columns.emplace_back(std::move(column));
     }
-    assert(preferred_schema.columns() == index);
     return {std::move(columns)};
 }
 

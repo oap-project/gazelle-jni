@@ -43,7 +43,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 void skipErrorChars(DB::ReadBuffer & buf, bool has_quote, char quote, String & escape, const DB::FormatSettings & settings)
 {
     if (has_quote)

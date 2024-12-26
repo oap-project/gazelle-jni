@@ -38,7 +38,7 @@ The following steps demonstrate how to set up a UDF library project:
 
     - `registerUdf()`:
       This function is called to register the UDF to Velox function registry.
-      This is where users should register functions by calling `facebook::velox::exec::registerVecotorFunction` or other Velox APIs.
+      This is where users should register functions by calling `facebook::velox::exec::registerVectorFunction` or other Velox APIs.
 
     - The interface functions are mapped to marcos in [Udf.h](../../cpp/velox/udf/Udf.h).
   
@@ -215,7 +215,7 @@ pip3 install pyspark==$SPARK_VERSION cython
 pip3 install pandas pyarrow
 ```
 
-Gluten provides a config to control enable `ColumnarArrowEvalPython` or not, with `true` as defalt.
+Gluten provides a config to control enable `ColumnarArrowEvalPython` or not, with `true` as default.
 
 ```
 spark.gluten.sql.columnar.arrowUdf

@@ -24,6 +24,7 @@ import org.apache.gluten.utils.VeloxFileSystemValidationJniWrapper
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.expressions.GreaterThan
 import org.apache.spark.sql.execution.ScalarSubquery
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
 
 class VeloxScanSuite extends VeloxWholeStageTransformerSuite {
@@ -147,6 +148,42 @@ class VeloxScanSuite extends VeloxWholeStageTransformerSuite {
           runQueryAndCompare(
             """select * from t where timestamp_field = current_timestamp()""".stripMargin
           )(checkGlutenOperatorMatch[FileSourceScanExecTransformer])
+      }
+    }
+  }
+
+  test("push partial filters to offload scan when filter need fallback - v1") {
+    withSQLConf(GlutenConfig.EXPRESSION_BLACK_LIST.key -> "add") {
+      createTPCHNotNullTables()
+      val query = "select l_partkey from lineitem where l_partkey + 1 > 5 and l_partkey - 1 < 8"
+      runQueryAndCompare(query) {
+        df =>
+          {
+            val executedPlan = getExecutedPlan(df)
+            val scans = executedPlan.collect { case p: FileSourceScanExecTransformer => p }
+            assert(scans.size == 1)
+            // isnotnull(l_partkey) and l_partkey - 1 < 8
+            assert(scans.head.filterExprs().size == 2)
+          }
+      }
+    }
+  }
+
+  test("push partial filters to offload scan when filter need fallback - v2") {
+    withSQLConf(
+      GlutenConfig.EXPRESSION_BLACK_LIST.key -> "add",
+      SQLConf.USE_V1_SOURCE_LIST.key -> "") {
+      createTPCHNotNullTables()
+      val query = "select l_partkey from lineitem where l_partkey + 1 > 5 and l_partkey - 1 < 8"
+      runQueryAndCompare(query) {
+        df =>
+          {
+            val executedPlan = getExecutedPlan(df)
+            val scans = executedPlan.collect { case p: BatchScanExecTransformer => p }
+            assert(scans.size == 1)
+            // isnotnull(l_partkey) and l_partkey - 1 < 8
+            assert(scans.head.filterExprs().size == 2)
+          }
       }
     }
   }

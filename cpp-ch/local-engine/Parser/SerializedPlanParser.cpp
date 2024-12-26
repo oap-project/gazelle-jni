@@ -20,17 +20,16 @@
 #include <string>
 #include <string_view>
 #include <AggregateFunctions/AggregateFunctionFactory.h>
+#include <Columns/ColumnConst.h>
 #include <Core/Block.h>
 #include <Core/ColumnWithTypeAndName.h>
 #include <Core/Names.h>
 #include <Core/NamesAndTypes.h>
 #include <Core/Settings.h>
 #include <DataTypes/DataTypeAggregateFunction.h>
-#include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypesDecimal.h>
 #include <DataTypes/IDataType.h>
 #include <Functions/FunctionFactory.h>
-#include <Interpreters/ActionsDAG.h>
 #include <Interpreters/Context.h>
 #include <Interpreters/ProcessList.h>
 #include <Interpreters/QueryPriorities.h>
@@ -160,15 +159,17 @@ void SerializedPlanParser::adjustOutput(const DB::QueryPlanPtr & query_plan, con
             else
             {
                 need_final_project = true;
-                bool need_const = origin_column.column && isColumnConst(*origin_column.column);
-                if (need_const)
+                if (origin_column.column && isColumnConst(*origin_column.column))
                 {
+                    /// For const column, we need to cast it individually. Otherwise, the const column will be converted to full column in
+                    /// ActionsDAG::makeConvertingActions.
+                    /// Note: creating fianl_column with Field of origin_column will cause Exception in some case.
                     const DB::ContextPtr context = DB::CurrentThread::get().getQueryContext();
                     const FunctionOverloadResolverPtr & cast_resolver = FunctionFactory::instance().get("CAST", context);
                     const DataTypePtr string_type = std::make_shared<DataTypeString>();
                     ColumnWithTypeAndName to_type_column = {string_type->createColumnConst(1, final_type->getName()), string_type, "__cast_const__"};
                     FunctionBasePtr cast_function = cast_resolver->build({origin_column, to_type_column});
-                    ColumnPtr const_col = ColumnConst::create(cast_function->execute({origin_column, to_type_column}, final_type, 1), 1);
+                    ColumnPtr const_col = ColumnConst::create(cast_function->execute({origin_column, to_type_column}, final_type, 1, false), 1);
                     ColumnWithTypeAndName final_column(const_col, final_type, origin_column.name);
                     final_columns.emplace_back(std::move(final_column));
                 }
@@ -310,7 +311,7 @@ DB::QueryPipelineBuilderPtr SerializedPlanParser::buildQueryPipeline(DB::QueryPl
     BuildQueryPipelineSettings build_settings = BuildQueryPipelineSettings::fromContext(context);
     build_settings.process_list_element = query_status;
     build_settings.progress_callback = nullptr;
-    return query_plan.buildQueryPipeline(optimization_settings,build_settings);
+    return query_plan.buildQueryPipeline(optimization_settings, build_settings);
 }
 
 std::unique_ptr<LocalExecutor> SerializedPlanParser::createExecutor(const std::string_view plan)

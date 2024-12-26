@@ -50,15 +50,15 @@ public:
     std::vector<DB::QueryPlanPtr> extraPlans() override { return std::move(extra_plan_holder); }
 
 private:
-    ContextPtr context;
-    std::vector<QueryPlanPtr> extra_plan_holder;
+    DB::ContextPtr context;
+    std::vector<DB::QueryPlanPtr> extra_plan_holder;
 
 
     DB::QueryPlanPtr parseJoin(const substrait::JoinRel & join, DB::QueryPlanPtr left, DB::QueryPlanPtr right);
     void renamePlanColumns(DB::QueryPlan & left, DB::QueryPlan & right, const StorageJoinFromReadBuffer & storage_join);
-    void addConvertStep(TableJoin & table_join, DB::QueryPlan & left, DB::QueryPlan & right);
+    void addConvertStep(DB::TableJoin & table_join, DB::QueryPlan & left, DB::QueryPlan & right);
     void collectJoinKeys(
-        TableJoin & table_join, const substrait::JoinRel & join_rel, const DB::Block & left_header, const DB::Block & right_header);
+        DB::TableJoin & table_join, const substrait::JoinRel & join_rel, const DB::Block & left_header, const DB::Block & right_header);
 
     bool applyJoinFilter(
         DB::TableJoin & table_join,

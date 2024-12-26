@@ -21,6 +21,7 @@
 #include "velox/common/base/tests/GTestUtils.h"
 
 namespace gluten {
+
 using namespace facebook::velox;
 
 class MockAllocationListener : public gluten::AllocationListener {
@@ -273,7 +274,8 @@ void MockSparkTaskMemoryManager::release(uint64_t bytes) {
 
 class MockMemoryReclaimer : public facebook::velox::memory::MemoryReclaimer {
  public:
-  explicit MockMemoryReclaimer(std::vector<void*>& buffs, int32_t size) : buffs_(buffs), size_(size) {}
+  explicit MockMemoryReclaimer(std::vector<void*>& buffs, int32_t size)
+      : facebook::velox::memory::MemoryReclaimer(0), buffs_(buffs), size_(size) {}
 
   bool reclaimableBytes(const memory::MemoryPool& pool, uint64_t& reclaimableBytes) const override {
     uint64_t total = 0;
@@ -398,4 +400,5 @@ TEST_F(MultiMemoryManagerTest, spill) {
 
   ASSERT_EQ(tmm.currentBytes(), 0);
 }
+
 } // namespace gluten

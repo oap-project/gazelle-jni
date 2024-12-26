@@ -18,7 +18,6 @@ package org.apache.gluten.extension.columnar.offload
 
 import org.apache.gluten.GlutenConfig
 import org.apache.gluten.backendsapi.BackendsApiManager
-import org.apache.gluten.exception.GlutenNotSupportException
 import org.apache.gluten.execution._
 import org.apache.gluten.extension.columnar.FallbackTags
 import org.apache.gluten.logging.LogLevelUtil
@@ -178,7 +177,7 @@ object OffloadJoin {
 // Other transformations.
 case class OffloadOthers() extends OffloadSingleNode with LogLevelUtil {
   import OffloadOthers._
-  private val replace = new ReplaceSingleNode()
+  private val replace = new ReplaceSingleNode
 
   override def offload(plan: SparkPlan): SparkPlan = replace.doReplace(plan)
 }
@@ -190,7 +189,7 @@ object OffloadOthers {
   // Do not look up on children on the input node in this rule. Otherwise
   // it may break RAS which would group all the possible input nodes to
   // search for validate candidates.
-  private class ReplaceSingleNode() extends LogLevelUtil with Logging {
+  private class ReplaceSingleNode extends LogLevelUtil with Logging {
 
     def doReplace(p: SparkPlan): SparkPlan = {
       val plan = p
@@ -199,11 +198,15 @@ object OffloadOthers {
       }
       plan match {
         case plan: BatchScanExec =>
-          applyScanTransformer(plan)
+          logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
+          ScanTransformerFactory.createBatchScanTransformer(plan)
         case plan: FileSourceScanExec =>
-          applyScanTransformer(plan)
+          logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
+          ScanTransformerFactory.createFileSourceScanTransformer(plan)
         case plan if HiveTableScanExecTransformer.isHiveTableScan(plan) =>
-          applyScanTransformer(plan)
+          // TODO: Add DynamicPartitionPruningHiveScanSuite.scala
+          logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
+          HiveTableScanExecTransformer(plan)
         case plan: CoalesceExec =>
           logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
           ColumnarCoalesceExec(plan.numPartitions, plan.child)
@@ -309,7 +312,10 @@ object OffloadOthers {
           val child = plan.child
           // For ArrowEvalPythonExec, CH supports it through EvalPythonExecTransformer while
           // Velox backend uses ColumnarArrowEvalPythonExec.
-          if (!BackendsApiManager.getSettings.supportColumnarArrowUdf()) {
+          if (
+            !BackendsApiManager.getSettings.supportColumnarArrowUdf() ||
+            !GlutenConfig.getConf.enableColumnarArrowUDF
+          ) {
             EvalPythonExecTransformer(plan.udfs, plan.resultAttrs, child)
           } else {
             BackendsApiManager.getSparkPlanExecApiInstance.createColumnarArrowEvalPythonExec(
@@ -332,41 +338,6 @@ object OffloadOthers {
           p
         case other => other
       }
-    }
-
-    /**
-     * Apply scan transformer for file source and batch source,
-     *   1. create new filter and scan transformer, 2. validate, tag new scan as unsupported if
-     *      failed, 3. return new source.
-     */
-    private def applyScanTransformer(plan: SparkPlan): SparkPlan = plan match {
-      case plan: FileSourceScanExec =>
-        val transformer = ScanTransformerFactory.createFileSourceScanTransformer(plan)
-        val validationResult = transformer.doValidate()
-        if (validationResult.ok()) {
-          logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
-          transformer
-        } else {
-          logDebug(s"Columnar Processing for ${plan.getClass} is currently unsupported.")
-          FallbackTags.add(plan, validationResult.reason())
-          plan
-        }
-      case plan: BatchScanExec =>
-        ScanTransformerFactory.createBatchScanTransformer(plan)
-      case plan if HiveTableScanExecTransformer.isHiveTableScan(plan) =>
-        // TODO: Add DynamicPartitionPruningHiveScanSuite.scala
-        val hiveTableScanExecTransformer =
-          BackendsApiManager.getSparkPlanExecApiInstance.genHiveTableScanExecTransformer(plan)
-        val validateResult = hiveTableScanExecTransformer.doValidate()
-        if (validateResult.ok()) {
-          logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
-          return hiveTableScanExecTransformer
-        }
-        logDebug(s"Columnar Processing for ${plan.getClass} is currently unsupported.")
-        FallbackTags.add(plan, validateResult.reason())
-        plan
-      case other =>
-        throw new GlutenNotSupportException(s"${other.getClass.toString} is not supported.")
     }
   }
 }

@@ -19,9 +19,10 @@ package org.apache.gluten.backendsapi.clickhouse
 import org.apache.spark.sql.internal.SQLConf
 
 object RuntimeConfig {
-  import CHConf._
+  import CHConf.runtimeConfig
   import SQLConf._
 
+  /** Clickhouse Configuration */
   val PATH =
     buildConf(runtimeConfig("path"))
       .doc(
@@ -37,9 +38,25 @@ object RuntimeConfig {
       .createWithDefault("/tmp/libch")
   // scalastyle:on line.size.limit
 
+  // scalastyle:off line.size.limit
+  val LOGGER_LEVEL =
+    buildConf(runtimeConfig("logger.level"))
+      .doc(
+        "https://clickhouse.com/docs/en/operations/server-configuration-parameters/settings#logger")
+      .stringConf
+      .createWithDefault("warning")
+  // scalastyle:on line.size.limit
+
+  /** Gluten Configuration */
   val USE_CURRENT_DIRECTORY_AS_TMP =
     buildConf(runtimeConfig("use_current_directory_as_tmp"))
       .doc("Use the current directory as the temporary directory.")
+      .booleanConf
+      .createWithDefault(false)
+
+  val DUMP_PIPELINE =
+    buildConf(runtimeConfig("dump_pipeline"))
+      .doc("Dump pipeline to file after execution")
       .booleanConf
       .createWithDefault(false)
 }

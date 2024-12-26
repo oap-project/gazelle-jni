@@ -21,7 +21,7 @@ import org.apache.gluten.ras.dp.DpZipperAlgo.Solution
 import org.apache.gluten.ras.memo.MemoState
 
 // Dynamic programming algorithm to solve problem against a single RAS group that can be
-// broken down to sub problems for sub groups.
+// broken down to sub problems for subgroups.
 trait DpGroupAlgoDef[T <: AnyRef, NodeOutput <: AnyRef, GroupOutput <: AnyRef] {
   def solveNode(node: InGroupNode[T], childrenGroupsOutput: RasGroup[T] => GroupOutput): NodeOutput
   def solveGroup(group: RasGroup[T], nodesOutput: InGroupNode[T] => NodeOutput): GroupOutput

@@ -53,7 +53,7 @@ class ObjectStore {
     ResourceHandle storeId = safeCast<ResourceHandle>(handle >> (sizeof(ResourceHandle) * 8));
     ResourceHandle resourceId = safeCast<ResourceHandle>(handle & std::numeric_limits<ResourceHandle>::max());
     auto store = stores().lookup(storeId);
-    store->release0(resourceId);
+    store->releaseInternal(resourceId);
   }
 
   template <typename T>
@@ -61,7 +61,7 @@ class ObjectStore {
     ResourceHandle storeId = safeCast<ResourceHandle>(handle >> (sizeof(ResourceHandle) * 8));
     ResourceHandle resourceId = safeCast<ResourceHandle>(handle & std::numeric_limits<ResourceHandle>::max());
     auto store = stores().lookup(storeId);
-    return store->retrieve0<T>(resourceId);
+    return store->retrieveInternal<T>(resourceId);
   }
 
   virtual ~ObjectStore();
@@ -82,7 +82,7 @@ class ObjectStore {
   }
 
   template <typename T>
-  std::shared_ptr<T> retrieve0(ResourceHandle handle) {
+  std::shared_ptr<T> retrieveInternal(ResourceHandle handle) {
     const std::lock_guard<std::mutex> lock(mtx_);
     std::shared_ptr<void> object = store_.lookup(handle);
     // Programming carefully. This will lead to ub if wrong typename T was passed in.
@@ -90,7 +90,7 @@ class ObjectStore {
     return casted;
   }
 
-  void release0(ResourceHandle handle);
+  void releaseInternal(ResourceHandle handle);
 
   ObjectStore(StoreHandle storeId) : storeId_(storeId){};
   StoreHandle storeId_;

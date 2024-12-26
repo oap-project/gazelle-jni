@@ -45,7 +45,7 @@ static void BM_CHParseDateTime64(benchmark::State & state)
     Block block = createDataBlock(30000000);
     auto executable = function->build(block.getColumnsWithTypeAndName());
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 
@@ -57,7 +57,7 @@ static void BM_SparkParseDateTime64(benchmark::State & state)
     Block block = createDataBlock(30000000);
     auto executable = function->build(block.getColumnsWithTypeAndName());
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 BENCHMARK(BM_CHParseDateTime64)->Unit(benchmark::kMillisecond)->Iterations(50);

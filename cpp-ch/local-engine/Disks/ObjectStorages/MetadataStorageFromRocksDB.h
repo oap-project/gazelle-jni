@@ -22,6 +22,7 @@
 #include <Disks/ObjectStorages/IMetadataStorage.h>
 #include <Disks/ObjectStorages/MetadataOperationsHolder.h>
 #include <rocksdb/db.h>
+#include <shared_mutex>
 
 namespace local_engine
 {

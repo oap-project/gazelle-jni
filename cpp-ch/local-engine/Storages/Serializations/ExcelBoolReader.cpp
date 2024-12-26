@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "ExcelBoolReader.h"
 #include <Columns/ColumnsNumber.h>
 #include <IO/PeekableReadBuffer.h>
 #include <IO/ReadHelpers.h>
-
-#include "ExcelBoolReader.h"
 
 namespace DB
 {

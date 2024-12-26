@@ -29,7 +29,7 @@ class VeloxParquetReadSuite extends VeloxWholeStageTransformerSuite {
 
   override protected def sparkConf: SparkConf = {
     super.sparkConf
-      .set(GlutenConfig.LOAD_QUANTUM.key, "128m")
+      .set(GlutenConfig.LOAD_QUANTUM.key, "256m")
   }
 
   testWithSpecifiedSparkVersion("read example parquet files", Some("3.5"), Some("3.5")) {

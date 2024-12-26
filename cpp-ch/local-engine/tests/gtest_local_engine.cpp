@@ -35,12 +35,12 @@
 #include <Common/GlutenConfig.h>
 
 using namespace local_engine;
-using namespace dbms;
+using namespace DB;
 
 TEST(TESTUtil, TestByteToLong)
 {
     Int64 expected = 0xf085460ccf7f0000l;
-    char * arr = new char[8];
+    char arr[8];
     arr[0] = -16;
     arr[1] = -123;
     arr[2] = 70;
@@ -67,6 +67,7 @@ TEST(ReadBufferFromFile, seekBackwards)
         WriteBufferFromFile out(tmp_file->path());
         for (size_t i = 0; i < N; ++i)
             writeIntBinary(i, out);
+        out.finalize();
     }
 
     ReadBufferFromFile in(tmp_file->path(), BUF_SIZE);

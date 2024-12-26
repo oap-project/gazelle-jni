@@ -21,6 +21,7 @@
 #include "shuffle/VeloxSortShuffleWriter.h"
 
 namespace gluten {
+
 arrow::Result<std::shared_ptr<VeloxShuffleWriter>> VeloxShuffleWriter::create(
     ShuffleWriterType type,
     uint32_t numPartitions,
@@ -43,4 +44,5 @@ arrow::Result<std::shared_ptr<VeloxShuffleWriter>> VeloxShuffleWriter::create(
       return arrow::Status::Invalid("Unsupported shuffle writer type: ", std::to_string(type));
   }
 }
+
 } // namespace gluten

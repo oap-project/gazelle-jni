@@ -30,14 +30,15 @@
 using namespace facebook::velox;
 
 namespace gluten {
-
 namespace {
+
 std::unique_ptr<ByteInputStream> toByteStream(uint8_t* data, int32_t size) {
   std::vector<ByteRange> byteRanges;
   byteRanges.push_back(ByteRange{data, size, 0});
   auto byteStream = std::make_unique<BufferInputStream>(byteRanges);
   return byteStream;
 }
+
 } // namespace
 
 VeloxColumnarBatchSerializer::VeloxColumnarBatchSerializer(
@@ -89,4 +90,5 @@ std::shared_ptr<ColumnarBatch> VeloxColumnarBatchSerializer::deserialize(uint8_t
   serde_->deserialize(byteStream.get(), veloxPool_.get(), rowType_, &result, &options_);
   return std::make_shared<VeloxColumnarBatch>(result);
 }
+
 } // namespace gluten

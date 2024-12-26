@@ -16,6 +16,7 @@
  */
 package org.apache.gluten.metrics;
 
+import org.apache.gluten.backendsapi.BackendsApiManager;
 import org.apache.gluten.runtime.Runtime;
 import org.apache.gluten.runtime.RuntimeAware;
 import org.apache.gluten.runtime.Runtimes;
@@ -29,7 +30,8 @@ public class IteratorMetricsJniWrapper implements RuntimeAware {
   }
 
   public static IteratorMetricsJniWrapper create() {
-    final Runtime runtime = Runtimes.contextInstance("IteratorMetrics");
+    final Runtime runtime =
+        Runtimes.contextInstance(BackendsApiManager.getBackendName(), "IteratorMetrics");
     return new IteratorMetricsJniWrapper(runtime);
   }
 

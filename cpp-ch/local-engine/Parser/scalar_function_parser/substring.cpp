@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <DataTypes/IDataType.h>
-#include <Parser/FunctionParser.h>
-
 #include <Core/Field.h>
+#include <DataTypes/DataTypesNumber.h>
+#include <Parser/FunctionParser.h>
 
 namespace DB
 {
@@ -38,13 +37,13 @@ public:
     static constexpr auto name = "substring";
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
     const substrait::Expression_ScalarFunction & substrait_func,
-    ActionsDAG & actions_dag) const override
+    DB::ActionsDAG & actions_dag) const override
     {
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 3)
-            throw Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires two or three arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires two or three arguments", getName());
 
         /*
             parse substring(str, index, length) as

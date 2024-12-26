@@ -17,6 +17,7 @@
 package org.apache.gluten.vectorized
 
 import org.apache.gluten.GlutenConfig
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.iterator.ClosableIterator
 import org.apache.gluten.memory.arrow.alloc.ArrowBufferAllocators
 import org.apache.gluten.runtime.Runtimes
@@ -99,7 +100,7 @@ private class ColumnarBatchSerializerInstance(
       GlutenConfig.getConf.columnarShuffleCodecBackend.orNull
     val batchSize = GlutenConfig.getConf.maxBatchSize
     val bufferSize = GlutenConfig.getConf.columnarShuffleReaderBufferSize
-    val runtime = Runtimes.contextInstance("ShuffleReader")
+    val runtime = Runtimes.contextInstance(BackendsApiManager.getBackendName, "ShuffleReader")
     val jniWrapper = ShuffleReaderJniWrapper.create(runtime)
     val shuffleReaderHandle = jniWrapper.make(
       cSchema.memoryAddress(),
@@ -135,7 +136,8 @@ private class ColumnarBatchSerializerInstance(
     extends DeserializationStream
     with TaskResource {
     private val byteIn: JniByteInputStream = JniByteInputStreams.create(in)
-    private val runtime = Runtimes.contextInstance("ShuffleReader")
+    private val runtime =
+      Runtimes.contextInstance(BackendsApiManager.getBackendName, "ShuffleReader")
     private val wrappedOut: ClosableIterator = new ColumnarBatchOutIterator(
       runtime,
       ShuffleReaderJniWrapper

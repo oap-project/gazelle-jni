@@ -29,5 +29,5 @@ val dbgenDir = "/PATH/TO/TPCDS_DBGEN" // location of dbgen
 Currently, Gluten with Velox can support Parquet file format and three compression codec including snappy, gzip, zstd.
 
 ## Test Queries
-We provide the test queries in [TPC-DS Queries](../../../gluten-core/src/test/resources/tpcds-queries).
+We provide the test queries in [TPC-DS Queries](../../../tools/gluten-it/common/src/main/resources/tpcds-queries).
 We also provide a Scala script in [Run TPC-DS](./run_tpcds) directory about how to run TPC-DS queries.

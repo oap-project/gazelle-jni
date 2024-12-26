@@ -17,7 +17,6 @@
 package org.apache.gluten.init;
 
 import org.apache.gluten.GlutenConfig;
-import org.apache.gluten.backend.Backend;
 import org.apache.gluten.utils.ConfigUtil;
 
 import org.apache.spark.util.SparkShutdownManagerUtil;
@@ -25,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import scala.runtime.BoxedUnit;
@@ -32,7 +32,18 @@ import scala.runtime.BoxedUnit;
 // Initialize native backend before calling any native methods from Java side.
 public final class NativeBackendInitializer {
   private static final Logger LOG = LoggerFactory.getLogger(NativeBackendInitializer.class);
-  private static final AtomicBoolean initialized = new AtomicBoolean(false);
+  private static final Map<String, NativeBackendInitializer> instances = new ConcurrentHashMap<>();
+
+  private final AtomicBoolean initialized = new AtomicBoolean(false);
+  private final String backendName;
+
+  private NativeBackendInitializer(String backendName) {
+    this.backendName = backendName;
+  }
+
+  public static NativeBackendInitializer forBackend(String backendName) {
+    return instances.computeIfAbsent(backendName, k -> new NativeBackendInitializer(backendName));
+  }
 
   // Spark DriverPlugin/ExecutorPlugin will only invoke NativeBackendInitializer#initializeBackend
   // method once in its init method.
@@ -41,7 +52,7 @@ public final class NativeBackendInitializer {
   // In local mode, NativeBackendInitializer#initializeBackend will be invoked twice in same
   // thread, driver first then executor, initialized flag ensure only invoke initializeBackend once,
   // so there are no race condition here.
-  public static void initializeBackend(scala.collection.Map<String, String> conf) {
+  public void initialize(scala.collection.Map<String, String> conf) {
     if (!initialized.compareAndSet(false, true)) {
       // Already called.
       return;
@@ -54,10 +65,9 @@ public final class NativeBackendInitializer {
         });
   }
 
-  private static void initialize0(scala.collection.Map<String, String> conf) {
+  private void initialize0(scala.collection.Map<String, String> conf) {
     try {
-      Map<String, String> nativeConfMap =
-          GlutenConfig.getNativeBackendConf(Backend.get().name(), conf);
+      Map<String, String> nativeConfMap = GlutenConfig.getNativeBackendConf(backendName, conf);
       initialize(ConfigUtil.serialize(nativeConfMap));
     } catch (Exception e) {
       LOG.error("Failed to call native backend's initialize method", e);
@@ -65,9 +75,7 @@ public final class NativeBackendInitializer {
     }
   }
 
-  private static native void initialize(byte[] configPlan);
+  private native void initialize(byte[] configPlan);
 
-  private static native void shutdown();
-
-  private NativeBackendInitializer() {}
+  private native void shutdown();
 }

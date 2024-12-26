@@ -46,7 +46,7 @@ import org.apache.spark.sql.vectorized.ColumnarBatch
 import org.apache.spark.util.SerializableConfiguration
 
 import com.google.common.collect.Lists
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.viewfs.ViewFileSystemUtils
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -198,7 +198,6 @@ case class WholeStageTransformer(child: SparkPlan, materializeInput: Boolean = f
     val transformStageId: Int
 ) extends WholeStageTransformerGenerateTreeStringShim
   with UnaryTransformSupport {
-  assert(child.isInstanceOf[TransformSupport])
 
   def stageId: Int = transformStageId
 
@@ -353,6 +352,7 @@ case class WholeStageTransformer(child: SparkPlan, materializeInput: Boolean = f
   }
 
   override def doExecuteColumnar(): RDD[ColumnarBatch] = {
+    assert(child.isInstanceOf[TransformSupport])
     val pipelineTime: SQLMetric = longMetric("pipelineTime")
     // We should do transform first to make sure all subqueries are materialized
     val wsCtx = GlutenTimeMetric.withMillisTime {
@@ -373,26 +373,20 @@ case class WholeStageTransformer(child: SparkPlan, materializeInput: Boolean = f
        * care of SCAN there won't be any other RDD for SCAN. As a result, genFirstStageIterator
        * rather than genFinalStageIterator will be invoked
        */
-      val allScanPartitions = basicScanExecTransformers.map(_.getPartitions)
+      val allScanPartitions = basicScanExecTransformers.map(_.getPartitions.toIndexedSeq)
       val allScanSplitInfos =
         getSplitInfosFromPartitions(basicScanExecTransformers, allScanPartitions)
       if (GlutenConfig.getConf.enableHdfsViewfs) {
+        val viewfsToHdfsCache: mutable.Map[String, String] = mutable.Map.empty
         allScanSplitInfos.foreach {
           splitInfos =>
             splitInfos.foreach {
               case splitInfo: LocalFilesNode =>
-                val paths = splitInfo.getPaths.asScala
-                if (paths.nonEmpty && paths.head.startsWith("viewfs")) {
-                  // Convert the viewfs path into hdfs
-                  val newPaths = paths.map {
-                    viewfsPath =>
-                      val viewPath = new Path(viewfsPath)
-                      val viewFileSystem =
-                        FileSystem.get(viewPath.toUri, serializableHadoopConf.value)
-                      viewFileSystem.resolvePath(viewPath).toString
-                  }
-                  splitInfo.setPaths(newPaths.asJava)
-                }
+                val newPaths = ViewFileSystemUtils.convertViewfsToHdfs(
+                  splitInfo.getPaths.asScala.toSeq,
+                  viewfsToHdfsCache,
+                  serializableHadoopConf.value)
+                splitInfo.setPaths(newPaths.asJava)
             }
         }
       }

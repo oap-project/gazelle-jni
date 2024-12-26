@@ -16,6 +16,7 @@
  */
 #include <Core/Field.h>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <Parser/FunctionParser.h>
 #include <Common/CHUtil.h>
 
@@ -41,9 +42,9 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /*
             parse elt(index, e1, e2, e3, ...) as
@@ -58,10 +59,10 @@ public:
         */
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() < 2)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires at least two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires at least two arguments", getName());
 
         const auto * index_arg = parsed_args[0];
-        ActionsDAG::NodeRawConstPtrs array_args;
+        DB::ActionsDAG::NodeRawConstPtrs array_args;
         for (size_t i = 1; i < parsed_args.size(); ++i)
         {
             array_args.push_back(parsed_args[i]);
@@ -76,11 +77,11 @@ public:
         const auto * nullable_array_element_node = ActionsDAGUtil::convertNodeType(
             actions_dag, array_element_node, nullable_result_type, array_element_node->result_name);
 
-        const auto * null_const_node = addColumnToActionsDAG(actions_dag, nullable_result_type, Field());
+        const auto * null_const_node = addColumnToActionsDAG(actions_dag, nullable_result_type, DB::Field());
         const auto * is_null_node = toFunctionNode(actions_dag, "isNull", {index_arg});
 
-        const auto * zero_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 0);
-        const auto * len_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), array_args.size());
+        const auto * zero_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 0);
+        const auto * len_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), array_args.size());
         const auto * less_or_equal_node = toFunctionNode(actions_dag, "lessOrEquals", {index_arg, zero_const_node});
         const auto * greater_node = toFunctionNode(actions_dag, "greater", {index_arg, len_const_node});
         const auto * or_condition_node = toFunctionNode(actions_dag, "or", {is_null_node, less_or_equal_node, greater_node});

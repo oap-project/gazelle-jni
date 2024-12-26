@@ -33,6 +33,7 @@ static const char* kDate = "date";
 static const char* kVarChar = "varchar";
 
 namespace hivestringstring {
+
 template <typename T>
 struct HiveStringStringFunction {
   VELOX_DEFINE_FUNCTION_TYPES(T);
@@ -67,6 +68,7 @@ class HiveStringStringRegisterer final : public gluten::UdfRegisterer {
   const std::string name_ = "org.apache.spark.sql.hive.execution.UDFStringString";
   const char* arg_[2] = {kVarChar, kVarChar};
 };
+
 } // namespace hivestringstring
 
 std::vector<std::shared_ptr<gluten::UdfRegisterer>>& globalRegisters() {

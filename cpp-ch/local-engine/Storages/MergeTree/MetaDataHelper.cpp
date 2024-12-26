@@ -69,19 +69,21 @@ std::unordered_map<String, String> extractPartMetaData(ReadBuffer & in)
 
 enum SupportedMetaDataStorageType
 {
-    UNKNOWN =0,
+    UNKNOWN = 0,
     ROCKSDB,
     LOCAL
 };
 
 template <SupportedMetaDataStorageType type>
-static void restoreMetaData(const SparkStorageMergeTreePtr & storage, const MergeTreeTableInstance & mergeTreeTable, const Context & context)
+static void
+restoreMetaData(const SparkStorageMergeTreePtr & storage, const MergeTreeTableInstance & mergeTreeTable, const Context & context)
 {
     UNREACHABLE();
 }
 
 template <>
-void restoreMetaData<ROCKSDB>(const SparkStorageMergeTreePtr & storage, const MergeTreeTableInstance & mergeTreeTable, const Context & context)
+void restoreMetaData<ROCKSDB>(
+    const SparkStorageMergeTreePtr & storage, const MergeTreeTableInstance & mergeTreeTable, const Context & context)
 {
     auto data_disk = storage->getStoragePolicy()->getAnyDisk();
     std::unordered_set<String> not_exists_part;
@@ -109,23 +111,23 @@ void restoreMetaData<ROCKSDB>(const SparkStorageMergeTreePtr & storage, const Me
 
         for (const auto & part : not_exists_part)
         {
-                auto part_path = table_path / part;
-                auto metadata_file_path = part_path / METADATA_FILE_NAME;
+            auto part_path = table_path / part;
+            auto metadata_file_path = part_path / METADATA_FILE_NAME;
 
-                if (metadata_storage->existsDirectory(part_path))
-                    return;
-                else
-                    transaction->createDirectoryRecursive(part_path);
-                auto key = s3->generateObjectKeyForPath(metadata_file_path.generic_string(), std::nullopt);
-                StoredObject metadata_object(key.serialize());
-                auto read_settings = ReadSettings{};
-                read_settings.enable_filesystem_cache = false;
-                auto part_metadata = extractPartMetaData(*s3->readObject(metadata_object, read_settings));
-                for (const auto & item : part_metadata)
-                {
-                    auto item_path = part_path / item.first;
-                    transaction->writeStringToFile(item_path, item.second);
-                }
+            if (metadata_storage->existsDirectory(part_path))
+                return;
+            else
+                transaction->createDirectoryRecursive(part_path);
+            auto key = s3->generateObjectKeyForPath(metadata_file_path.generic_string(), std::nullopt);
+            StoredObject metadata_object(key.serialize());
+            auto read_settings = ReadSettings{};
+            read_settings.enable_filesystem_cache = false;
+            auto part_metadata = extractPartMetaData(*s3->readObject(metadata_object, read_settings));
+            for (const auto & item : part_metadata)
+            {
+                auto item_path = part_path / item.first;
+                transaction->writeStringToFile(item_path, item.second);
+            }
         }
         transaction->commit();
     }
@@ -190,6 +192,7 @@ void restoreMetaData<LOCAL>(
                     auto item_path = part_path / item.first;
                     auto out = metadata_disk->writeFile(item_path);
                     out->write(item.second.data(), item.second.size());
+                    out->finalize();
                 }
             };
             thread_pool.scheduleOrThrow(job);
@@ -211,25 +214,16 @@ void restoreMetaData(const SparkStorageMergeTreePtr & storage, const MergeTreeTa
         return;
     auto metadata_storage = data_disk->getMetadataStorage();
     if (metadata_storage->getType() == MetadataStorageType::Local)
-    {
         restoreMetaData<LOCAL>(storage, mergeTreeTable, context);
-    }
     // None is RocksDB
     else if (metadata_storage->getType() == MetadataStorageType::None)
-    {
         restoreMetaData<ROCKSDB>(storage, mergeTreeTable, context);
-    }
     else
-    {
         throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Unsupported metadata storage type {}.", metadata_storage->getType());
-    }
 }
 
 void saveFileStatus(
-    const DB::MergeTreeData & storage,
-    const DB::ContextPtr& context,
-    const String & part_name,
-    IDataPartStorage & data_part_storage)
+    const DB::MergeTreeData & storage, const DB::ContextPtr & context, const String & part_name, IDataPartStorage & data_part_storage)
 {
     const DiskPtr disk = storage.getStoragePolicy()->getAnyDisk();
     if (!disk->isRemote())
@@ -251,11 +245,11 @@ void saveFileStatus(
 }
 
 
-std::vector<MergeTreeDataPartPtr> mergeParts(
+MergeTreeDataPartPtr mergeParts(
     std::vector<DB::DataPartPtr> selected_parts,
     const String & new_part_uuid,
     SparkStorageMergeTree & storage,
-    const String  & partition_dir,
+    const String & partition_dir,
     const String & bucket_dir)
 {
     auto future_part = std::make_shared<DB::FutureMergedMutatedPart>();
@@ -263,41 +257,30 @@ std::vector<MergeTreeDataPartPtr> mergeParts(
 
     future_part->assign(std::move(selected_parts));
     future_part->part_info = MergeListElement::FAKE_RESULT_PART_FOR_PROJECTION;
+
+    //TODO: name
     future_part->name = partition_dir.empty() ? "" : partition_dir + "/";
-
-    if(!bucket_dir.empty())
-    {
+    if (!bucket_dir.empty())
         future_part->name = future_part->name + bucket_dir + "/";
-    }
-    future_part->name = future_part->name +  new_part_uuid + "-merged";
+    future_part->name = future_part->name + new_part_uuid + "-merged";
 
-    auto entry = std::make_shared<DB::MergeMutateSelectedEntry>(future_part, DB::CurrentlyMergingPartsTaggerPtr{}, std::make_shared<DB::MutationCommands>());
+    auto entry = std::make_shared<DB::MergeMutateSelectedEntry>(
+        future_part, DB::CurrentlyMergingPartsTaggerPtr{}, std::make_shared<DB::MutationCommands>());
 
     // Copying a vector of columns `deduplicate by columns.
     DB::IExecutableTask::TaskResultCallback f = [](bool) {};
-    auto task = std::make_shared<local_engine::MergeSparkMergeTreeTask>(
-        storage, storage.getInMemoryMetadataPtr(), false,  std::vector<std::string>{}, false, entry,
-        DB::TableLockHolder{}, f);
+    const auto task = std::make_shared<MergeSparkMergeTreeTask>(
+        storage, storage.getInMemoryMetadataPtr(), false, std::vector<std::string>{}, false, entry, DB::TableLockHolder{}, f);
 
     task->setCurrentTransaction(DB::MergeTreeTransactionHolder{}, DB::MergeTreeTransactionPtr{});
 
-    executeHere(task);
-
-    std::unordered_set<std::string> to_load{future_part->name};
-    std::vector<MergeTreeDataPartPtr> merged = storage.loadDataPartsWithNames(to_load);
-    return merged;
-}
-
-/** TODO: Remove it.
- * Extract partition values from partition directory, we implement it in the java */
-void extractPartitionValues(const String & partition_dir, std::unordered_map<String, String> & partition_values)
-{
-    Poco::StringTokenizer partitions(partition_dir, "/");
-    for (const auto & partition : partitions)
+    while (task->executeStep())
     {
-        Poco::StringTokenizer key_value(partition, "=");
-        chassert(key_value.count() == 2);
-        partition_values.emplace(key_value[0], key_value[1]);
     }
+
+    std::vector<MergeTreeDataPartPtr> merged = storage.loadDataPartsWithNames({future_part->name});
+    assert(merged.size() == 1);
+    return merged[0];
 }
+
 }

@@ -97,6 +97,10 @@ TEST(TestJoin, simple)
     for (const auto & column : join->columnsFromJoinedTable())
         join->addJoinedColumn(column);
 
+    auto columns_from_left_table = left_plan.getCurrentHeader().getNamesAndTypesList();
+    for (auto & column_from_joined_table : columns_from_left_table)
+        join->setUsedColumn(column_from_joined_table, JoinTableSide::Left);
+
     auto left_keys = left.getNamesAndTypesList();
     join->addJoinedColumnsAndCorrectTypes(left_keys, true);
     std::cerr << "after join:\n";
@@ -123,7 +127,7 @@ TEST(TestJoin, simple)
     auto hash_join = std::make_shared<HashJoin>(join, right_plan.getCurrentHeader());
 
     QueryPlanStepPtr join_step
-        = std::make_unique<JoinStep>(left_plan.getCurrentHeader(), right_plan.getCurrentHeader(), hash_join, 8192, 8192, 1, false);
+        = std::make_unique<JoinStep>(left_plan.getCurrentHeader(), right_plan.getCurrentHeader(), hash_join, 8192, 8192, 1,  NameSet{}, false, false);
 
     std::cerr << "join step:" << join_step->getOutputHeader().dumpStructure() << std::endl;
 

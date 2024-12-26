@@ -17,6 +17,7 @@
 package org.apache.gluten.execution.hive
 
 import org.apache.gluten.GlutenConfig
+import org.apache.gluten.backendsapi.clickhouse.RuntimeConfig
 import org.apache.gluten.execution.GlutenClickHouseWholeStageTransformerSuite
 import org.apache.gluten.test.AllDataTypesWithComplexType.genTestData
 import org.apache.gluten.utils.UTSystemParameters
@@ -37,8 +38,6 @@ class GlutenClickHouseNativeWriteTableSuite
   with NativeWriteChecker {
 
   override protected def sparkConf: SparkConf = {
-    import org.apache.gluten.backendsapi.clickhouse.CHConf._
-
     var sessionTimeZone = "GMT"
     if (isSparkVersionGE("3.5")) {
       sessionTimeZone = java.util.TimeZone.getDefault.getID
@@ -67,7 +66,7 @@ class GlutenClickHouseNativeWriteTableSuite
       .set("spark.sql.storeAssignmentPolicy", "legacy")
       .set("spark.sql.warehouse.dir", getWarehouseDir)
       .set("spark.sql.session.timeZone", sessionTimeZone)
-      .setCHConfig("logger.level", "error")
+      .set(RuntimeConfig.LOGGER_LEVEL.key, "error")
       .setMaster("local[1]")
   }
 
@@ -553,7 +552,7 @@ class GlutenClickHouseNativeWriteTableSuite
           // spark write does not support bucketed table
           // https://issues.apache.org/jira/browse/SPARK-19256
           val table_name = table_name_template.format(format)
-          writeAndCheckRead(origin_table, table_name, fields_.keys.toSeq, isSparkVersionLE("3.3")) {
+          writeAndCheckRead(origin_table, table_name, fields_.keys.toSeq) {
             fields =>
               spark
                 .table("origin_table")
@@ -589,8 +588,9 @@ class GlutenClickHouseNativeWriteTableSuite
       ("byte_field", "byte"),
       ("boolean_field", "boolean"),
       ("decimal_field", "decimal(23,12)"),
-      ("date_field", "date"),
-      ("timestamp_field", "timestamp")
+      ("date_field", "date")
+      // ("timestamp_field", "timestamp")
+      // FIXME https://github.com/apache/incubator-gluten/issues/8053
     )
     val origin_table = "origin_table"
     withSource(genTestData(), origin_table) {
@@ -598,7 +598,7 @@ class GlutenClickHouseNativeWriteTableSuite
         format =>
           val table_name = table_name_template.format(format)
           val testFields = fields.keys.toSeq
-          writeAndCheckRead(origin_table, table_name, testFields, isSparkVersionLE("3.3")) {
+          writeAndCheckRead(origin_table, table_name, testFields) {
             fields =>
               spark
                 .table(origin_table)
@@ -658,7 +658,7 @@ class GlutenClickHouseNativeWriteTableSuite
       nativeWrite {
         format =>
           val table_name = table_name_template.format(format)
-          writeAndCheckRead(origin_table, table_name, fields.keys.toSeq, isSparkVersionLE("3.3")) {
+          writeAndCheckRead(origin_table, table_name, fields.keys.toSeq) {
             fields =>
               spark
                 .table("origin_table")
@@ -762,7 +762,7 @@ class GlutenClickHouseNativeWriteTableSuite
       format =>
         val table_name = table_name_template.format(format)
         spark.sql(s"drop table IF EXISTS $table_name")
-        withNativeWriteCheck(checkNative = isSparkVersionLE("3.3")) {
+        withNativeWriteCheck(checkNative = true) {
           spark
             .range(10000000)
             .selectExpr("id", "cast('2020-01-01' as date) as p")
@@ -798,7 +798,7 @@ class GlutenClickHouseNativeWriteTableSuite
       format =>
         val table_name = table_name_template.format(format)
         spark.sql(s"drop table IF EXISTS $table_name")
-        withNativeWriteCheck(checkNative = isSparkVersionLE("3.3")) {
+        withNativeWriteCheck(checkNative = true) {
           spark
             .range(30000)
             .selectExpr("id", "cast(null as string) as p")
@@ -903,7 +903,7 @@ class GlutenClickHouseNativeWriteTableSuite
   }
 
   test("GLUTEN-2584: fix native write and read mismatch about complex types") {
-    def table(format: String): String = s"t_$format"
+    def table(format: String): String = s"t_2584_$format"
     def create(format: String, table_name: Option[String] = None): String =
       s"""CREATE TABLE ${table_name.getOrElse(table(format))}(
          |  id INT,
@@ -933,5 +933,64 @@ class GlutenClickHouseNativeWriteTableSuite
         checkAnswer(dfFromWriteTable, rowsFromOriginTable)
       }
     )
+  }
+
+  test(
+    "GLUTEN-8021/8022/8032: fix orc read/write mismatch and parquet" +
+      "read exception when written complex column contains null") {
+    def table(format: String): String = s"t_8021_$format"
+    def create(format: String, table_name: Option[String] = None): String =
+      s"""CREATE TABLE ${table_name.getOrElse(table(format))}(
+         |id int,
+         |x int,
+         |y int,
+         |mp map<string, string>,
+         |arr array<int>,
+         |tup struct<x:int, y:int>,
+         |arr_mp array<map<string, string>>,
+         |mp_arr map<string, array<int>>,
+         |tup_arr struct<a: array<int>>,
+         |tup_map struct<m: map<string, string>>
+         |) stored as $format""".stripMargin
+    def insert(format: String, table_name: Option[String] = None): String =
+      s"""INSERT OVERWRITE TABLE ${table_name.getOrElse(table(format))}
+         |SELECT
+         |  id, x, y,
+         |  str_to_map(concat('x:', x, ',y:', y)) AS mp,
+         |  IF(id % 4 = 0, NULL, array(x, y)) AS arr,
+         |  IF(id % 4 = 1, NULL, struct(x, y)) AS tup,
+         |  IF(id % 4 = 2, NULL, array(str_to_map(concat('x:', x, ',y:', y)))) AS arr_mp,
+         |  IF(id % 4 = 3, NULL, map('x', array(x), 'y', array(y))) AS mp_arr,
+         |  IF(id % 4 = 0, NULL, named_struct('a', array(x, y))) AS tup_arr,
+         |  IF(id % 4 = 1, NULL, named_struct('m',
+         |  str_to_map(concat('x:', x, ',y:', y)))) AS tup_map
+         |FROM (
+         |  SELECT
+         |    id,
+         |    IF(id % 3 = 1, NULL, id + 1) AS x,
+         |    IF(id % 3 = 1, NULL, id + 2) AS y
+         |  FROM range(100)
+         |) AS data_source;""".stripMargin
+
+    // TODO fix it in spark3.5
+    if (!isSparkVersionGE("3.5")) {
+      nativeWrite2(
+        format => (table(format), create(format), insert(format)),
+        (table_name, format) => {
+          val vanilla_table = s"${table_name}_v"
+          val vanilla_create = create(format, Some(vanilla_table))
+          vanillaWrite {
+            withDestinationTable(vanilla_table, Option(vanilla_create)) {
+              checkInsertQuery(insert(format, Some(vanilla_table)), checkNative = false)
+            }
+          }
+          val rowsFromOriginTable =
+            spark.sql(s"select * from $vanilla_table").collect()
+          val dfFromWriteTable =
+            spark.sql(s"select * from $table_name")
+          checkAnswer(dfFromWriteTable, rowsFromOriginTable)
+        }
+      )
+    }
   }
 }

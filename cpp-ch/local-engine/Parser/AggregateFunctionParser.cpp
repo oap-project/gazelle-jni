@@ -18,6 +18,7 @@
 #include <AggregateFunctions/AggregateFunctionFactory.h>
 #include <DataTypes/DataTypeAggregateFunction.h>
 #include <DataTypes/DataTypeTuple.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <Functions/FunctionHelpers.h>
 #include <Parser/ExpressionParser.h>
 #include <Parser/RelParsers/RelParser.h>
@@ -37,6 +38,7 @@ extern const int UNKNOWN_FUNCTION;
 
 namespace local_engine
 {
+using namespace DB;
 AggregateFunctionParser::AggregateFunctionParser(ParserContextPtr parser_context_) : parser_context(parser_context_)
 {
     expression_parser = std::make_unique<ExpressionParser>(parser_context);
@@ -76,7 +78,7 @@ const DB::ActionsDAG::Node * AggregateFunctionParser::parseExpression(DB::Action
 
 std::pair<DataTypePtr, Field> AggregateFunctionParser::parseLiteral(const substrait::Expression_Literal & literal) const
 {
-    return LiteralParser().parse(literal);
+    return LiteralParser::parse(literal);
 }
 
 DB::ActionsDAG::NodeRawConstPtrs
@@ -195,6 +197,8 @@ const DB::ActionsDAG::Node * AggregateFunctionParser::convertNodeTypeIfNeeded(
         actions_dag.addOrReplaceInOutputs(*func_node);
     }
 
+    func_node = convertNanToNullIfNeed(func_info, func_node, actions_dag);
+
     if (output_type.has_decimal())
     {
         String checkDecimalOverflowSparkOrNull = "checkDecimalOverflowSparkOrNull";
@@ -206,6 +210,25 @@ const DB::ActionsDAG::Node * AggregateFunctionParser::convertNodeTypeIfNeeded(
         actions_dag.addOrReplaceInOutputs(*func_node);
     }
 
+    return func_node;
+}
+
+const DB::ActionsDAG::Node * AggregateFunctionParser::convertNanToNullIfNeed(
+    const CommonFunctionInfo & func_info, const DB::ActionsDAG::Node * func_node, DB::ActionsDAG & actions_dag) const
+{
+    if (getCHFunctionName(func_info) != "corr" || !func_node->result_type->isNullable())
+        return func_node;
+
+    /// result is nullable.
+    /// if result is NaN, convert it to NULL.
+    auto is_nan_func_node = toFunctionNode(actions_dag, "isNaN", getUniqueName("isNaN"), {func_node});
+    auto nullable_col = func_node->result_type->createColumn();
+    nullable_col->insertDefault();
+    const auto * null_node
+        = &actions_dag.addColumn(DB::ColumnWithTypeAndName(std::move(nullable_col), func_node->result_type, getUniqueName("null")));
+    DB::ActionsDAG::NodeRawConstPtrs convert_nan_func_args = {is_nan_func_node, null_node, func_node};
+    func_node = toFunctionNode(actions_dag, "if", func_node->result_name, convert_nan_func_args);
+    actions_dag.addOrReplaceInOutputs(*func_node);
     return func_node;
 }
 

@@ -123,7 +123,7 @@ object Pattern {
   def ignore[T <: AnyRef]: Node[T] = Ignore.INSTANCE.asInstanceOf[Node[T]]
   def node[T <: AnyRef](matcher: Matcher[T]): Node[T] = Single(matcher)
   def branch[T <: AnyRef](matcher: Matcher[T], children: Node[T]*): Node[T] =
-    Branch(matcher, Branch.ChildrenFactory.Plain(children.toSeq))
+    Branch(matcher, Branch.ChildrenFactory.Plain(children))
   // Similar to #branch, but with unknown arity.
   def branch2[T <: AnyRef](
       matcher: Matcher[T],

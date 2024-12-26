@@ -35,7 +35,6 @@ using namespace arrow;
 using namespace arrow::ipc;
 
 namespace gluten {
-
 namespace {
 
 facebook::velox::RowVectorPtr takeRows(
@@ -728,4 +727,5 @@ INSTANTIATE_TEST_SUITE_P(
     VeloxShuffleWriteParam,
     RangePartitioningShuffleWriter,
     ::testing::ValuesIn(kShuffleWriteTestParams));
+
 } // namespace gluten

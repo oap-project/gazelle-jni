@@ -26,7 +26,7 @@ EXTRA_MAVEN_OPTIONS="-Pspark-3.2 \
                      -Dcheckstyle.skip=true"
 
 cd /opt/gluten
-bash dev/builddeps-veloxbe.sh --build_type=Debug --enable_ep_cache=ON
+bash dev/builddeps-veloxbe.sh --build_type=Debug
 mvn clean install $EXTRA_MAVEN_OPTIONS
 
 apt-get -y -q --no-install-recommends install firefox tmux openjdk-8-source

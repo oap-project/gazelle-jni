@@ -61,7 +61,7 @@ public:
             auto nested_type = typeid_cast<const DB::DataTypeNullable *>(func_node->result_type.get())->getNestedType();
             DB::Field empty_field = nested_type->getDefault();
             const auto * default_value_node = &actions_dag.addColumn(
-                ColumnWithTypeAndName(nested_type->createColumnConst(1, empty_field), nested_type, getUniqueName("[]")));
+                DB::ColumnWithTypeAndName(nested_type->createColumnConst(1, empty_field), nested_type, getUniqueName("[]")));
             args.push_back(default_value_node);
             const auto * if_null_node = toFunctionNode(actions_dag, "ifNull", func_node->result_name, args);
             actions_dag.addOrReplaceInOutputs(*if_null_node);

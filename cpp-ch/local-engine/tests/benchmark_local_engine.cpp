@@ -846,7 +846,7 @@ QueryPlanPtr joinPlan(QueryPlanPtr left, QueryPlanPtr right, String left_key, St
     auto hash_join = std::make_shared<HashJoin>(join, right->getCurrentHeader());
 
     QueryPlanStepPtr join_step
-        = std::make_unique<JoinStep>(left->getCurrentHeader(), right->getCurrentHeader(), hash_join, block_size, 1, false);
+        = std::make_unique<JoinStep>(left->getCurrentHeader(), right->getCurrentHeader(), hash_join, block_size, 8192, 1,  NameSet{}, false, false);
 
     std::vector<QueryPlanPtr> plans;
     plans.emplace_back(std::move(left));

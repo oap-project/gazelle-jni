@@ -181,13 +181,6 @@
   <build>
     <outputDirectory>target/scala-${scala.binary.version}/classes</outputDirectory>
     <testOutputDirectory>target/scala-${scala.binary.version}/test-classes</testOutputDirectory>
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <!-- Include the properties file to provide the build information. -->
-        <directory>${project.build.directory}/extra-resources</directory>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -205,7 +198,7 @@
                   <arg value="${project.basedir}/../dev/gluten-build-info.sh"/>
                   <arg value="${backend.type}"/>
                   <arg value="${backend.home}"/>
-                  <arg value="${project.build.directory}/extra-resources"/>
+                  <arg value="${project.build.directory}/generated-resources"/>
                   <arg value="${project.version}"/>
                   <arg value="${java.version}"/>
                   <arg value="${scala.version}"/>

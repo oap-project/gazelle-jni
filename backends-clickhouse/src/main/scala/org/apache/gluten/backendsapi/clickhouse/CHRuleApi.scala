@@ -26,8 +26,7 @@ import org.apache.gluten.extension.columnar.heuristic.{ExpandFallbackPolicy, Heu
 import org.apache.gluten.extension.columnar.offload.{OffloadExchange, OffloadJoin, OffloadOthers}
 import org.apache.gluten.extension.columnar.rewrite._
 import org.apache.gluten.extension.columnar.transition.{InsertTransitions, RemoveTransitions}
-import org.apache.gluten.extension.columnar.validator.Validator
-import org.apache.gluten.extension.columnar.validator.Validators.ValidatorBuilderImplicits
+import org.apache.gluten.extension.columnar.validator.{Validator, Validators}
 import org.apache.gluten.extension.injector.{Injector, SparkInjector}
 import org.apache.gluten.extension.injector.GlutenInjector.{LegacyInjector, RasInjector}
 import org.apache.gluten.parser.{GlutenCacheFilesSqlParser, GlutenClickhouseSqlParser}
@@ -79,29 +78,21 @@ object CHRuleApi {
     injector.injectPreTransform(_ => RewriteSubqueryBroadcast())
     injector.injectPreTransform(c => FallbackBroadcastHashJoin.apply(c.session))
     injector.injectPreTransform(c => MergeTwoPhasesHashBaseAggregate.apply(c.session))
+    injector.injectPreTransform(_ => WriteFilesWithBucketValue)
 
     // Legacy: The legacy transform rule.
+    val offloads = Seq(OffloadOthers(), OffloadExchange(), OffloadJoin())
     val validatorBuilder: GlutenConfig => Validator = conf =>
-      Validator
-        .builder()
-        .fallbackByHint()
-        .fallbackIfScanOnlyWithFilterPushed(conf.enableScanOnly)
-        .fallbackComplexExpressions()
-        .fallbackByBackendSettings()
-        .fallbackByUserOptions()
-        .fallbackByTestInjects()
-        .fallbackByNativeValidation()
-        .build()
+      Validators.newValidator(conf, offloads)
     val rewrites =
       Seq(RewriteIn, RewriteMultiChildrenCount, RewriteJoin, PullOutPreProject, PullOutPostProject)
-    val offloads = Seq(OffloadOthers(), OffloadExchange(), OffloadJoin())
     injector.injectTransform(
-      c => intercept(HeuristicTransform.Single(validatorBuilder(c.glutenConf), rewrites, offloads)))
+      c =>
+        intercept(
+          HeuristicTransform.WithRewrites(validatorBuilder(c.glutenConf), rewrites, offloads)))
 
     // Legacy: Post-transform rules.
     injector.injectPostTransform(_ => PruneNestedColumnsInHiveTableScan)
-    injector.injectPostTransform(_ => RemoveNativeWriteFilesSortAndProject())
-    injector.injectPostTransform(c => intercept(RewriteTransformer.apply(c.session)))
     injector.injectPostTransform(_ => PushDownFilterToScan)
     injector.injectPostTransform(_ => PushDownInputFileExpression.PostOffload)
     injector.injectPostTransform(_ => EnsureLocalSortRequirements)
@@ -117,6 +108,8 @@ object CHRuleApi {
           SparkPlanRules.extendedColumnarRule(c.glutenConf.extendedColumnarTransformRules)(
             c.session)))
     injector.injectPostTransform(c => InsertTransitions.create(c.outputsColumnar, CHBatch))
+    injector.injectPostTransform(c => RemoveDuplicatedColumns.apply(c.session))
+    injector.injectPostTransform(c => AddPreProjectionForHashJoin.apply(c.session))
 
     // Gluten columnar: Fallback policies.
     injector.injectFallbackPolicy(

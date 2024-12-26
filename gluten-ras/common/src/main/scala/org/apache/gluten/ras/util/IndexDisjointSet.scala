@@ -79,7 +79,7 @@ object IndexDisjointSet {
       nodeBuffer.size
     }
 
-    private def checkBound(ele: Int) = {
+    private def checkBound(ele: Int): Unit = {
       assert(ele < nodeBuffer.size, "Grow the disjoint set first")
     }
   }

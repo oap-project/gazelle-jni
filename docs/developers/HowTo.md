@@ -134,16 +134,16 @@ to let it override the corresponding C standard functions entirely. It may help 
 Now, both Parquet and DWRF format files are supported, related scripts and files are under the directory of `${GLUTEN_HOME}/backends-velox/workload/tpch`.
 The file `README.md` under `${GLUTEN_HOME}/backends-velox/workload/tpch` offers some useful help, but it's still not enough and exact.
 
-One way of run TPC-H test is to run velox-be by workflow, you can refer to [velox_be.yml](https://github.com/apache/incubator-gluten/blob/main/.github/workflows/velox_be.yml#L90)
+One way of run TPC-H test is to run velox-be by workflow, you can refer to [velox_backend.yml](https://github.com/apache/incubator-gluten/blob/main/.github/workflows/velox_backend.yml#L280)
 
 Here we will explain how to run TPC-H on Velox backend with the Parquet file format.
 1. First, prepare the datasets, you have two choices.
-  - One way, generate Parquet datasets using the script under `${GLUTEN_HOME}/backends-velox/workload/tpch/gen_data/parquet_dataset`, you can get help from the above
+  - One way, generate Parquet datasets using the script under `${GLUTEN_HOME}/tools/workload/tpch/gen_data/parquet_dataset`, you can get help from the above
     -mentioned `README.md`.
   - The other way, using the small dataset under `${GLUTEN_HOME}/backends-velox/src/test/resources/tpch-data-parquet` directly, if you just want to make simple
     TPC-H testing, this dataset is a good choice.
 2. Second, run TPC-H on Velox backend testing.
-  - Modify `${GLUTEN_HOME}/backends-velox/workload/tpch/run_tpch/tpch_parquet.scala`.
+  - Modify `${GLUTEN_HOME}/tools/workload/tpch/run_tpch/tpch_parquet.scala`.
     - Set `var parquet_file_path` to correct directory. If using the small dataset directly in the step one, then modify it as below:
 
     ```scala
@@ -156,12 +156,12 @@ Here we will explain how to run TPC-H on Velox backend with the Parquet file for
     var gluten_root = "/home/gluten"
     ```
 
-  - Modify `${GLUTEN_HOME}/backends-velox/workload/tpch/run_tpch/tpch_parquet.sh`.
+  - Modify `${GLUTEN_HOME}/tools/workload/tpch/run_tpch/tpch_parquet.sh`.
     - Set `GLUTEN_JAR` correctly. Please refer to the section of [Build Gluten with Velox Backend](../get-started/Velox.md/#2-build-gluten-with-velox-backend)
     - Set `SPARK_HOME` correctly.
     - Set the memory configurations appropriately.
   - Execute `tpch_parquet.sh` using the below command.
-    - `cd ${GLUTEN_HOME}/backends-velox/workload/tpch/run_tpch/`
+    - `cd ${GLUTEN_HOME}/tools/workload/tpch/run_tpch/`
     - `./tpch_parquet.sh`
 
 # How to run TPC-DS

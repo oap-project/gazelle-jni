@@ -52,7 +52,7 @@ static void BM_CHCastFloatToInt(benchmark::State & state)
     args.emplace_back(type_name_col);
     auto executable = function->build(args);
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 static void BM_SparkCastFloatToInt(benchmark::State & state)
@@ -63,7 +63,7 @@ static void BM_SparkCastFloatToInt(benchmark::State & state)
     Block block = createDataBlock(30000000);
     auto executable = function->build(block.getColumnsWithTypeAndName());
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 BENCHMARK(BM_CHCastFloatToInt)->Unit(benchmark::kMillisecond)->Iterations(100);

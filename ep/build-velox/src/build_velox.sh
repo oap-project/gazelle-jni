@@ -26,7 +26,6 @@ ENABLE_HDFS=OFF
 ENABLE_ABFS=OFF
 BUILD_TYPE=release
 VELOX_HOME=""
-ENABLE_EP_CACHE=OFF
 # May be deprecated in Gluten build.
 ENABLE_BENCHMARK=OFF
 # May be deprecated in Gluten build.
@@ -63,10 +62,6 @@ for arg in "$@"; do
     ;;
   --build_type=*)
     BUILD_TYPE=("${arg#*=}")
-    shift # Remove argument name from processing
-    ;;
-  --enable_ep_cache=*)
-    ENABLE_EP_CACHE=("${arg#*=}")
     shift # Remove argument name from processing
     ;;
   --build_test_utils=*)
@@ -158,45 +153,12 @@ function compile {
     if [ -d gtest-build ]; then
       echo "INSTALL gtest."
       if [ $OS == 'Linux' ]; then
-        sudo cmake --install gtest-build/
+        cd gtest-src; cmake . ; sudo make install -j
+        #sudo cmake --install gtest-build/
       elif [ $OS == 'Darwin' ]; then
         sudo cmake --install gtest-build/
       fi
     fi
-  fi
-}
-
-function get_build_summary {
-  COMMIT_HASH=$1
-  # Ideally all script arguments should be put into build summary.
-  # ENABLE_EP_CACHE is excluded. Thus, in current build with ENABLE_EP_CACHE=ON, we can use EP cache
-  # from last build with ENABLE_EP_CACHE=OFF,
-  echo "ENABLE_S3=$ENABLE_S3,ENABLE_GCS=$ENABLE_GCS,ENABLE_HDFS=$ENABLE_HDFS,ENABLE_ABFS=$ENABLE_ABFS,\
-BUILD_TYPE=$BUILD_TYPE,VELOX_HOME=$VELOX_HOME,ENABLE_BENCHMARK=$ENABLE_BENCHMARK,\
-ENABLE_TESTS=$ENABLE_TESTS,BUILD_TEST_UTILS=$BUILD_TEST_UTILS,\
-OTHER_ARGUMENTS=$OTHER_ARGUMENTS,COMMIT_HASH=$COMMIT_HASH"
-}
-
-function check_commit {
-  if [ $ENABLE_EP_CACHE == "ON" ]; then
-    if [ -f ${VELOX_HOME}/velox-build.cache ]; then
-      CACHED_BUILD_SUMMARY="$(cat ${VELOX_HOME}/velox-build.cache)"
-      if [ -n "$CACHED_BUILD_SUMMARY" ]; then
-        if [ "$TARGET_BUILD_SUMMARY" = "$CACHED_BUILD_SUMMARY" ]; then
-          echo "Velox build $TARGET_BUILD_SUMMARY was cached."
-          exit 0
-        else
-          echo "Found cached build $CACHED_BUILD_SUMMARY for Velox which is different with target build $TARGET_BUILD_SUMMARY."
-        fi
-      fi
-    fi
-  else
-    # Branch-new build requires all untracked files to be deleted. We only need the source code.
-    sudo git clean -dffx :/
-  fi
-
-  if [ -f ${VELOX_HOME}/velox-build.cache ]; then
-    rm -f ${VELOX_HOME}/velox-build.cache
   fi
 }
 
@@ -219,15 +181,8 @@ echo "ENABLE_ABFS=${ENABLE_ABFS}"
 echo "BUILD_TYPE=${BUILD_TYPE}"
 
 cd ${VELOX_HOME}
-TARGET_BUILD_SUMMARY=$(get_build_summary "$(git rev-parse --verify HEAD)")
-if [ -z "$TARGET_BUILD_SUMMARY" ]; then
-  echo "Unable to parse Velox build: $TARGET_BUILD_SUMMARY."
-  exit 1
-fi
-echo "Target Velox build: $TARGET_BUILD_SUMMARY"
-
-check_commit
+# Branch-new build requires all untracked files to be deleted. We only need the source code.
+sudo git clean -dffx :/
 compile
 
 echo "Successfully built Velox from Source."
-echo $TARGET_BUILD_SUMMARY > "${VELOX_HOME}/velox-build.cache"

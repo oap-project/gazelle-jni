@@ -19,13 +19,12 @@
 #include <Core/Block.h>
 #include <Core/SortDescription.h>
 #include <DataTypes/DataTypeFactory.h>
-#include <DataTypes/Serializations/ISerialization.h>
+#include <Interpreters/ActionsDAG.h>
 #include <Interpreters/Aggregator.h>
 #include <Parser/CHColumnToSparkRow.h>
 #include <Parser/RelMetric.h>
 #include <Processors/QueryPlan/ISourceStep.h>
 #include <Processors/QueryPlan/QueryPlan.h>
-#include <Storages/MergeTree/SparkStorageMergeTree.h>
 #include <Storages/SourceFromJavaIter.h>
 #include <base/types.h>
 #include <substrait/plan.pb.h>
@@ -33,7 +32,7 @@
 namespace local_engine
 {
 
-std::string join(const ActionsDAG::NodeRawConstPtrs & v, char c);
+std::string join(const DB::ActionsDAG::NodeRawConstPtrs & v, char c);
 
 class SerializedPlanParser;
 class LocalExecutor;
@@ -98,8 +97,8 @@ public:
     int nextSplitInfoIndex()
     {
         if (split_info_index >= split_infos.size())
-            throw Exception(
-                ErrorCodes::LOGICAL_ERROR,
+            throw DB::Exception(
+                DB::ErrorCodes::LOGICAL_ERROR,
                 "split info index out of range, split_info_index: {}, split_infos.size(): {}",
                 split_info_index,
                 split_infos.size());
@@ -114,7 +113,7 @@ public:
 
     RelMetricPtr getMetric() { return metrics.empty() ? nullptr : metrics.at(0); }
 
-    std::vector<QueryPlanPtr> extra_plan_holder;
+    std::vector<DB::QueryPlanPtr> extra_plan_holder;
 
 private:
     DB::QueryPlanPtr parseOp(const substrait::Rel & rel, std::list<const substrait::Rel *> & rel_stack);
@@ -124,7 +123,7 @@ private:
     std::vector<std::string> split_infos;
     int split_info_index = 0;
     std::vector<bool> materialize_inputs;
-    ContextPtr context;
+    DB::ContextPtr context;
     std::shared_ptr<const ParserContext> parser_context;
     std::vector<RelMetricPtr> metrics;
 };

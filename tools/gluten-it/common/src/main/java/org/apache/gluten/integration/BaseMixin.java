@@ -22,6 +22,7 @@ import org.apache.gluten.integration.command.SparkRunModes;
 import org.apache.gluten.integration.ds.TpcdsSuite;
 import org.apache.gluten.integration.h.TpchSuite;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.spark.SparkConf;
 import picocli.CommandLine;
 import scala.Predef;
@@ -119,6 +120,8 @@ public class BaseMixin {
       default:
         throw new IllegalArgumentException("Log level not found: " + logLevel);
     }
+
+    LogManager.getRootLogger().setLevel(level);
 
     scala.collection.immutable.Map<String, String> extraSparkConfScala =
         JavaConverters.mapAsScalaMapConverter(

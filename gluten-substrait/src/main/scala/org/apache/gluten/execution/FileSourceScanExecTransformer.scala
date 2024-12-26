@@ -17,6 +17,7 @@
 package org.apache.gluten.execution
 
 import org.apache.gluten.backendsapi.BackendsApiManager
+import org.apache.gluten.expression.ExpressionConverter
 import org.apache.gluten.extension.ValidationResult
 import org.apache.gluten.metrics.MetricsUpdater
 import org.apache.gluten.sql.shims.SparkShimLoader
@@ -26,12 +27,15 @@ import org.apache.gluten.utils.FileIndexUtil
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, PlanExpression}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
+import org.apache.spark.sql.catalyst.util.truncatedString
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.execution.FileSourceScanExecShim
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.collection.BitSet
+
+import org.apache.commons.lang3.StringUtils
 
 case class FileSourceScanExecTransformer(
     @transient override val relation: HadoopFsRelation,
@@ -99,7 +103,12 @@ abstract class FileSourceScanExecTransformerBase(
       .genFileSourceScanTransformerMetrics(sparkContext)
       .filter(m => !driverMetricsAlias.contains(m._1)) ++ driverMetricsAlias
 
-  override def filterExprs(): Seq[Expression] = dataFiltersInScan
+  override def filterExprs(): Seq[Expression] = dataFiltersInScan.filter {
+    expr =>
+      ExpressionConverter.canReplaceWithExpressionTransformer(
+        ExpressionConverter.replaceAttributeReference(expr),
+        output)
+  }
 
   override def getMetadataColumns(): Seq[AttributeReference] = metadataColumns
 
@@ -181,15 +190,19 @@ abstract class FileSourceScanExecTransformerBase(
   }
 
   @transient override lazy val fileFormat: ReadFileFormat =
-    relation.fileFormat.getClass.getSimpleName match {
-      case "OrcFileFormat" => ReadFileFormat.OrcReadFormat
-      case "ParquetFileFormat" => ReadFileFormat.ParquetReadFormat
-      case "DeltaParquetFileFormat" => ReadFileFormat.ParquetReadFormat
-      case "DwrfFileFormat" => ReadFileFormat.DwrfReadFormat
-      case "DeltaMergeTreeFileFormat" => ReadFileFormat.MergeTreeReadFormat
-      case "CSVFileFormat" => ReadFileFormat.TextReadFormat
-      case _ => ReadFileFormat.UnknownFormat
+    BackendsApiManager.getSettings.getSubstraitReadFileFormatV1(relation.fileFormat)
+
+  override def simpleString(maxFields: Int): String = {
+    val metadataEntries = metadata.toSeq.sorted.map {
+      case (key, value) =>
+        key + ": " + StringUtils.abbreviate(redact(value), maxMetadataValueLength)
     }
+    val metadataStr = truncatedString(metadataEntries, " ", ", ", "", maxFields)
+    val nativeFiltersString = s"NativeFilters: ${filterExprs().mkString("[", ",", "]")}"
+    redact(
+      s"$nodeNamePrefix$nodeName${truncatedString(output, "[", ",", "]", maxFields)}$metadataStr" +
+        s" $nativeFiltersString")
+  }
 }
 
 object FileSourceScanExecTransformerBase {

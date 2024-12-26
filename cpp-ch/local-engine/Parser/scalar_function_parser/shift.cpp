@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <Parser/FunctionParser.h>
-#include <DataTypes/IDataType.h>
-#include <Common/CHUtil.h>
 #include <Core/Field.h>
-#include <DataTypes/DataTypeArray.h>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypesNumber.h>
+#include <DataTypes/IDataType.h>
 #include <Functions/FunctionHelpers.h>
+#include <Parser/FunctionParser.h>
+#include <Common/CHUtil.h>
 
 namespace DB
 {
@@ -42,31 +42,31 @@ public:
 
     virtual String getCHFunctionName() const = 0;
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /// parse spark shiftxxx(expr, n) as
         /// If expr has long type -> CH bitShiftxxx(expr, pmod(n, 64))
         /// Otherwise             -> CH bitShiftxxx(expr, pmod(n, 32))
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
 
 
         auto input_type = removeNullable(parsed_args[0]->result_type);
-        WhichDataType which(input_type);
-        const ActionsDAG::Node * base_node = nullptr;
+        DB::WhichDataType which(input_type);
+        const DB::ActionsDAG::Node * base_node = nullptr;
         if (which.isInt64())
         {
-            base_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 64);
+            base_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 64);
         }
         else if (which.isInt32())
         {
-            base_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 32);
+            base_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 32);
         }
         else
-            throw Exception(DB::ErrorCodes::BAD_ARGUMENTS, "First argument for function {} must be an long or integer", getName());
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "First argument for function {} must be an long or integer", getName());
 
         const auto * pmod_node = toFunctionNode(actions_dag, "pmod", {parsed_args[1], base_node});
         auto ch_function_name = getCHFunctionName();

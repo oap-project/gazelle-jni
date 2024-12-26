@@ -73,6 +73,7 @@ GraceMergingAggregateConfig GraceMergingAggregateConfig::loadFromContext(const D
         = context->getConfigRef().getUInt64(MAX_PENDING_FLUSH_BLOCKS_PER_GRACE_AGGREGATE_MERGING_BUCKET, 1_MiB);
     config.max_allowed_memory_usage_ratio_for_aggregate_merging
         = context->getConfigRef().getDouble(MAX_ALLOWED_MEMORY_USAGE_RATIO_FOR_AGGREGATE_MERGING, 0.9);
+    config.enable_spill_test = context->getConfigRef().getBool(ENABLE_SPILL_TEST, false);
     return config;
 }
 

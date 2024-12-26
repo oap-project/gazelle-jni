@@ -48,6 +48,7 @@ void registerGlutenHDFSObjectStorage(DB::ObjectStorageFactory & factory);
 void registerGlutenDisks(bool global_skip_access_check)
 {
     auto & factory = DB::DiskFactory::instance();
+    auto & object_factory = DB::ObjectStorageFactory::instance();
 
 #if USE_AWS_S3
     auto creator = [global_skip_access_check](
@@ -90,7 +91,6 @@ void registerGlutenDisks(bool global_skip_access_check)
         return disk;
     };
 
-    auto & object_factory = DB::ObjectStorageFactory::instance();
 
     registerGlutenS3ObjectStorage(object_factory);
     factory.registerDiskType("s3_gluten", creator); /// For compatibility

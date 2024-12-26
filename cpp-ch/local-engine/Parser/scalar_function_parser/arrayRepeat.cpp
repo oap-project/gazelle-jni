@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 #include <DataTypes/DataTypeArray.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <Functions/FunctionsMiscellaneous.h>
 #include <Parser/FunctionParser.h>
 #include <Common/Exception.h>
@@ -31,6 +32,7 @@ extern const int SIZES_OF_COLUMNS_DOESNT_MATCH;
 
 namespace local_engine
 {
+using namespace DB;
 class FunctionParserArrayRepeat : public FunctionParser
 {
 public:
@@ -56,7 +58,7 @@ public:
         const auto * const_zero_node = addColumnToActionsDAG(actions_dag, n_not_null_arg->result_type, {0});
         const auto * greatest_node = toFunctionNode(actions_dag, "greatest", {n_not_null_arg, const_zero_node});
         const auto * range_node = toFunctionNode(actions_dag, "range", {greatest_node});
-        const auto & range_type = assert_cast<const DataTypeArray & >(*removeNullable(range_node->result_type));
+        const auto & range_type = assert_cast<const DataTypeArray &>(*removeNullable(range_node->result_type));
 
         // Create lambda function x -> elem
         ActionsDAG lambda_actions_dag;
@@ -65,16 +67,14 @@ public:
         const auto * lambda_output = elem_in_lambda;
         lambda_actions_dag.getOutputs().push_back(lambda_output);
         lambda_actions_dag.removeUnusedActions(Names(1, lambda_output->result_name));
-
-        auto expression_actions_settings = DB::ExpressionActionsSettings::fromContext(getContext(), DB::CompileExpressions::yes);
-        auto lambda_actions = std::make_shared<DB::ExpressionActions>(std::move(lambda_actions_dag), expression_actions_settings);
-
         DB::Names captured_column_names{elem_in_lambda->result_name};
         NamesAndTypesList lambda_arguments_names_and_types;
         lambda_arguments_names_and_types.emplace_back(x_in_lambda->result_name, x_in_lambda->result_type);
-        DB::Names required_column_names = lambda_actions->getRequiredColumns();
+        DB::Names required_column_names = lambda_actions_dag.getRequiredColumnsNames();
+        auto expression_actions_settings = DB::ExpressionActionsSettings::fromContext(getContext(), DB::CompileExpressions::yes);
         auto function_capture = std::make_shared<FunctionCaptureOverloadResolver>(
-            lambda_actions,
+            std::move(lambda_actions_dag),
+            expression_actions_settings,
             captured_column_names,
             lambda_arguments_names_and_types,
             lambda_output->result_type,

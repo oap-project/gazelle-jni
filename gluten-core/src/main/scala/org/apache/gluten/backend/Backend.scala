@@ -16,60 +16,13 @@
  */
 package org.apache.gluten.backend
 
-import org.apache.gluten.extension.columnar.transition.ConventionFunc
-import org.apache.gluten.extension.injector.Injector
+import org.apache.gluten.component.Component
 
-import org.apache.spark.SparkContext
-import org.apache.spark.api.plugin.PluginContext
-
-import java.util.ServiceLoader
-
-import scala.collection.JavaConverters
-
-trait Backend {
-  import Backend._
-
-  /** Base information. */
-  def name(): String
-  def buildInfo(): BuildInfo
-
-  /** Spark listeners. */
-  def onDriverStart(sc: SparkContext, pc: PluginContext): Unit = {}
-  def onDriverShutdown(): Unit = {}
-  def onExecutorStart(pc: PluginContext): Unit = {}
-  def onExecutorShutdown(): Unit = {}
+trait Backend extends Component {
 
   /**
-   * Overrides [[org.apache.gluten.extension.columnar.transition.ConventionFunc]] Gluten is using to
-   * determine the convention (its row-based processing / columnar-batch processing support) of a
-   * plan with a user-defined function that accepts a plan then returns convention type it outputs,
-   * and input conventions it requires.
+   * Backends don't have dependencies. They are all considered root components in the component DAG
+   * and will be loaded at the beginning.
    */
-  def convFuncOverride(): ConventionFunc.Override = ConventionFunc.Override.Empty
-
-  /** Query planner rules. */
-  def injectRules(injector: Injector): Unit
-}
-
-object Backend {
-  private val backend: Backend = {
-    val discoveredBackends =
-      JavaConverters.iterableAsScalaIterable(ServiceLoader.load(classOf[Backend])).toList
-    discoveredBackends match {
-      case Nil =>
-        throw new IllegalStateException("Backend implementation not discovered from JVM classpath")
-      case head :: Nil =>
-        head
-      case backends =>
-        val backendNames = backends.map(_.name())
-        throw new IllegalStateException(
-          s"More than one Backend implementation discovered from JVM classpath: $backendNames")
-    }
-  }
-
-  def get(): Backend = {
-    backend
-  }
-
-  case class BuildInfo(name: String, branch: String, revision: String, revisionTime: String)
+  final override def dependencies(): Seq[Class[_ <: Component]] = Nil
 }

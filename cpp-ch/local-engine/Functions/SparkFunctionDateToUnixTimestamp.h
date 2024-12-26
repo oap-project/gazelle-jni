@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
+#include <Columns/ColumnVector.h>
+#include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypesNumber.h>
+#include <DataTypes/IDataType.h>
+#include <Functions/FunctionFactory.h>
 #include <Common/DateLUT.h>
 #include <Common/DateLUTImpl.h>
 #include <Common/LocalDateTime.h>
-#include <Columns/ColumnVector.h>
-#include <DataTypes/IDataType.h>
-#include <DataTypes/DataTypeNullable.h>
-#include <DataTypes/DataTypesNumber.h>
-#include <Functions/FunctionFactory.h>
 
 namespace DB
 {
@@ -32,16 +32,13 @@ namespace ErrorCodes
 }
 }
 
-using namespace DB;
-
 namespace local_eingine
 {
-
-class SparkFunctionDateToUnixTimestamp : public IFunction
+class SparkFunctionDateToUnixTimestamp : public DB::IFunction
 {
 public:
     static constexpr auto name = "sparkDateToUnixTimestamp";
-    static FunctionPtr create(ContextPtr) { return std::make_shared<SparkFunctionDateToUnixTimestamp>(); }
+    static DB::FunctionPtr create(DB::ContextPtr) { return std::make_shared<SparkFunctionDateToUnixTimestamp>(); }
     SparkFunctionDateToUnixTimestamp() {}
     ~SparkFunctionDateToUnixTimestamp() override = default;
     String getName() const override { return name; }
@@ -49,17 +46,14 @@ public:
     size_t getNumberOfArguments() const override { return 0; }
     bool isVariadic() const override { return true; }
     bool useDefaultImplementationForConstants() const override { return true; }
-    DataTypePtr getReturnTypeImpl(const ColumnsWithTypeAndName &) const override
-    {
-        return std::make_shared<DataTypeUInt32>();
-    }
+    DB::DataTypePtr getReturnTypeImpl(const DB::ColumnsWithTypeAndName &) const override { return std::make_shared<DB::DataTypeUInt32>(); }
 
-    ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DataTypePtr & result_type, size_t input_rows) const override
+    DB::ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr & result_type, size_t input_rows) const override
     {
        if (arguments.size() != 1 && arguments.size() != 2)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} argument size must be 1 or 2", name);
-        
-       ColumnWithTypeAndName first_arg = arguments[0];
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} argument size must be 1 or 2", name);
+
+        DB::ColumnWithTypeAndName first_arg = arguments[0];
        if (isDate(first_arg.type))
             return executeInternal<UInt16>(first_arg.column, input_rows);
         else
@@ -67,11 +61,11 @@ public:
     }
 
     template<typename T>
-    ColumnPtr NO_SANITIZE_UNDEFINED executeInternal(const ColumnPtr & col, size_t input_rows) const
+    DB::ColumnPtr NO_SANITIZE_UNDEFINED executeInternal(const DB::ColumnPtr & col, size_t input_rows) const
     {
-        const ColumnVector<T> * col_src = checkAndGetColumn<ColumnVector<T>>(col.get());
-        MutableColumnPtr res = ColumnVector<UInt32>::create(col->size());
-        PaddedPODArray<UInt32> & data = assert_cast<ColumnVector<UInt32> *>(res.get())->getData();
+        const DB::ColumnVector<T> * col_src = checkAndGetColumn<DB::ColumnVector<T>>(col.get());
+        DB::MutableColumnPtr res = DB::ColumnVector<UInt32>::create(col->size());
+        DB::PaddedPODArray<UInt32> & data = assert_cast<DB::ColumnVector<UInt32> *>(res.get())->getData();
         if (col->size() == 0)
             return res;
         

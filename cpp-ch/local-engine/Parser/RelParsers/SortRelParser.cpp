@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 #include "SortRelParser.h"
-
-#include <Parser/RelParsers/SortParsingUtils.h>
 #include <Parser/RelParsers/RelParser.h>
+#include <Parser/RelParsers/SortParsingUtils.h>
 #include <Processors/QueryPlan/SortingStep.h>
 #include <Common/GlutenConfig.h>
 #include <Common/QueryContext.h>
@@ -33,6 +32,7 @@ extern const int LOGICAL_ERROR;
 
 namespace local_engine
 {
+using namespace DB;
 SortRelParser::SortRelParser(ParserContextPtr parser_context_) : RelParser(parser_context_)
 {
 }

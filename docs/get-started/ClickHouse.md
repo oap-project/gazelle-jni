@@ -118,7 +118,7 @@ cd $gluten_root/cpp-ch/local-engine/docker
 `build_directory` is a directory used as to store the intermediate files from compiling. It will use `current_dir>`/build as the default value if you don't provide it.
 
 
-`output_directory` is used as to store the finaly output `libch.so`. The default value is `current_dir`/output if you don't provide it.
+`output_directory` is used as to store the finally output `libch.so`. The default value is `current_dir`/output if you don't provide it.
 
 
 3. (Option 1) Use CLion

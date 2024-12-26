@@ -29,6 +29,7 @@
 using namespace facebook::velox;
 
 namespace gluten {
+
 class VeloxColumnarBatchSerializerTest : public ::testing::Test, public test::VectorTestBase {
  protected:
   static void SetUpTestCase() {

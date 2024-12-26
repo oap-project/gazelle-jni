@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 #include "MergeSparkMergeTreeTask.h"
-#include <Storages/MergeTree/SparkStorageMergeTree.h>
 
 #include <Interpreters/TransactionLog.h>
 #include <Storages/MergeTree/MergeTreeData.h>
 #include <Storages/MergeTree/MergeTreeDataMergerMutator.h>
+#include <Storages/MergeTree/SparkStorageMergeTree.h>
 #include <Common/ProfileEvents.h>
 #include <Common/ProfileEventsScope.h>
 #include <Common/ThreadFuzzer.h>
@@ -93,6 +93,12 @@ bool MergeSparkMergeTreeTask::executeStep()
     }
 }
 
+
+void MergeSparkMergeTreeTask::cancel() noexcept
+{
+    if (merge_task)
+        merge_task->cancel();
+}
 
 void MergeSparkMergeTreeTask::prepare()
 {

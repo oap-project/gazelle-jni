@@ -32,7 +32,7 @@ namespace local_engine
 class ReadBufferBuilder
 {
 public:
-    explicit ReadBufferBuilder(DB::ContextPtr context_);
+    explicit ReadBufferBuilder(const DB::ContextPtr & context_);
 
     virtual ~ReadBufferBuilder() = default;
 

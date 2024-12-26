@@ -48,13 +48,13 @@ public:
     std::vector<DB::QueryPlanPtr> extraPlans() override { return std::move(extra_plan_holder); }
 
 private:
-    ContextPtr context;
-    std::vector<QueryPlanPtr> extra_plan_holder;
+    DB::ContextPtr context;
+    std::vector<DB::QueryPlanPtr> extra_plan_holder;
 
 
     DB::QueryPlanPtr parseJoin(const substrait::CrossRel & join, DB::QueryPlanPtr left, DB::QueryPlanPtr right);
     void renamePlanColumns(DB::QueryPlan & left, DB::QueryPlan & right, const StorageJoinFromReadBuffer & storage_join);
-    void addConvertStep(TableJoin & table_join, DB::QueryPlan & left, DB::QueryPlan & right);
+    void addConvertStep(DB::TableJoin & table_join, DB::QueryPlan & left, DB::QueryPlan & right);
     void addPostFilter(DB::QueryPlan & query_plan, const substrait::CrossRel & join);
     bool applyJoinFilter(
         DB::TableJoin & table_join,

@@ -246,4 +246,93 @@ class GlutenDateFunctionsSuite extends DateFunctionsSuite with GlutenSQLTestsTra
         }
     }
   }
+
+  testGluten("function to_date") {
+    val d1 = Date.valueOf("2015-07-22")
+    val d2 = Date.valueOf("2015-07-01")
+    val d3 = Date.valueOf("2014-12-31")
+    val t1 = Timestamp.valueOf("2015-07-22 10:00:00")
+    val t2 = Timestamp.valueOf("2014-12-31 23:59:59")
+    val t3 = Timestamp.valueOf("2014-12-31 23:59:59")
+    val s1 = "2015-07-22 10:00:00"
+    val s2 = "2014-12-31"
+    val s3 = "2014-31-12"
+    val df = Seq((d1, t1, s1), (d2, t2, s2), (d3, t3, s3)).toDF("d", "t", "s")
+
+    checkAnswer(
+      df.select(to_date(col("t"))),
+      Seq(
+        Row(Date.valueOf("2015-07-22")),
+        Row(Date.valueOf("2014-12-31")),
+        Row(Date.valueOf("2014-12-31"))))
+    checkAnswer(
+      df.select(to_date(col("d"))),
+      Seq(
+        Row(Date.valueOf("2015-07-22")),
+        Row(Date.valueOf("2015-07-01")),
+        Row(Date.valueOf("2014-12-31"))))
+    checkAnswer(
+      df.select(to_date(col("s"))),
+      Seq(Row(Date.valueOf("2015-07-22")), Row(Date.valueOf("2014-12-31")), Row(null)))
+
+    checkAnswer(
+      df.selectExpr("to_date(t)"),
+      Seq(
+        Row(Date.valueOf("2015-07-22")),
+        Row(Date.valueOf("2014-12-31")),
+        Row(Date.valueOf("2014-12-31"))))
+    checkAnswer(
+      df.selectExpr("to_date(d)"),
+      Seq(
+        Row(Date.valueOf("2015-07-22")),
+        Row(Date.valueOf("2015-07-01")),
+        Row(Date.valueOf("2014-12-31"))))
+    checkAnswer(
+      df.selectExpr("to_date(s)"),
+      Seq(Row(Date.valueOf("2015-07-22")), Row(Date.valueOf("2014-12-31")), Row(null)))
+
+    // now with format
+    checkAnswer(
+      df.select(to_date(col("t"), "yyyy-MM-dd")),
+      Seq(
+        Row(Date.valueOf("2015-07-22")),
+        Row(Date.valueOf("2014-12-31")),
+        Row(Date.valueOf("2014-12-31"))))
+    checkAnswer(
+      df.select(to_date(col("d"), "yyyy-MM-dd")),
+      Seq(
+        Row(Date.valueOf("2015-07-22")),
+        Row(Date.valueOf("2015-07-01")),
+        Row(Date.valueOf("2014-12-31"))))
+    val confKey = SQLConf.LEGACY_TIME_PARSER_POLICY.key
+    withSQLConf(confKey -> "corrected") {
+      checkAnswer(
+        df.select(to_date(col("s"), "yyyy-MM-dd")),
+        Seq(Row(null), Row(Date.valueOf("2014-12-31")), Row(null)))
+    }
+    // legacyParserPolicy is not respected by Gluten.
+    // withSQLConf(confKey -> "exception") {
+    //   checkExceptionMessage(df.select(to_date(col("s"), "yyyy-MM-dd")))
+    // }
+
+    // now switch format
+    checkAnswer(
+      df.select(to_date(col("s"), "yyyy-dd-MM")),
+      Seq(Row(null), Row(null), Row(Date.valueOf("2014-12-31"))))
+
+    // invalid format
+    checkAnswer(df.select(to_date(col("s"), "yyyy-hh-MM")), Seq(Row(null), Row(null), Row(null)))
+    // velox getTimestamp function does not throw exception when format is "yyyy-dd-aa".
+    // val e =
+    //   intercept[SparkUpgradeException](df.select(to_date(col("s"), "yyyy-dd-aa")).collect())
+    // assert(e.getCause.isInstanceOf[IllegalArgumentException])
+    // assert(
+    //   e.getMessage.contains("You may get a different result due to the upgrading to Spark"))
+
+    // February
+    val x1 = "2016-02-29"
+    val x2 = "2017-02-29"
+    val df1 = Seq(x1, x2).toDF("x")
+    checkAnswer(df1.select(to_date(col("x"))), Row(Date.valueOf("2016-02-29")) :: Row(null) :: Nil)
+  }
 }

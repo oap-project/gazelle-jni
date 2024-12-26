@@ -62,7 +62,7 @@ RUN if [ "$BUILD_BACKEND_TYPE" == "velox" ]; \
       if [ "$GLUTEN_DEBUG_BUILD" == "ON" ]; then GLUTEN_BUILD_TYPE="Debug"; else GLUTEN_BUILD_TYPE="Release"; fi; \
       DEPS_INSTALL_SCRIPT="source /env.sh && bash /opt/gluten/dev/builddeps-veloxbe.sh \
                            --enable_hdfs=ON --enable_s3=ON --enable_gcs=ON --enable_abfs=ON \
-                           --build_type=$GLUTEN_BUILD_TYPE --enable_ep_cache=ON"; \
+                           --build_type=$GLUTEN_BUILD_TYPE"; \
       EXTRA_MAVEN_OPTIONS="-Pspark-3.2 \
                            -Pbackends-velox \
                            -Pceleborn \

@@ -22,7 +22,7 @@
     <scala.binary.version>2.12</scala.binary.version>
     <spark.major.version>3</spark.major.version>
     <celeborn.version>0.3.2-incubating</celeborn.version>
-    <uniffle.version>0.9.0</uniffle.version>
+    <uniffle.version>0.9.1</uniffle.version>
     <gluten.version>1.3.0-SNAPSHOT</gluten.version>
     <guava.version>32.0.1-jre</guava.version>
     <tpch.version>1.1</tpch.version>
@@ -177,7 +177,7 @@
     <profile>
       <id>celeborn-0.5</id>
       <properties>
-        <celeborn.version>0.5.1</celeborn.version>
+        <celeborn.version>0.5.2</celeborn.version>
       </properties>
     </profile>
   </profiles>

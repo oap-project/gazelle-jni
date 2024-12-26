@@ -24,6 +24,7 @@
 #include <Common/CurrentThread.h>
 #include <Common/GlutenConfig.h>
 #include <Common/ThreadStatus.h>
+#include <Common/formatReadable.h>
 #include <Common/logger_useful.h>
 
 namespace DB
@@ -133,7 +134,7 @@ String QueryContext::currentTaskIdOrEmpty()
         const int64_t id = reinterpret_cast<int64_t>(thread_group.get());
         return query_map_.get(id)->task_id;
     }
-   return "";
+    return "";
 }
 
 void QueryContext::logCurrentPerformanceCounters(ProfileEvents::Counters & counters, const String & task_id) const
@@ -170,23 +171,24 @@ void QueryContext::finalizeQuery(int64_t id)
     if (!CurrentThread::getGroup())
         throw DB::Exception(ErrorCodes::LOGICAL_ERROR, "Thread group not found.");
     std::shared_ptr<Data> context = query_map_.get(id);
+    query_map_.erase(id);
+
     auto query_context = context->thread_status->getQueryContext();
     if (!query_context)
         throw DB::Exception(ErrorCodes::LOGICAL_ERROR, "query context not found");
     context->thread_status->flushUntrackedMemory();
     context->thread_status->finalizePerformanceCounters();
-    LOG_INFO(logger_, "Task finished, peak memory usage: {} bytes", currentPeakMemory(id));
+    auto peak = context->thread_group->memory_tracker.getPeak();
+    LOG_INFO(logger_, "Task {} finished, peak memory usage: {}", context->task_id, formatReadableSizeWithBinarySuffix(peak));
 
-    if (currentThreadGroupMemoryUsage() > 2_MiB)
-        LOG_WARNING(logger_, "{} bytes memory didn't release, There may be a memory leak!", currentThreadGroupMemoryUsage());
+    auto final_usage = context->thread_group->memory_tracker.get();
+    if (final_usage > 2_MiB)
+        LOG_WARNING(logger_, "{} memory didn't release, There may be a memory leak!", formatReadableSizeWithBinarySuffix(final_usage));
     logCurrentPerformanceCounters(context->thread_group->performance_counters, context->task_id);
     context->thread_status->detachFromGroup();
     context->thread_group.reset();
     context->thread_status.reset();
     query_context.reset();
-    {
-        query_map_.erase(id);
-    }
 }
 
 size_t currentThreadGroupMemoryUsage()

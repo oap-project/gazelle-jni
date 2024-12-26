@@ -15,7 +15,7 @@ comparing with directly debugging in a Spark job. Developers can use it to creat
 workloads, debug in native process, profile the hotspot and do optimizations.
 
 To simulate a first stage, you need to dump the Substrait plan and input split info into two JSON
-files. The input URIs of the splits should be exising file locations, which can be either local or
+files. The input URIs of the splits should be existing file locations, which can be either local or
 HDFS paths.
 
 To simulate a middle stage, in addition to the JSON file, you also need to save the input data of

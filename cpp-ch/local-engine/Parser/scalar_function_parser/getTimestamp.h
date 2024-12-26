@@ -14,13 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
-#include <DataTypes/DataTypeNullable.h>
-#include <Parser/FunctionParser.h>
-#include <Core/Settings.h>
 #include <Core/Field.h>
-#include <Common/CHUtil.h>
+#include <Core/Settings.h>
+#include <DataTypes/DataTypeString.h>
+#include <DataTypes/DataTypesNumber.h>
+#include <Parser/FunctionParser.h>
 #include <boost/algorithm/string/case_conv.hpp>
+#include <Common/CHUtil.h>
 
 namespace DB
 {
@@ -44,9 +46,9 @@ public:
     static constexpr auto name = "get_timestamp";
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /*
         spark function: get_timestamp(expr, fmt)
@@ -57,7 +59,7 @@ public:
         */
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
         const auto * expr_arg = parsed_args[0];
         const auto * fmt_arg = parsed_args[1];
         
@@ -80,10 +82,10 @@ public:
         {
             if (s_count == 0)
             {
-                const auto * index_begin_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeUInt64>(), 1);
-                const auto * index_end_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeUInt64>(), fmt.size());
+                const auto * index_begin_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeUInt64>(), 1);
+                const auto * index_end_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeUInt64>(), fmt.size());
                 const auto * substr_node = toFunctionNode(actions_dag, "substringUTF8", {expr_arg, index_begin_node, index_end_node});
-                const auto * fmt_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeString>(), fmt);
+                const auto * fmt_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), fmt);
                 const auto * result_node = toFunctionNode(actions_dag, "parseDateTime64InJodaSyntaxOrNull", {substr_node, fmt_node});
                 return convertNodeTypeIfNeeded(substrait_func, result_node, actions_dag);
             }
@@ -92,7 +94,7 @@ public:
             else
                 fmt = fmt.substr(0, fmt.size() - (s_count - 3));
 
-            const auto * fmt_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeString>(), fmt);
+            const auto * fmt_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), fmt);
             const auto * result_node = toFunctionNode(actions_dag, "parseDateTime64InJodaSyntaxOrNull", {expr_arg, fmt_node});
             return convertNodeTypeIfNeeded(substrait_func, result_node, actions_dag);
         }

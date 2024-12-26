@@ -24,9 +24,7 @@
 
 namespace gluten {
 
-/**
- * arrow::MemoryPool instance with limited capacity, used by tests and benchmarks
- */
+// arrow::MemoryPool instance with limited capacity, used by tests and benchmarks.
 class LimitedMemoryPool final : public arrow::MemoryPool {
  public:
   explicit LimitedMemoryPool() : capacity_(std::numeric_limits<int64_t>::max()) {}
@@ -54,9 +52,7 @@ class LimitedMemoryPool final : public arrow::MemoryPool {
   arrow::internal::MemoryPoolStats stats_;
 };
 
-/**
- * arrow::MemoryPool instance with limited capacity and can be evictable on OOM, used by tests and benchmarks
- */
+// arrow::MemoryPool instance with limited capacity and can be evictable on OOM, used by tests and benchmarks.
 class SelfEvictedMemoryPool : public arrow::MemoryPool {
  public:
   explicit SelfEvictedMemoryPool(arrow::MemoryPool* pool, bool failIfOOM = true) : pool_(pool), failIfOOM_(failIfOOM) {}

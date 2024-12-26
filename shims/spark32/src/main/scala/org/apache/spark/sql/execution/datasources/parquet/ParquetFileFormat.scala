@@ -82,9 +82,8 @@ class ParquetFileFormat extends FileFormat with DataSourceRegister with Logging 
       job: Job,
       options: Map[String, String],
       dataSchema: StructType): OutputWriterFactory = {
-    if ("true" == sparkSession.sparkContext.getLocalProperty("isNativeApplicable")) {
-
-      // pass compression to job conf so that the file extension can be aware of it.
+    if (sparkSession.sparkContext.getLocalProperty("isNativeApplicable") == "true") {
+      // Pass compression to job conf so that the file extension can be aware of it.
       val conf = ContextUtil.getConfiguration(job)
       val parquetOptions = new ParquetOptions(options, sparkSession.sessionState.conf)
       conf.set(ParquetOutputFormat.COMPRESSION, parquetOptions.compressionCodecClassName)
@@ -103,7 +102,6 @@ class ParquetFileFormat extends FileFormat with DataSourceRegister with Logging 
             context: TaskAttemptContext): OutputWriter = {
           GlutenFormatFactory(shortName())
             .createOutputWriter(path, dataSchema, context, nativeConf)
-
         }
       }
     } else {

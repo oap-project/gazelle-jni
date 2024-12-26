@@ -27,6 +27,7 @@ import org.apache.gluten.substrait.type.TypeNode;
 
 import io.substrait.proto.CrossRel;
 import io.substrait.proto.JoinRel;
+import io.substrait.proto.SetRel;
 import io.substrait.proto.SortField;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 
@@ -316,5 +317,21 @@ public class RelBuilder {
       Long operatorId) {
     context.registerRelToOperator(operatorId);
     return new GenerateRelNode(input, generator, childOutput, extensionNode, outer);
+  }
+
+  public static RelNode makeSetRel(
+      List<RelNode> inputs, SetRel.SetOp setOp, SubstraitContext context, Long operatorId) {
+    context.registerRelToOperator(operatorId);
+    return new SetRelNode(inputs, setOp);
+  }
+
+  public static RelNode makeSetRel(
+      List<RelNode> inputs,
+      SetRel.SetOp setOp,
+      AdvancedExtensionNode extensionNode,
+      SubstraitContext context,
+      Long operatorId) {
+    context.registerRelToOperator(operatorId);
+    return new SetRelNode(inputs, setOp, extensionNode);
   }
 }

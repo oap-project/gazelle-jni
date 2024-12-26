@@ -50,7 +50,7 @@ object PushDownFilterToScan extends Rule[SparkPlan] with PredicateHelper {
           // If BatchScanExecTransformerBase's parent is filter, pushdownFilters can't be None.
           batchScan.setPushDownFilters(Seq.empty)
           val newScan = batchScan
-          if (pushDownFilters.size > 0) {
+          if (pushDownFilters.nonEmpty) {
             newScan.setPushDownFilters(pushDownFilters)
             if (newScan.doValidate().ok()) {
               filter.withNewChildren(Seq(newScan))

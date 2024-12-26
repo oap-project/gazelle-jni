@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 #include "parseUrl.h"
-#include <iterator>
-#include <Common/Exception.h>
+#include <DataTypes/DataTypeString.h>
 #include <DataTypes/IDataType.h>
-#include <unordered_map>
+#include <Common/Exception.h>
 
 namespace DB
 {
@@ -121,7 +120,7 @@ const DB::ActionsDAG::Node * ParseURLParser::convertNodeTypeIfNeeded(
     // Empty string is converted to NULL.
     auto str_type = std::make_shared<DB::DataTypeString>();
     const auto * empty_str_node
-        = &actions_dag.addColumn(ColumnWithTypeAndName(str_type->createColumnConst(1, DB::Field("")), str_type, getUniqueName("")));
+        = &actions_dag.addColumn(DB::ColumnWithTypeAndName(str_type->createColumnConst(1, DB::Field("")), str_type, getUniqueName("")));
     return toFunctionNode(actions_dag, "nullIf", {func_node, empty_str_node});
 }
 

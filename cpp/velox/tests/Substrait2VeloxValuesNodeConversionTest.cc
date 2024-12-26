@@ -32,6 +32,7 @@ using namespace facebook::velox::exec;
 using namespace facebook::velox::exec::test;
 
 namespace gluten {
+
 class Substrait2VeloxValuesNodeConversionTest : public OperatorTestBase {};
 
 // SELECT * FROM tmp
@@ -57,4 +58,5 @@ TEST_F(Substrait2VeloxValuesNodeConversionTest, valuesNode) {
   createDuckDbTable({expectedData});
   assertQuery(veloxPlan, "SELECT * FROM tmp");
 }
+
 } // namespace gluten

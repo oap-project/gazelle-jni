@@ -19,7 +19,6 @@
 #include <DataTypes/DataTypeNullable.h>
 #include <Parser/FunctionParser.h>
 
-
 namespace DB
 {
 
@@ -42,9 +41,9 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /*
             parse nanvl(e1, e2) as
@@ -57,7 +56,7 @@ public:
         */
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires at least two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires at least two arguments", getName());
 
         const auto * e1 = parsed_args[0];
         const auto * e2 = parsed_args[1];
@@ -67,7 +66,7 @@ public:
         const auto * e1_is_null_node = toFunctionNode(actions_dag, "isNull", {e1});
         const auto * e1_is_nan_node = toFunctionNode(actions_dag, "isNaN", {e1});
 
-        const auto * null_const_node = addColumnToActionsDAG(actions_dag, makeNullable(result_type), Field());
+        const auto * null_const_node = addColumnToActionsDAG(actions_dag, makeNullable(result_type), DB::Field());
         const auto * result_node = toFunctionNode(actions_dag, "multiIf", {
             e1_is_null_node,
             null_const_node,

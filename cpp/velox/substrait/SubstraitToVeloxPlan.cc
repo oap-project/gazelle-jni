@@ -56,7 +56,7 @@ struct EmitInfo {
 };
 
 /// Helper function to extract the attributes required to create a ProjectNode
-/// used for interpretting Substrait Emit.
+/// used for interpreting Substrait Emit.
 EmitInfo getEmitInfo(const ::substrait::RelCommon& relCommon, const core::PlanNodePtr& node) {
   const auto& emit = relCommon.emit();
   int emitSize = emit.output_mapping_size();
@@ -138,13 +138,6 @@ RowTypePtr getJoinOutputType(
     }
   }
   VELOX_FAIL("Output should include left or right columns.");
-}
-
-// Returns the path vector used to create Subfield.
-std::vector<std::unique_ptr<common::Subfield::PathElement>> getPath(const std::string& field) {
-  std::vector<std::unique_ptr<common::Subfield::PathElement>> path;
-  path.push_back(std::make_unique<common::Subfield::NestedField>(field));
-  return path;
 }
 
 } // namespace
@@ -1030,7 +1023,11 @@ core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(
     // Handle if all sorting keys are also used as partition keys.
 
     return std::make_shared<core::RowNumberNode>(
-        nextPlanNodeId(), partitionKeys, rowNumberColumnName, (int32_t)windowGroupLimitRel.limit(), childNode);
+        nextPlanNodeId(),
+        partitionKeys,
+        rowNumberColumnName,
+        static_cast<int32_t>(windowGroupLimitRel.limit()),
+        childNode);
   }
 
   return std::make_shared<core::TopNRowNumberNode>(
@@ -1039,8 +1036,53 @@ core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(
       sortingKeys,
       sortingOrders,
       rowNumberColumnName,
-      (int32_t)windowGroupLimitRel.limit(),
+      static_cast<int32_t>(windowGroupLimitRel.limit()),
       childNode);
+}
+
+core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::SetRel& setRel) {
+  switch (setRel.op()) {
+    case ::substrait::SetRel_SetOp::SetRel_SetOp_SET_OP_UNION_ALL: {
+      std::vector<core::PlanNodePtr> children;
+      for (int32_t i = 0; i < setRel.inputs_size(); ++i) {
+        const auto& input = setRel.inputs(i);
+        children.push_back(toVeloxPlan(input));
+      }
+      GLUTEN_CHECK(!children.empty(), "At least one source is required for Velox LocalPartition");
+
+      // Velox doesn't allow different field names in schemas of LocalPartitionNode's children.
+      // Add project nodes to unify the schemas.
+      const RowTypePtr outRowType = asRowType(children[0]->outputType());
+      std::vector<std::string> outNames;
+      for (int32_t colIdx = 0; colIdx < outRowType->size(); ++colIdx) {
+        const auto name = outRowType->childAt(colIdx)->name();
+        outNames.push_back(name);
+      }
+
+      std::vector<core::PlanNodePtr> projectedChildren;
+      for (int32_t i = 0; i < children.size(); ++i) {
+        const auto& child = children[i];
+        const RowTypePtr& childRowType = child->outputType();
+        std::vector<core::TypedExprPtr> expressions;
+        for (int32_t colIdx = 0; colIdx < outNames.size(); ++colIdx) {
+          const auto fa =
+              std::make_shared<core::FieldAccessTypedExpr>(childRowType->childAt(colIdx), childRowType->nameOf(colIdx));
+          const auto cast = std::make_shared<core::CastTypedExpr>(outRowType->childAt(colIdx), fa, false);
+          expressions.push_back(cast);
+        }
+        auto project = std::make_shared<core::ProjectNode>(nextPlanNodeId(), outNames, expressions, child);
+        projectedChildren.push_back(project);
+      }
+      return std::make_shared<core::LocalPartitionNode>(
+          nextPlanNodeId(),
+          core::LocalPartitionNode::Type::kGather,
+          false,
+          std::make_shared<core::GatherPartitionFunctionSpec>(),
+          projectedChildren);
+    }
+    default:
+      throw GlutenException("Unsupported SetRel op: " + std::to_string(setRel.op()));
+  }
 }
 
 core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::SortRel& sortRel) {
@@ -1085,14 +1127,18 @@ core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::
 core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::FetchRel& fetchRel) {
   auto childNode = convertSingleInput<::substrait::FetchRel>(fetchRel);
   return std::make_shared<core::LimitNode>(
-      nextPlanNodeId(), (int32_t)fetchRel.offset(), (int32_t)fetchRel.count(), false /*isPartial*/, childNode);
+      nextPlanNodeId(),
+      static_cast<int32_t>(fetchRel.offset()),
+      static_cast<int32_t>(fetchRel.count()),
+      false /*isPartial*/,
+      childNode);
 }
 
 core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::TopNRel& topNRel) {
   auto childNode = convertSingleInput<::substrait::TopNRel>(topNRel);
   auto [sortingKeys, sortingOrders] = processSortField(topNRel.sorts(), childNode->outputType());
   return std::make_shared<core::TopNNode>(
-      nextPlanNodeId(), sortingKeys, sortingOrders, (int32_t)topNRel.n(), false /*isPartial*/, childNode);
+      nextPlanNodeId(), sortingKeys, sortingOrders, static_cast<int32_t>(topNRel.n()), false /*isPartial*/, childNode);
 }
 
 core::PlanNodePtr SubstraitToVeloxPlanConverter::constructValueStreamNode(
@@ -1298,6 +1344,8 @@ core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::
     return toVeloxPlan(rel.write());
   } else if (rel.has_windowgrouplimit()) {
     return toVeloxPlan(rel.windowgrouplimit());
+  } else if (rel.has_set()) {
+    return toVeloxPlan(rel.set());
   } else {
     VELOX_NYI("Substrait conversion not supported for Rel.");
   }

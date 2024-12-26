@@ -45,6 +45,7 @@ extern const int LOGICAL_ERROR;
 }
 namespace local_engine
 {
+using namespace DB;
 DB::QueryPlanPtr ReadRelParser::parse(DB::QueryPlanPtr query_plan, const substrait::Rel & rel, std::list<const substrait::Rel *> &)
 {
     if (query_plan)

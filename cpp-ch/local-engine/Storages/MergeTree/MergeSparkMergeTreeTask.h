@@ -21,26 +21,22 @@
 #include <Storages/MergeTree/MergeMutateSelectedEntry.h>
 #include <Storages/MergeTree/MergeTask.h>
 
-using namespace DB;
-
-
 namespace local_engine
 {
 class SparkStorageMergeTree;
 
-
-class MergeSparkMergeTreeTask : public IExecutableTask
+class MergeSparkMergeTreeTask : public DB::IExecutableTask
 {
 public:
     MergeSparkMergeTreeTask(
         SparkStorageMergeTree & storage_,
-        StorageMetadataPtr metadata_snapshot_,
+        DB::StorageMetadataPtr metadata_snapshot_,
         bool deduplicate_,
-        Names deduplicate_by_columns_,
+        DB::Names deduplicate_by_columns_,
         bool cleanup_,
-        MergeMutateSelectedEntryPtr merge_mutate_entry_,
-        TableLockHolder table_lock_holder_,
-        IExecutableTask::TaskResultCallback & task_result_callback_)
+        DB::MergeMutateSelectedEntryPtr merge_mutate_entry_,
+        DB::TableLockHolder table_lock_holder_,
+        DB::IExecutableTask::TaskResultCallback & task_result_callback_)
         : storage(storage_)
         , metadata_snapshot(std::move(metadata_snapshot_))
         , deduplicate(deduplicate_)
@@ -56,15 +52,16 @@ public:
 
     bool executeStep() override;
     void onCompleted() override;
-    StorageID getStorageID() const override;
+    DB::StorageID getStorageID() const override;
     Priority getPriority() const override { return priority; }
     String getQueryId() const override { return getStorageID().getShortName() + "::" + merge_mutate_entry->future_part->name; }
 
-    void setCurrentTransaction(MergeTreeTransactionHolder && txn_holder_, MergeTreeTransactionPtr && txn_)
+    void setCurrentTransaction(DB::MergeTreeTransactionHolder && txn_holder_, DB::MergeTreeTransactionPtr && txn_)
     {
         txn_holder = std::move(txn_holder_);
         txn = std::move(txn_);
     }
+    void cancel() noexcept override;
 
 private:
     void prepare();
@@ -83,43 +80,36 @@ private:
 
     SparkStorageMergeTree & storage;
 
-    StorageMetadataPtr metadata_snapshot;
+    DB::StorageMetadataPtr metadata_snapshot;
     bool deduplicate;
-    Names deduplicate_by_columns;
+    DB::Names deduplicate_by_columns;
     bool cleanup;
-    MergeMutateSelectedEntryPtr merge_mutate_entry{nullptr};
-    TableLockHolder table_lock_holder;
-    FutureMergedMutatedPartPtr future_part{nullptr};
-    MergeTreeData::MutableDataPartPtr new_part;
+    DB::MergeMutateSelectedEntryPtr merge_mutate_entry{nullptr};
+    DB::TableLockHolder table_lock_holder;
+    DB::FutureMergedMutatedPartPtr future_part{nullptr};
+    DB::MergeTreeData::MutableDataPartPtr new_part;
     std::unique_ptr<Stopwatch> stopwatch_ptr{nullptr};
-    using MergeListEntryPtr = std::unique_ptr<MergeListEntry>;
+    using MergeListEntryPtr = std::unique_ptr<DB::MergeListEntry>;
     MergeListEntryPtr merge_list_entry;
 
     Priority priority;
 
-    std::function<void(const ExecutionStatus &)> write_part_log;
+    std::function<void(const DB::ExecutionStatus &)> write_part_log;
     std::function<void()> transfer_profile_counters_to_initial_query;
-    IExecutableTask::TaskResultCallback task_result_callback;
-    MergeTaskPtr merge_task{nullptr};
+    DB::IExecutableTask::TaskResultCallback task_result_callback;
+    DB::MergeTaskPtr merge_task{nullptr};
 
-    MergeTreeTransactionHolder txn_holder;
-    MergeTreeTransactionPtr txn;
+    DB::MergeTreeTransactionHolder txn_holder;
+    DB::MergeTreeTransactionPtr txn;
 
     ProfileEvents::Counters profile_counters;
 
-    ContextMutablePtr task_context;
+    DB::ContextMutablePtr task_context;
 
-    ContextMutablePtr createTaskContext() const;
+    DB::ContextMutablePtr createTaskContext() const;
 };
 
 
 using MergeSparkMergeTreeTaskPtr = std::shared_ptr<MergeSparkMergeTreeTask>;
-
-
-[[ maybe_unused ]] static void executeHere(MergeSparkMergeTreeTaskPtr task)
-{
-    while (task->executeStep()) {}
-}
-
 
 }

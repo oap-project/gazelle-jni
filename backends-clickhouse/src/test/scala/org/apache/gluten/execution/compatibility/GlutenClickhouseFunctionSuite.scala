@@ -401,4 +401,32 @@ class GlutenClickhouseFunctionSuite extends GlutenClickHouseTPCHAbstractSuite {
     }
   }
 
+  test("GLUTEN-8148: Fix corr with NaN") {
+    withTable("corr_nan") {
+      sql("create table if not exists corr_nan (x double, y double) using parquet")
+      sql("insert into corr_nan values(0,1)")
+      compareResultsAgainstVanillaSpark(
+        """
+          |select corr(x,y), corr(y,x) from corr_nan
+        """.stripMargin,
+        true,
+        { _ => }
+      )
+    }
+  }
+
+  test("GLUTEN-7755: translate support args with unequal length") {
+    withTable("test_7755") {
+      sql("create table if not exists test_7755 (id string) using parquet")
+      sql("insert into test_7755 values('aAbBcC')")
+      compareResultsAgainstVanillaSpark(
+        """
+          |select translate(id, 'abc', '12') from test_7755
+        """.stripMargin,
+        true,
+        { _ => }
+      )
+    }
+  }
+
 }

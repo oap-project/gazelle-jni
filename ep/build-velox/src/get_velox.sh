@@ -17,7 +17,7 @@
 set -exu
 
 VELOX_REPO=https://github.com/oap-project/velox.git
-VELOX_BRANCH=2024_11_29
+VELOX_BRANCH=2024_12_25
 VELOX_HOME=""
 
 OS=`uname -s`
@@ -169,27 +169,20 @@ git submodule update --init --recursive
 function apply_compilation_fixes {
   current_dir=$1
   velox_home=$2
-  sudo cp ${current_dir}/modify_velox.patch ${velox_home}/
+
   sudo cp ${current_dir}/modify_arrow.patch ${velox_home}/CMake/resolve_dependency_modules/arrow/
   sudo cp ${current_dir}/modify_arrow_dataset_scan_option.patch ${velox_home}/CMake/resolve_dependency_modules/arrow/
-  git add ${velox_home}/modify_velox.patch # to avoid the file from being deleted by git clean -dffx :/
+
   git add ${velox_home}/CMake/resolve_dependency_modules/arrow/modify_arrow.patch # to avoid the file from being deleted by git clean -dffx :/
   git add ${velox_home}/CMake/resolve_dependency_modules/arrow/modify_arrow_dataset_scan_option.patch # to avoid the file from being deleted by git clean -dffx :/
-  cd ${velox_home}
-  echo "Applying patch to Velox source code..."
-  git apply modify_velox.patch
-  if [ $? -ne 0 ]; then
-    echo "Failed to apply compilation fixes to Velox: $?."
-    exit 1
-  fi
+
 }
 
 function setup_linux {
   local LINUX_DISTRIBUTION=$(. /etc/os-release && echo ${ID})
   local LINUX_VERSION_ID=$(. /etc/os-release && echo ${VERSION_ID})
 
-  # apply patches
-  sed -i 's/SUDO="${SUDO:-""}"/SUDO="${SUDO:-"sudo --preserve-env"}"/g' scripts/setup-helper-functions.sh
+  export SUDO="sudo --preserve-env"
   if [[ "$LINUX_DISTRIBUTION" == "ubuntu" || "$LINUX_DISTRIBUTION" == "debian" || "$LINUX_DISTRIBUTION" == "pop" ]]; then
     process_setup_ubuntu
   elif [[ "$LINUX_DISTRIBUTION" == "centos" ]]; then

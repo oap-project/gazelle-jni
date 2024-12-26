@@ -17,18 +17,10 @@
 package org.apache.gluten.memory.memtarget;
 
 import org.apache.gluten.memory.MemoryUsageStatsBuilder;
-import org.apache.gluten.memory.SimpleMemoryUsageRecorder;
-import org.apache.gluten.proto.MemoryUsageStats;
 
-import com.google.common.base.Preconditions;
-import org.apache.spark.util.Utils;
-
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.stream.Collectors;
 
 public class TreeMemoryTargets {
 
@@ -36,13 +28,16 @@ public class TreeMemoryTargets {
     // enclose factory ctor
   }
 
-  public static TreeMemoryTarget newChild(
+  /**
+   * A short-cut method to create a child target of `parent`. The child will follow the parent's
+   * maximum capacity.
+   */
+  static TreeMemoryTarget newChild(
       TreeMemoryTarget parent,
       String name,
-      long capacity,
       Spiller spiller,
       Map<String, MemoryUsageStatsBuilder> virtualChildren) {
-    return new Node(parent, name, capacity, spiller, virtualChildren);
+    return parent.newChild(name, TreeMemoryTarget.CAPACITY_UNLIMITED, spiller, virtualChildren);
   }
 
   public static long spillTree(TreeMemoryTarget node, final long bytes) {
@@ -82,146 +77,5 @@ public class TreeMemoryTargets {
     }
 
     return bytes - remainingBytes;
-  }
-
-  // non-root nodes are not Spark memory consumer
-  public static class Node implements TreeMemoryTarget, KnownNameAndStats {
-    private final Map<String, Node> children = new HashMap<>();
-    private final TreeMemoryTarget parent;
-    private final String name;
-    private final long capacity;
-    private final Spiller spiller;
-    private final Map<String, MemoryUsageStatsBuilder> virtualChildren;
-    private final SimpleMemoryUsageRecorder selfRecorder = new SimpleMemoryUsageRecorder();
-
-    private Node(
-        TreeMemoryTarget parent,
-        String name,
-        long capacity,
-        Spiller spiller,
-        Map<String, MemoryUsageStatsBuilder> virtualChildren) {
-      this.parent = parent;
-      this.capacity = capacity;
-      final String uniqueName = MemoryTargetUtil.toUniqueName(name);
-      if (capacity == CAPACITY_UNLIMITED) {
-        this.name = uniqueName;
-      } else {
-        this.name = String.format("%s, %s", uniqueName, Utils.bytesToString(capacity));
-      }
-      this.spiller = spiller;
-      this.virtualChildren = virtualChildren;
-    }
-
-    @Override
-    public long borrow(long size) {
-      if (size == 0) {
-        return 0;
-      }
-      ensureFreeCapacity(size);
-      return borrow0(Math.min(freeBytes(), size));
-    }
-
-    private long freeBytes() {
-      return capacity - usedBytes();
-    }
-
-    private long borrow0(long size) {
-      long granted = parent.borrow(size);
-      selfRecorder.inc(granted);
-      return granted;
-    }
-
-    @Override
-    public Spiller getNodeSpiller() {
-      return spiller;
-    }
-
-    private boolean ensureFreeCapacity(long bytesNeeded) {
-      while (true) { // FIXME should we add retry limit?
-        long freeBytes = freeBytes();
-        Preconditions.checkState(freeBytes >= 0);
-        if (freeBytes >= bytesNeeded) {
-          // free bytes fit requirement
-          return true;
-        }
-        // spill
-        long bytesToSpill = bytesNeeded - freeBytes;
-        long spilledBytes = TreeMemoryTargets.spillTree(this, bytesToSpill);
-        Preconditions.checkState(spilledBytes >= 0);
-        if (spilledBytes == 0) {
-          // OOM
-          return false;
-        }
-      }
-    }
-
-    @Override
-    public long repay(long size) {
-      if (size == 0) {
-        return 0;
-      }
-      long toFree = Math.min(usedBytes(), size);
-      long freed = parent.repay(toFree);
-      selfRecorder.inc(-freed);
-      return freed;
-    }
-
-    @Override
-    public long usedBytes() {
-      return selfRecorder.current();
-    }
-
-    @Override
-    public <T> T accept(MemoryTargetVisitor<T> visitor) {
-      return visitor.visit(this);
-    }
-
-    @Override
-    public String name() {
-      return name;
-    }
-
-    @Override
-    public MemoryUsageStats stats() {
-      final Map<String, MemoryUsageStats> childrenStats =
-          new HashMap<>(
-              children.entrySet().stream()
-                  .collect(Collectors.toMap(e -> e.getValue().name(), e -> e.getValue().stats())));
-
-      Preconditions.checkState(childrenStats.size() == children.size());
-
-      // add virtual children
-      for (Map.Entry<String, MemoryUsageStatsBuilder> entry : virtualChildren.entrySet()) {
-        if (childrenStats.containsKey(entry.getKey())) {
-          throw new IllegalArgumentException("Child stats already exists: " + entry.getKey());
-        }
-        childrenStats.put(entry.getKey(), entry.getValue().toStats());
-      }
-      return selfRecorder.toStats(childrenStats);
-    }
-
-    @Override
-    public TreeMemoryTarget newChild(
-        String name,
-        long capacity,
-        Spiller spiller,
-        Map<String, MemoryUsageStatsBuilder> virtualChildren) {
-      final Node child = new Node(this, name, capacity, spiller, virtualChildren);
-      if (children.containsKey(child.name())) {
-        throw new IllegalArgumentException("Child already registered: " + child.name());
-      }
-      children.put(child.name(), child);
-      return child;
-    }
-
-    @Override
-    public Map<String, TreeMemoryTarget> children() {
-      return Collections.unmodifiableMap(children);
-    }
-
-    @Override
-    public TreeMemoryTarget parent() {
-      return parent;
-    }
   }
 }

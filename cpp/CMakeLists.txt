@@ -236,10 +236,7 @@ if(ENABLE_IAA)
   add_definitions(-DGLUTEN_ENABLE_IAA)
 endif()
 
-#
 # Subdirectories
-#
-
 add_subdirectory(core)
 
 if(BUILD_VELOX_BACKEND)

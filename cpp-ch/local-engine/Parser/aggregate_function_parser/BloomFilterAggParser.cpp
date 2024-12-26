@@ -19,7 +19,6 @@
 #include <Interpreters/ActionsDAG.h>
 #include <Parser/AggregateFunctionParser.h>
 #include <Parser/aggregate_function_parser/BloomFilterAggParser.h>
-#include <Poco/StringTokenizer.h>
 #include "substrait/algebra.pb.h"
 
 namespace DB
@@ -33,6 +32,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
+using namespace DB;
 // This is copied from Spark, org.apache.spark.util.sketch.BloomFilter#optimalNumOfHashFunctions,
 // which in return learned from https://en.wikipedia.org/wiki/Bloom_filter#Optimal_number_of_hash_functions.
 Int64 optimalNumOfHashFunctions(Int64 n, Int64 m)

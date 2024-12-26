@@ -98,3 +98,5 @@ dist/
 
 # For Hive
 metastore_db/
+
+.ipynb_checkpoints

@@ -33,28 +33,24 @@ extern const int ILLEGAL_TYPE_OF_ARGUMENT;
 
 namespace local_engine
 {
-using namespace DB;
-
-struct Settings;
-
 /**
  * this class is copied from AggregateFunctionMerge with little enhancement.
  * we use this PartialMerge for both spark PartialMerge and Final
  */
-class AggregateFunctionPartialMerge final : public IAggregateFunctionHelper<AggregateFunctionPartialMerge>
+class AggregateFunctionPartialMerge final : public DB::IAggregateFunctionHelper<AggregateFunctionPartialMerge>
 {
 private:
-    AggregateFunctionPtr nested_func;
+    DB::AggregateFunctionPtr nested_func;
 
 public:
-    AggregateFunctionPartialMerge(const AggregateFunctionPtr & nested_, const DataTypePtr & argument, const Array & params_)
-        : IAggregateFunctionHelper<AggregateFunctionPartialMerge>({argument}, params_, createResultType(nested_)), nested_func(nested_)
+    AggregateFunctionPartialMerge(const DB::AggregateFunctionPtr & nested_, const DB::DataTypePtr & argument, const DB::Array & params_)
+        : DB::IAggregateFunctionHelper<AggregateFunctionPartialMerge>({argument}, params_, createResultType(nested_)), nested_func(nested_)
     {
-        const DataTypeAggregateFunction * data_type = typeid_cast<const DataTypeAggregateFunction *>(argument.get());
+        const DB::DataTypeAggregateFunction * data_type = typeid_cast<const DB::DataTypeAggregateFunction *>(argument.get());
 
         if (!data_type || !nested_func->haveSameStateRepresentation(*data_type->getFunction()))
-            throw Exception(
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+            throw DB::Exception(
+                DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
                 "Illegal type {} of argument for aggregate function {}, "
                 "expected {} or equivalent type",
                 argument->getName(),
@@ -64,19 +60,19 @@ public:
 
     String getName() const override { return nested_func->getName() + "PartialMerge"; }
 
-    static DataTypePtr createResultType(const AggregateFunctionPtr & nested_) { return nested_->getResultType(); }
+    static DB::DataTypePtr createResultType(const DB::AggregateFunctionPtr & nested_) { return nested_->getResultType(); }
 
-    const DataTypePtr & getResultType() const override { return nested_func->getResultType(); }
+    const DB::DataTypePtr & getResultType() const override { return nested_func->getResultType(); }
 
     bool isVersioned() const override { return nested_func->isVersioned(); }
 
     size_t getDefaultVersion() const override { return nested_func->getDefaultVersion(); }
 
-    DataTypePtr getStateType() const override { return nested_func->getStateType(); }
+    DB::DataTypePtr getStateType() const override { return nested_func->getStateType(); }
 
-    void create(AggregateDataPtr __restrict place) const override { nested_func->create(place); }
+    void create(DB::AggregateDataPtr __restrict place) const override { nested_func->create(place); }
 
-    void destroy(AggregateDataPtr __restrict place) const noexcept override { nested_func->destroy(place); }
+    void destroy(DB::AggregateDataPtr __restrict place) const noexcept override { nested_func->destroy(place); }
 
     bool hasTrivialDestructor() const override { return nested_func->hasTrivialDestructor(); }
 
@@ -84,34 +80,34 @@ public:
 
     size_t alignOfData() const override { return nested_func->alignOfData(); }
 
-    void add(AggregateDataPtr __restrict place, const IColumn ** columns, size_t row_num, Arena * arena) const override
+    void add(DB::AggregateDataPtr __restrict place, const DB::IColumn ** columns, size_t row_num, DB::Arena * arena) const override
     {
-        nested_func->merge(place, assert_cast<const ColumnAggregateFunction &>(*columns[0]).getData()[row_num], arena);
+        nested_func->merge(place, assert_cast<const DB::ColumnAggregateFunction &>(*columns[0]).getData()[row_num], arena);
     }
 
-    void merge(AggregateDataPtr __restrict place, ConstAggregateDataPtr rhs, Arena * arena) const override
+    void merge(DB::AggregateDataPtr __restrict place, DB::ConstAggregateDataPtr rhs, DB::Arena * arena) const override
     {
         nested_func->merge(place, rhs, arena);
     }
 
-    void serialize(ConstAggregateDataPtr __restrict place, WriteBuffer & buf, std::optional<size_t> version) const override
+    void serialize(DB::ConstAggregateDataPtr __restrict place, DB::WriteBuffer & buf, std::optional<size_t> version) const override
     {
         nested_func->serialize(place, buf, version);
     }
 
-    void deserialize(AggregateDataPtr __restrict place, ReadBuffer & buf, std::optional<size_t> version, Arena * arena) const override
+    void deserialize(DB::AggregateDataPtr __restrict place, DB::ReadBuffer & buf, std::optional<size_t> version, DB::Arena * arena) const override
     {
         nested_func->deserialize(place, buf, version, arena);
     }
 
-    void insertResultInto(AggregateDataPtr __restrict place, IColumn & to, Arena * arena) const override
+    void insertResultInto(DB::AggregateDataPtr __restrict place, DB::IColumn & to, DB::Arena * arena) const override
     {
         nested_func->insertResultInto(place, to, arena);
     }
 
     bool allocatesMemoryInArena() const override { return nested_func->allocatesMemoryInArena(); }
 
-    AggregateFunctionPtr getNestedFunction() const override { return nested_func; }
+    DB::AggregateFunctionPtr getNestedFunction() const override { return nested_func; }
     /// If the aggregate phase is `INTEMEDIATE_TO_INTERMEDIATE`, partial merge combinator is applied. In this case, the actual result column's
     /// representation is `xxxPartialMerge`. It will make block structure check fail somewhere, since the expected column's represiontation is
     /// `xxx` without partial merge. The represiontaions of `xxxPartialMerge` and `xxx` are the same actually.

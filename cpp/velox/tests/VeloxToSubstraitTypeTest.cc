@@ -61,4 +61,5 @@ TEST_F(VeloxToSubstraitTypeTest, basic) {
   testTypeConversion(ROW({"a", "b", "c"}, {BIGINT(), ROW({"x", "y"}, {BOOLEAN(), VARCHAR()}), REAL()}));
   testTypeConversion(ROW({}, {}));
 }
+
 } // namespace gluten

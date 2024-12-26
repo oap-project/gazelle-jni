@@ -19,6 +19,7 @@
 #include "velox/expression/VectorFunction.h"
 
 namespace gluten {
+
 facebook::velox::TypePtr RowConstructorWithNullCallToSpecialForm::resolveType(
     const std::vector<facebook::velox::TypePtr>& argTypes) {
   auto numInput = argTypes.size();
@@ -52,4 +53,5 @@ facebook::velox::exec::ExprPtr RowConstructorWithNullCallToSpecialForm::construc
   return std::make_shared<facebook::velox::exec::Expr>(
       type, std::move(compiledChildren), function, metadata, name, trackCpuUsage);
 }
+
 } // namespace gluten

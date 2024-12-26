@@ -17,28 +17,26 @@
 #include "CHColumnToSparkRow.h"
 #include <Columns/ColumnArray.h>
 #include <Columns/ColumnConst.h>
-#include <Columns/ColumnDecimal.h>
 #include <Columns/ColumnMap.h>
 #include <Columns/ColumnNullable.h>
 #include <Columns/ColumnString.h>
 #include <Columns/IColumn.h>
-#include <Core/Types.h>
 #include <DataTypes/DataTypeArray.h>
 #include <DataTypes/DataTypeLowCardinality.h>
 #include <DataTypes/DataTypeMap.h>
 #include <DataTypes/DataTypeNullable.h>
-#include <DataTypes/DataTypeString.h>
 #include <DataTypes/DataTypeTuple.h>
 #include <DataTypes/DataTypesDecimal.h>
 #include <DataTypes/ObjectUtils.h>
+#include <jni/jni_common.h>
 #include <Common/Exception.h>
 
 namespace DB
 {
 namespace ErrorCodes
 {
-    extern const int LOGICAL_ERROR;
-    extern const int UNKNOWN_TYPE;
+extern const int LOGICAL_ERROR;
+extern const int UNKNOWN_TYPE;
 }
 }
 
@@ -297,11 +295,7 @@ static void writeValue(
 }
 
 SparkRowInfo::SparkRowInfo(
-    const DB::ColumnsWithTypeAndName & cols,
-    const DB::DataTypes & dataTypes,
-    size_t col_size,
-    size_t row_size,
-    const MaskVector & masks)
+    const DB::ColumnsWithTypeAndName & cols, const DB::DataTypes & dataTypes, size_t col_size, size_t row_size, const MaskVector & masks)
     : types(dataTypes)
     , num_rows(masks == nullptr ? row_size : masks->size())
     , num_cols(col_size)
@@ -461,8 +455,7 @@ std::unique_ptr<SparkRowInfo> CHColumnToSparkRow::convertCHColumnToSparkRow(cons
         const auto & col = block.getByPosition(col_idx);
         int64_t field_offset = spark_row_info->getFieldOffset(col_idx);
 
-        ColumnWithTypeAndName col_full{col.column->convertToFullIfNeeded(),
-            removeLowCardinality(col.type), col.name};
+        ColumnWithTypeAndName col_full{col.column->convertToFullIfNeeded(), removeLowCardinality(col.type), col.name};
         writeValue(
             spark_row_info->getBufferAddress(),
             field_offset,
@@ -585,8 +578,7 @@ int64_t BackingDataLengthCalculator::getArrayElementSize(const DataTypePtr & nes
         return 1;
     else if (nested_which.isUInt16() || nested_which.isInt16() || nested_which.isDate())
         return 2;
-    else if (
-        nested_which.isUInt32() || nested_which.isInt32() || nested_which.isFloat32() || nested_which.isDate32())
+    else if (nested_which.isUInt32() || nested_which.isInt32() || nested_which.isFloat32() || nested_which.isDate32())
         return 4;
     else if (
         nested_which.isUInt64() || nested_which.isInt64() || nested_which.isFloat64() || nested_which.isDateTime64()
@@ -686,9 +678,7 @@ int64_t VariableLengthDataWriter::writeArray(size_t row_idx, const DB::Array & a
             if (elem.isNull())
                 bitSet(buffer_address + offset + start + 8, i);
             else
-            {
                 writer.write(elem, buffer_address + offset + start + 8 + len_null_bitmap + i * elem_size);
-            }
         }
     }
     else
@@ -955,6 +945,36 @@ void FixedLengthDataWriter::unsafeWrite(const StringRef & str, char * buffer)
 void FixedLengthDataWriter::unsafeWrite(const char * __restrict src, char * __restrict buffer)
 {
     memcpy(buffer, src, type_without_nullable->getSizeOfValueInMemory());
+}
+
+namespace SparkRowInfoJNI
+{
+static jclass spark_row_info_class;
+static jmethodID spark_row_info_constructor;
+void init(JNIEnv * env)
+{
+    spark_row_info_class = CreateGlobalClassReference(env, "Lorg/apache/gluten/row/SparkRowInfo;");
+    spark_row_info_constructor = GetMethodID(env, spark_row_info_class, "<init>", "([J[JJJJ)V");
+}
+void destroy(JNIEnv * env)
+{
+    env->DeleteGlobalRef(spark_row_info_class);
+}
+jobject create(JNIEnv * env, const SparkRowInfo & spark_row_info)
+{
+    auto * offsets_arr = env->NewLongArray(spark_row_info.getNumRows());
+    const auto * offsets_src = spark_row_info.getOffsets().data();
+    env->SetLongArrayRegion(offsets_arr, 0, spark_row_info.getNumRows(), offsets_src);
+    auto * lengths_arr = env->NewLongArray(spark_row_info.getNumRows());
+    const auto * lengths_src = spark_row_info.getLengths().data();
+    env->SetLongArrayRegion(lengths_arr, 0, spark_row_info.getNumRows(), lengths_src);
+    int64_t address = reinterpret_cast<int64_t>(spark_row_info.getBufferAddress());
+    int64_t column_number = spark_row_info.getNumCols();
+    int64_t total_size = spark_row_info.getTotalBytes();
+
+    return env->NewObject(
+        spark_row_info_class, spark_row_info_constructor, offsets_arr, lengths_arr, address, column_number, total_size);
+}
 }
 
 }

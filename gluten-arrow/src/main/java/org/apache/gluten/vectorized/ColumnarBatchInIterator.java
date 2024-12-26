@@ -23,9 +23,11 @@ import org.apache.spark.sql.vectorized.ColumnarBatch;
 import java.util.Iterator;
 
 public class ColumnarBatchInIterator {
+  private final String backendName;
   private final Iterator<ColumnarBatch> delegated;
 
-  public ColumnarBatchInIterator(Iterator<ColumnarBatch> delegated) {
+  public ColumnarBatchInIterator(String backendName, Iterator<ColumnarBatch> delegated) {
+    this.backendName = backendName;
     this.delegated = delegated;
   }
 
@@ -38,6 +40,6 @@ public class ColumnarBatchInIterator {
   public long next() {
     final ColumnarBatch next = delegated.next();
     ColumnarBatches.checkOffloaded(next);
-    return ColumnarBatches.getNativeHandle(next);
+    return ColumnarBatches.getNativeHandle(backendName, next);
   }
 }

@@ -255,6 +255,7 @@ bool supporteType(const RowTypePtr rowType) {
 }
 
 } // namespace
+
 VeloxRowToColumnarConverter::VeloxRowToColumnarConverter(
     struct ArrowSchema* cSchema,
     std::shared_ptr<memory::MemoryPool> memoryPool)
@@ -301,4 +302,5 @@ VeloxRowToColumnarConverter::convertPrimitive(int64_t numRows, int64_t* rowLengt
   auto rowVector = std::make_shared<RowVector>(pool_.get(), rowType_, BufferPtr(nullptr), numRows, std::move(columns));
   return std::make_shared<VeloxColumnarBatch>(rowVector);
 }
+
 } // namespace gluten

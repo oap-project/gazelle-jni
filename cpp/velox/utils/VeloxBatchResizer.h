@@ -22,6 +22,7 @@
 #include "velox/vector/ComplexVector.h"
 
 namespace gluten {
+
 class VeloxBatchResizer : public ColumnarBatchIterator {
  public:
   VeloxBatchResizer(
@@ -42,4 +43,5 @@ class VeloxBatchResizer : public ColumnarBatchIterator {
 
   std::unique_ptr<ColumnarBatchIterator> next_ = nullptr;
 };
+
 } // namespace gluten

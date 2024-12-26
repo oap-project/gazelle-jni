@@ -31,7 +31,7 @@ extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
 
 namespace local_engine
 {
-
+using namespace DB;
 class DecimalType
 {
     static constexpr Int32 spark_max_precision = 38;

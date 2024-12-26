@@ -33,6 +33,7 @@
 #include <IO/SeekableReadBuffer.h>
 #include <IO/SharedThreadPools.h>
 #include <IO/SplittableBzip2ReadBuffer.h>
+#include <IO/ParallelReadBuffer.h>
 #include <Interpreters/Cache/FileCache.h>
 #include <Interpreters/Cache/FileCacheFactory.h>
 #include <Interpreters/Cache/FileCacheSettings.h>
@@ -74,6 +75,7 @@ extern const SettingsUInt64 s3_retry_attempts;
 extern const SettingsMaxThreads max_download_threads;
 extern const SettingsUInt64 max_download_buffer_size;
 extern const SettingsBool input_format_allow_seeks;
+extern const SettingsUInt64 max_read_buffer_size;
 }
 namespace ErrorCodes
 {
@@ -258,9 +260,16 @@ public:
         /// Get hdfs_uri
         Poco::URI uri(file_info.uri_file());
         auto hdfs_file_path = uri.getPath();
-        std::string hdfs_uri = "hdfs://" + uri.getHost();
-        if (uri.getPort())
-            hdfs_uri += ":" + std::to_string(uri.getPort());
+
+        std::string new_file_uri = uri.toString();
+        if (uri.getUserInfo().empty() && BackendInitializerUtil::spark_user.has_value())
+        {
+            uri.setUserInfo(*BackendInitializerUtil::spark_user);
+            new_file_uri = uri.toString();
+        }
+
+        auto begin_of_path = new_file_uri.find('/', new_file_uri.find("//") + 2);
+        auto hdfs_uri = new_file_uri.substr(0, begin_of_path);
 
         std::optional<size_t> file_size;
         std::optional<size_t> modified_time;
@@ -422,8 +431,7 @@ public:
         if (object_size > 0)
             buffer_size = std::min(object_size, buffer_size);
         auto async_reader
-            = std::make_unique<DB::AsynchronousBoundedReadBuffer>(std::move(s3_impl), pool_reader, read_settings, buffer_size);
-
+            = std::make_unique<DB::AsynchronousBoundedReadBuffer>(std::move(s3_impl), pool_reader, read_settings, buffer_size,read_settings.remote_read_min_bytes_for_seek);
         if (read_settings.remote_fs_prefetch)
             async_reader->prefetch(Priority{});
 
@@ -609,21 +617,20 @@ ConcurrentLRU<std::string, std::shared_ptr<DB::S3::Client>> S3FileReadBufferBuil
 class AzureBlobReadBuffer : public ReadBufferBuilder
 {
 public:
-    explicit AzureBlobReadBuffer(DB::ContextPtr context_) : ReadBufferBuilder(context_) { }
+    explicit AzureBlobReadBuffer(const DB::ContextPtr & context_) : ReadBufferBuilder(context_) { }
     ~AzureBlobReadBuffer() override = default;
 
     std::unique_ptr<DB::ReadBuffer> build(const substrait::ReadRel::LocalFiles::FileOrFiles & file_info) override
     {
         Poco::URI file_uri(file_info.uri_file());
-        std::unique_ptr<DB::ReadBuffer> read_buffer;
-        read_buffer = std::make_unique<DB::ReadBufferFromAzureBlobStorage>(getClient(), file_uri.getPath(), DB::ReadSettings(), 5, 5);
-        return read_buffer;
+        return std::make_unique<DB::ReadBufferFromAzureBlobStorage>(getClient(), file_uri.getPath(), DB::ReadSettings(), 5, 5);
     }
 
 private:
-    std::shared_ptr<Azure::Storage::Blobs::BlobContainerClient> shared_client;
 
-    std::shared_ptr<Azure::Storage::Blobs::BlobContainerClient> getClient()
+    std::shared_ptr<DB::AzureBlobStorage::ContainerClient> shared_client;
+
+    std::shared_ptr<DB::AzureBlobStorage::ContainerClient> getClient()
     {
         if (shared_client)
             return shared_client;
@@ -680,7 +687,7 @@ DB::ReadSettings ReadBufferBuilder::getReadSettings() const
     return read_settings;
 }
 
-ReadBufferBuilder::ReadBufferBuilder(DB::ContextPtr context_) : context(context_)
+ReadBufferBuilder::ReadBufferBuilder(const DB::ContextPtr & context_) : context(context_)
 {
 }
 
@@ -747,8 +754,9 @@ ReadBufferBuilder::wrapWithBzip2(std::unique_ptr<DB::ReadBuffer> in, const subst
     bounded_in->setReadUntilPosition(new_end);
     bool first_block_need_special_process = (new_start > 0);
     bool last_block_need_special_process = (new_end < file_size);
+    size_t buffer_size = context->getSettingsRef()[DB::Setting::max_read_buffer_size];
     auto decompressed_in = std::make_unique<SplittableBzip2ReadBuffer>(
-        std::move(bounded_in), first_block_need_special_process, last_block_need_special_process);
+        std::move(bounded_in), first_block_need_special_process, last_block_need_special_process, buffer_size);
     return std::move(decompressed_in);
 }
 

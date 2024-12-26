@@ -47,7 +47,7 @@ TEST(TestFuntion, Hash)
     std::cerr << "input:\n";
     debug::headBlock(block);
     auto executable = function->build(block.getColumnsWithTypeAndName());
-    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
     std::cerr << "output:\n";
     debug::headColumn(result);
     ASSERT_EQ(result->getUInt(0), result->getUInt(1));
@@ -79,7 +79,8 @@ TEST(TestFunction, In)
     set->setHeader(col1_set_block.getColumnsWithTypeAndName());
     set->insertFromBlock(col1_set_block.getColumnsWithTypeAndName());
     set->finishInsert();
-    auto future_set = std::make_shared<FutureSetFromStorage>(std::move(set));
+    PreparedSets::Hash empty;
+    auto future_set = std::make_shared<FutureSetFromStorage>(empty, std::move(set));
     //TODO: WHY? after https://github.com/ClickHouse/ClickHouse/pull/63723 we need pass 4 instead of 1
     auto arg = ColumnSet::create(4, future_set);
 
@@ -89,7 +90,7 @@ TEST(TestFunction, In)
     std::cerr << "input:\n";
     debug::headBlock(block);
     auto executable = function->build(block.getColumnsWithTypeAndName());
-    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
     std::cerr << "output:\n";
     debug::headColumn(result);
     ASSERT_EQ(result->getUInt(3), 0);
@@ -122,7 +123,8 @@ TEST(TestFunction, NotIn1)
     set->setHeader(col1_set_block.getColumnsWithTypeAndName());
     set->insertFromBlock(col1_set_block.getColumnsWithTypeAndName());
     set->finishInsert();
-    auto future_set = std::make_shared<FutureSetFromStorage>(std::move(set));
+    PreparedSets::Hash empty;
+    auto future_set = std::make_shared<FutureSetFromStorage>(empty, std::move(set));
 
     //TODO: WHY? after https://github.com/ClickHouse/ClickHouse/pull/63723 we need pass 4 instead of 1
     auto arg = ColumnSet::create(4, future_set);
@@ -133,7 +135,7 @@ TEST(TestFunction, NotIn1)
     std::cerr << "input:\n";
     debug::headBlock(block);
     auto executable = function->build(block.getColumnsWithTypeAndName());
-    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
     std::cerr << "output:\n";
     debug::headColumn(result);
     ASSERT_EQ(result->getUInt(3), 1);
@@ -165,7 +167,8 @@ TEST(TestFunction, NotIn2)
     set->setHeader(col1_set_block.getColumnsWithTypeAndName());
     set->insertFromBlock(col1_set_block.getColumnsWithTypeAndName());
     set->finishInsert();
-    auto future_set = std::make_shared<FutureSetFromStorage>(std::move(set));
+    PreparedSets::Hash empty;
+    auto future_set = std::make_shared<FutureSetFromStorage>(empty, std::move(set));
 
     //TODO: WHY? after https://github.com/ClickHouse/ClickHouse/pull/63723 we need pass 4 instead of 1
     auto arg = ColumnSet::create(4, future_set);
@@ -176,14 +179,14 @@ TEST(TestFunction, NotIn2)
     std::cerr << "input:\n";
     debug::headBlock(block);
     auto executable = function->build(block.getColumnsWithTypeAndName());
-    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+    auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 
     auto function_not = factory.get("not", local_engine::QueryContext::globalContext());
     auto type_bool = DataTypeFactory::instance().get("UInt8");
     ColumnsWithTypeAndName columns2 = {ColumnWithTypeAndName(result, type_bool, "string0")};
     Block block2(columns2);
     auto executable2 = function_not->build(block2.getColumnsWithTypeAndName());
-    auto result2 = executable2->execute(block2.getColumnsWithTypeAndName(), executable2->getResultType(), block2.rows());
+    auto result2 = executable2->execute(block2.getColumnsWithTypeAndName(), executable2->getResultType(), block2.rows(), false);
     std::cerr << "output:\n";
     debug::headColumn(result2);
     ASSERT_EQ(result2->getUInt(3), 1);

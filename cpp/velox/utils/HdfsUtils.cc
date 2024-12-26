@@ -23,6 +23,7 @@
 namespace gluten {
 
 namespace {
+
 struct Credential {
   const std::string userName;
   const std::string allTokens;
@@ -34,6 +35,7 @@ struct Credential {
     return !(rhs == *this);
   }
 };
+
 } // namespace
 
 void updateHdfsTokens(const facebook::velox::config::ConfigBase* veloxCfg) {
@@ -63,4 +65,5 @@ void updateHdfsTokens(const facebook::velox::config::ConfigBase* veloxCfg) {
     hdfsSetTokenForDefaultUser(token.data());
   activeCredential.emplace(newCredential);
 }
+
 } // namespace gluten

@@ -16,20 +16,21 @@
  */
 package org.apache.spark.sql.execution
 
-import org.apache.gluten.backendsapi.BackendsApiManager
+import org.apache.gluten.backendsapi.clickhouse.RuntimeSettings
+import org.apache.gluten.vectorized.NativeExpressionEvaluator
 
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.internal.io.{FileCommitProtocol, FileNameSpec, HadoopMapReduceCommitProtocol}
 import org.apache.spark.internal.io.FileCommitProtocol.TaskCommitMessage
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
-import org.apache.spark.sql.delta.stats.DeltaJobStatisticsTracker
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, GenericInternalRow}
 import org.apache.spark.sql.execution.datasources.{BasicWriteJobStatsTracker, BasicWriteTaskStats, ExecutedWriteSummary, PartitioningUtils, WriteJobDescription, WriteTaskResult, WriteTaskStatsTracker}
+import org.apache.spark.sql.types.{LongType, StringType}
 import org.apache.spark.util.Utils
 
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.mapreduce.{JobID, OutputCommitter, TaskAttemptContext, TaskAttemptID, TaskID, TaskType}
+import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl
 
@@ -59,11 +60,6 @@ trait CHColumnarWrite[T <: FileCommitProtocol] {
     .find(_.isInstanceOf[BasicWriteJobStatsTracker])
     .map(_.newTaskInstance())
     .get
-
-  lazy val deltaWriteJobStatsTracker: Option[DeltaJobStatisticsTracker] =
-    description.statsTrackers
-      .find(_.isInstanceOf[DeltaJobStatisticsTracker])
-      .map(_.asInstanceOf[DeltaJobStatisticsTracker])
 
   lazy val (taskAttemptContext: TaskAttemptContext, jobId: String) = {
     // Copied from `SparkHadoopWriterUtils.createJobID` to be compatible with multi-version
@@ -102,6 +98,12 @@ object CreateFileNameSpec {
   }
 }
 
+// More details in local_engine::FileNameGenerator in NormalFileWriter.cpp
+object FileNamePlaceHolder {
+  val ID = "{id}"
+  val BUCKET = "{bucket}"
+}
+
 /** [[HadoopMapReduceAdapter]] for [[HadoopMapReduceCommitProtocol]]. */
 case class HadoopMapReduceAdapter(sparkCommitter: HadoopMapReduceCommitProtocol) {
   private lazy val committer: OutputCommitter = {
@@ -132,26 +134,31 @@ case class HadoopMapReduceAdapter(sparkCommitter: HadoopMapReduceCommitProtocol)
     GetFilename.invoke(sparkCommitter, taskContext, spec).asInstanceOf[String]
   }
 
-  def getTaskAttemptTempPathAndFilename(
+  def getTaskAttemptTempPathAndFilePattern(
       taskContext: TaskAttemptContext,
       description: WriteJobDescription): (String, String) = {
     val stageDir = newTaskAttemptTempPath(description.path)
-    val filename = getFilename(taskContext, CreateFileNameSpec(taskContext, description))
-    (stageDir, filename)
+
+    if (isBucketWrite(description)) {
+      val filePart = getFilename(taskContext, FileNameSpec("", ""))
+      val fileSuffix = CreateFileNameSpec(taskContext, description).suffix
+      (stageDir, s"${filePart}_${FileNamePlaceHolder.BUCKET}$fileSuffix")
+    } else {
+      val filename = getFilename(taskContext, CreateFileNameSpec(taskContext, description))
+      (stageDir, filename)
+    }
+  }
+
+  private def isBucketWrite(desc: WriteJobDescription): Boolean = {
+    // In Spark 3.2, bucketSpec is not defined, instead, it uses bucketIdExpression.
+    val bucketSpecField: Field = desc.getClass.getDeclaredField("bucketSpec")
+    bucketSpecField.setAccessible(true)
+    bucketSpecField.get(desc).asInstanceOf[Option[_]].isDefined
   }
 }
 
-/**
- * {{{
- * val schema =
- *   StructType(
- *     StructField("filename", StringType, false) ::
- *     StructField("partition_id", StringType, false) ::
- *     StructField("record_count", LongType, false) :: Nil)
- * }}}
- */
 case class NativeFileWriteResult(filename: String, partition_id: String, record_count: Long) {
-  lazy val relativePath: String = if (partition_id == "__NO_PARTITION_ID__") {
+  lazy val relativePath: String = if (partition_id == CHColumnarWrite.EMPTY_PARTITION_ID) {
     filename
   } else {
     s"$partition_id/$filename"
@@ -161,6 +168,28 @@ case class NativeFileWriteResult(filename: String, partition_id: String, record_
 object NativeFileWriteResult {
   implicit def apply(row: InternalRow): NativeFileWriteResult = {
     NativeFileWriteResult(row.getString(0), row.getString(1), row.getLong(2))
+  }
+
+  /**
+   * {{{
+   * val schema =
+   *   StructType(
+   *     StructField("filename", StringType, false) ::
+   *     StructField("partition_id", StringType, false) ::
+   *     StructField("record_count", LongType, false) :: <= overlap with vanilla =>
+   *     min...
+   *     max...
+   *     null_count...)
+   * }}}
+   */
+  private val inputBasedSchema: Seq[AttributeReference] = Seq(
+    AttributeReference("filename", StringType, nullable = false)(),
+    AttributeReference("partittion_id", StringType, nullable = false)(),
+    AttributeReference("record_count", LongType, nullable = false)()
+  )
+
+  def nativeStatsSchema(vanilla: Seq[AttributeReference]): Seq[AttributeReference] = {
+    inputBasedSchema.take(2) ++ vanilla
   }
 }
 
@@ -177,13 +206,13 @@ case class NativeStatCompute(rows: Seq[InternalRow]) {
 }
 
 case class NativeBasicWriteTaskStatsTracker(
-    description: WriteJobDescription,
+    writeDir: String,
     basicWriteJobStatsTracker: WriteTaskStatsTracker)
   extends (NativeFileWriteResult => Unit) {
   private var numWrittenRows: Long = 0
   override def apply(stat: NativeFileWriteResult): Unit = {
-    val absolutePath = s"${description.path}/${stat.relativePath}"
-    if (stat.partition_id != "__NO_PARTITION_ID__") {
+    val absolutePath = s"$writeDir/${stat.relativePath}"
+    if (stat.partition_id != CHColumnarWrite.EMPTY_PARTITION_ID) {
       basicWriteJobStatsTracker.newPartition(new GenericInternalRow(Array[Any](stat.partition_id)))
     }
     basicWriteJobStatsTracker.newFile(absolutePath)
@@ -204,7 +233,7 @@ case class FileCommitInfo(description: WriteJobDescription)
 
   def apply(stat: NativeFileWriteResult): Unit = {
     val tmpAbsolutePath = s"${description.path}/${stat.relativePath}"
-    if (stat.partition_id != "__NO_PARTITION_ID__") {
+    if (stat.partition_id != CHColumnarWrite.EMPTY_PARTITION_ID) {
       partitions += stat.partition_id
       val customOutputPath =
         description.customPartitionLocations.get(
@@ -227,6 +256,8 @@ case class HadoopMapReduceCommitProtocolWrite(
   extends CHColumnarWrite[HadoopMapReduceCommitProtocol]
   with Logging {
 
+  private var stageDir: String = _
+
   private lazy val adapter: HadoopMapReduceAdapter = HadoopMapReduceAdapter(committer)
 
   /**
@@ -234,10 +265,16 @@ case class HadoopMapReduceCommitProtocolWrite(
    * initializing the native plan and collect native write files metrics for each backend.
    */
   override def doSetupNativeTask(): Unit = {
-    val (writePath, writeFileName) =
-      adapter.getTaskAttemptTempPathAndFilename(taskAttemptContext, description)
-    logDebug(s"Native staging write path: $writePath and file name: $writeFileName")
-    BackendsApiManager.getIteratorApiInstance.injectWriteFilesTempPath(writePath, writeFileName)
+    val (writePath, writeFilePattern) =
+      adapter.getTaskAttemptTempPathAndFilePattern(taskAttemptContext, description)
+    stageDir = writePath
+    logDebug(s"Native staging write path: $stageDir and file pattern: $writeFilePattern")
+
+    val settings =
+      Map(
+        RuntimeSettings.TASK_WRITE_TMP_DIR.key -> stageDir,
+        RuntimeSettings.TASK_WRITE_FILENAME_PATTERN.key -> writeFilePattern)
+    NativeExpressionEvaluator.updateQueryRuntimeSettings(settings)
   }
 
   def doCollectNativeResult(stats: Seq[InternalRow]): Option[WriteTaskResult] = {
@@ -246,7 +283,7 @@ case class HadoopMapReduceCommitProtocolWrite(
       None
     } else {
       val commitInfo = FileCommitInfo(description)
-      val basicNativeStat = NativeBasicWriteTaskStatsTracker(description, basicWriteJobStatsTracker)
+      val basicNativeStat = NativeBasicWriteTaskStatsTracker(stageDir, basicWriteJobStatsTracker)
       val basicNativeStats = Seq(commitInfo, basicNativeStat)
       NativeStatCompute(stats)(basicNativeStats)
       val (partitions, addedAbsPathFiles) = commitInfo.result
@@ -287,4 +324,6 @@ object CHColumnarWrite {
         .asInstanceOf[CHColumnarWrite[FileCommitProtocol]]
     case other => CHDeltaColumnarWrite(jobTrackerID, description, other)
   }
+
+  val EMPTY_PARTITION_ID = "__NO_PARTITION_ID__"
 }

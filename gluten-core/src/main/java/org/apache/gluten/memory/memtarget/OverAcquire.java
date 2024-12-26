@@ -57,13 +57,15 @@ public class OverAcquire implements MemoryTarget {
     }
     Preconditions.checkState(overTarget.usedBytes() == 0);
     long granted = target.borrow(size);
-    long majorSize = target.usedBytes();
-    long overSize = (long) (ratio * majorSize);
-    long overAcquired = overTarget.borrow(overSize);
-    Preconditions.checkState(overAcquired == overTarget.usedBytes());
-    long releasedOverSize = overTarget.repay(overAcquired);
-    Preconditions.checkState(releasedOverSize == overAcquired);
-    Preconditions.checkState(overTarget.usedBytes() == 0);
+    if (granted >= size) {
+      long majorSize = target.usedBytes();
+      long overSize = (long) (ratio * majorSize);
+      long overAcquired = overTarget.borrow(overSize);
+      Preconditions.checkState(overAcquired == overTarget.usedBytes());
+      long releasedOverSize = overTarget.repay(overAcquired);
+      Preconditions.checkState(releasedOverSize == overAcquired);
+      Preconditions.checkState(overTarget.usedBytes() == 0);
+    }
     return granted;
   }
 
@@ -72,7 +74,6 @@ public class OverAcquire implements MemoryTarget {
     if (size == 0) {
       return 0;
     }
-    Preconditions.checkState(overTarget.usedBytes() == 0);
     return target.repay(size);
   }
 

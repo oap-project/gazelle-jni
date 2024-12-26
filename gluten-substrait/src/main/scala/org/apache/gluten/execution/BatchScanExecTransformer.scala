@@ -17,7 +17,7 @@
 package org.apache.gluten.execution
 
 import org.apache.gluten.backendsapi.BackendsApiManager
-import org.apache.gluten.exception.GlutenNotSupportException
+import org.apache.gluten.expression.ExpressionConverter
 import org.apache.gluten.extension.ValidationResult
 import org.apache.gluten.metrics.MetricsUpdater
 import org.apache.gluten.sql.shims.SparkShimLoader
@@ -27,6 +27,7 @@ import org.apache.gluten.utils.FileIndexUtil
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
+import org.apache.spark.sql.catalyst.util.truncatedString
 import org.apache.spark.sql.connector.catalog.Table
 import org.apache.spark.sql.connector.read.{InputPartition, Scan}
 import org.apache.spark.sql.execution.datasources.v2.{BatchScanExecShim, FileScan}
@@ -54,6 +55,10 @@ case class BatchScanExecTransformer(
     commonPartitionValues,
     applyPartialClustering,
     replicatePartitions) {
+
+  protected[this] def supportsBatchScan(scan: Scan): Boolean = {
+    scan.isInstanceOf[FileScan]
+  }
 
   override def doCanonicalize(): BatchScanExecTransformer = {
     this.copy(
@@ -96,18 +101,24 @@ abstract class BatchScanExecTransformerBase(
   // class. Otherwise, we will encounter an issue where makeCopy cannot find a constructor
   // with the corresponding number of parameters.
   // The workaround is to add a mutable list to pass in pushdownFilters.
-  protected var pushdownFilters: Option[Seq[Expression]] = None
+  protected var pushdownFilters: Seq[Expression] = scan match {
+    case fileScan: FileScan =>
+      fileScan.dataFilters.filter {
+        expr =>
+          ExpressionConverter.canReplaceWithExpressionTransformer(
+            ExpressionConverter.replaceAttributeReference(expr),
+            output)
+      }
+    case _ =>
+      logInfo(s"${scan.getClass.toString} does not support push down filters")
+      Seq.empty
+  }
 
   def setPushDownFilters(filters: Seq[Expression]): Unit = {
-    pushdownFilters = Some(filters)
+    pushdownFilters = filters
   }
 
-  override def filterExprs(): Seq[Expression] = scan match {
-    case fileScan: FileScan =>
-      pushdownFilters.getOrElse(fileScan.dataFilters)
-    case _ =>
-      throw new GlutenNotSupportException(s"${scan.getClass.toString} is not supported")
-  }
+  override def filterExprs(): Seq[Expression] = pushdownFilters
 
   override def getMetadataColumns(): Seq[AttributeReference] = Seq.empty
 
@@ -133,7 +144,13 @@ abstract class BatchScanExecTransformerBase(
     }
   }
 
+  protected[this] def supportsBatchScan(scan: Scan): Boolean
+
   override def doValidateInternal(): ValidationResult = {
+    if (!supportsBatchScan(scan)) {
+      return ValidationResult.failed(s"Unsupported scan $scan")
+    }
+
     if (pushedAggregate.nonEmpty) {
       return ValidationResult.failed(s"Unsupported aggregation push down for $scan.")
     }
@@ -158,11 +175,15 @@ abstract class BatchScanExecTransformerBase(
   @transient protected lazy val filteredFlattenPartitions: Seq[InputPartition] =
     filteredPartitions.flatten
 
-  @transient override lazy val fileFormat: ReadFileFormat = scan.getClass.getSimpleName match {
-    case "OrcScan" => ReadFileFormat.OrcReadFormat
-    case "ParquetScan" => ReadFileFormat.ParquetReadFormat
-    case "DwrfScan" => ReadFileFormat.DwrfReadFormat
-    case "ClickHouseScan" => ReadFileFormat.MergeTreeReadFormat
-    case _ => ReadFileFormat.UnknownFormat
+  @transient override lazy val fileFormat: ReadFileFormat =
+    BackendsApiManager.getSettings.getSubstraitReadFileFormatV2(scan)
+
+  override def simpleString(maxFields: Int): String = {
+    val truncatedOutputString = truncatedString(output, "[", ", ", "]", maxFields)
+    val runtimeFiltersString = s"RuntimeFilters: ${runtimeFilters.mkString("[", ",", "]")}"
+    val nativeFiltersString = s"NativeFilters: ${filterExprs().mkString("[", ",", "]")}"
+    val result = s"$nodeName$truncatedOutputString ${scan.description()}" +
+      s" $runtimeFiltersString $nativeFiltersString"
+    redact(result)
   }
 }

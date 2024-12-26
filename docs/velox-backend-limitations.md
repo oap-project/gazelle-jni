@@ -147,7 +147,7 @@ Gluten's.
 
 ### Spill
 
-`OutOfMemoryExcetpion` may still be triggered within current implementation of spill-to-disk feature, when shuffle partitions is set to a large number. When this case happens, please try to reduce the partition number to get rid of the OOM.
+`OutOfMemoryException` may still be triggered within current implementation of spill-to-disk feature, when shuffle partitions is set to a large number. When this case happens, please try to reduce the partition number to get rid of the OOM.
 
 ### Unsupported Data type support in ParquetScan
 

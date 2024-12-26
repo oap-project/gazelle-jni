@@ -107,6 +107,30 @@ class GlutenClickhouseStringFunctionsSuite extends GlutenClickHouseWholeStageTra
     }
   }
 
+  test("GLUTEN-8325 $. missmatched") {
+    withTable("regexp_string_end") {
+      sql("create table regexp_string_end(a String) using parquet")
+      sql("""
+            |insert into regexp_string_end
+            | values ('@abc'),('@abc\n'),('@abc\nsdd'), ('sfsd\n@abc'), ('sdfsdf\n@abc\n'),
+            | ('sdfsdf\n@abc\nsdf'), ('sdfsdf@abc\nsdf\n'), ('sdfsdf@abc'), ('sdfsdf@abc\n')
+            |""".stripMargin)
+      runQueryAndCompare("""
+                           |select
+                           |regexp_extract(a, '@(.*?)($)', 1),
+                           |regexp_extract(a, '@(.*?)(f|$)', 1),
+                           |regexp_extract(a, '^@(.*?)(f|$)', 1)
+                           |from regexp_string_end""".stripMargin) { _ => }
+
+      runQueryAndCompare("""
+                           |select
+                           |regexp_extract(a, '@(.*)($)', 1),
+                           |regexp_extract(a, '@(.*)(f|$)', 1),
+                           |regexp_extract(a, '^@(.*?)(f|$)', 1)
+                           |from regexp_string_end""".stripMargin) { _ => }
+    }
+  }
+
   test("replace") {
     val tableName = "replace_table"
     withTable(tableName) {

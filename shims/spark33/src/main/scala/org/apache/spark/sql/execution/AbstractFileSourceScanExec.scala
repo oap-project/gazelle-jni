@@ -77,7 +77,9 @@ abstract class AbstractFileSourceScanExec(
 
   override def supportsColumnar: Boolean = {
     // The value should be defined in GlutenPlan.
-    throw new UnsupportedOperationException("Unreachable code")
+    throw new UnsupportedOperationException(
+      "Unreachable code from org.apache.spark.sql.execution.AbstractFileSourceScanExec" +
+        ".supportsColumnar")
   }
 
   private lazy val needsUnsafeRowConversion: Boolean = {

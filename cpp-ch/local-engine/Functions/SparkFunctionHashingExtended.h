@@ -47,9 +47,6 @@ namespace ErrorCodes
 namespace local_engine
 {
 
-using namespace DB;
-
-
 template <typename T>
 requires std::is_integral_v<T>
 struct IntHashPromotion
@@ -57,7 +54,7 @@ struct IntHashPromotion
     static constexpr bool is_signed = is_signed_v<T>;
     static constexpr size_t size = std::max<size_t>(4, sizeof(T));
 
-    using Type = typename NumberTraits::Construct<is_signed, false, size>::Type;
+    using Type = typename DB::NumberTraits::Construct<is_signed, false, size>::Type;
     static constexpr bool need_promotion_v = sizeof(T) < 4;
 };
 
@@ -77,7 +74,7 @@ inline String toHexString(const char * buf, size_t length)
 DECLARE_MULTITARGET_CODE(
 
 template <typename Impl>
-class SparkFunctionAnyHash : public IFunction
+class SparkFunctionAnyHash : public DB::IFunction
 {
 public:
     static constexpr auto name = Impl::name;
@@ -90,14 +87,14 @@ public:
 private:
     using ToType = typename Impl::ReturnType;
 
-    static ToType applyGeneric(const Field & field, UInt64 seed, const DataTypePtr & type)
+    static ToType applyGeneric(const DB::Field & field, UInt64 seed, const DB::DataTypePtr & type)
     {
         /// Do nothing when field is null
         if (field.isNull())
             return seed;
 
-        DataTypePtr non_nullable_type = removeNullable(type);
-        WhichDataType which(non_nullable_type);
+        DB::DataTypePtr non_nullable_type = removeNullable(type);
+        DB::WhichDataType which(non_nullable_type);
         if (which.isNothing())
             return seed;
         else if (which.isUInt8())
@@ -127,13 +124,13 @@ private:
         else if (which.isDateTime())
             return applyNumber<UInt32>(field.safeGet<UInt32>(), seed);
         else if (which.isDateTime64())
-            return applyDecimal<DateTime64>(field.safeGet<DateTime64>(), seed);
+            return applyDecimal<DB::DateTime64>(field.safeGet<DB::DateTime64>(), seed);
         else if (which.isDecimal32())
-            return applyDecimal<Decimal32>(field.safeGet<Decimal32>(), seed);
+            return applyDecimal<DB::Decimal32>(field.safeGet<DB::Decimal32>(), seed);
         else if (which.isDecimal64())
-            return applyDecimal<Decimal64>(field.safeGet<Decimal64>(), seed);
+            return applyDecimal<DB::Decimal64>(field.safeGet<DB::Decimal64>(), seed);
         else if (which.isDecimal128())
-            return applyDecimal<Decimal128>(field.safeGet<Decimal128>(), seed);
+            return applyDecimal<DB::Decimal128>(field.safeGet<DB::Decimal128>(), seed);
         else if (which.isStringOrFixedString())
         {
             const String & str = field.safeGet<String>();
@@ -141,11 +138,11 @@ private:
         }
         else if (which.isTuple())
         {
-            const auto * tuple_type = checkAndGetDataType<DataTypeTuple>(non_nullable_type.get());
+            const auto * tuple_type = checkAndGetDataType<DB::DataTypeTuple>(non_nullable_type.get());
             assert(tuple_type);
 
             const auto & elements = tuple_type->getElements();
-            const Tuple & tuple = field.safeGet<Tuple>();
+            const DB::Tuple & tuple = field.safeGet<DB::Tuple>();
             assert(tuple.size() == elements.size());
 
             for (size_t i = 0; i < elements.size(); ++i)
@@ -156,11 +153,11 @@ private:
         }
         else if (which.isArray())
         {
-            const auto * array_type = checkAndGetDataType<DataTypeArray>(non_nullable_type.get());
+            const auto * array_type = checkAndGetDataType<DB::DataTypeArray>(non_nullable_type.get());
             assert(array_type);
 
             const auto & nested_type = array_type->getNestedType();
-            const Array & array = field.safeGet<Array>();
+            const DB::Array & array = field.safeGet<DB::Array>();
             for (size_t i=0; i < array.size(); ++i)
             {
                 seed = applyGeneric(array[i], seed, nested_type);
@@ -173,7 +170,7 @@ private:
             /// Note: No need to implement for uuid/ipv4/ipv6/enum* type in gluten
             /// Note: No need to implement for decimal256 type in gluten
             /// Note: No need to implement for map type as long as spark.sql.legacy.allowHashOnMapType is false(default)
-            throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Unsupported type {}", type->getName());
+            throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Unsupported type {}", type->getName());
         }
     }
 
@@ -217,7 +214,7 @@ private:
     }
 
     template <typename T>
-        requires is_decimal<T>
+        requires DB::is_decimal<T>
     static ToType applyDecimal(const T & n, UInt64 seed)
     {
         using NativeType = typename T::NativeType;
@@ -265,11 +262,11 @@ private:
     }
 
     void executeGeneric(
-        const IDataType * from_type,
+        const DB::IDataType * from_type,
         bool from_const,
-        const IColumn * data_column,
-        const NullMap * null_map,
-        typename ColumnVector<ToType>::Container & vec_to) const
+        const DB::IColumn * data_column,
+        const DB::NullMap * null_map,
+        typename DB::ColumnVector<ToType>::Container & vec_to) const
     {
         size_t size = vec_to.size();
         if (!from_const)
@@ -288,13 +285,13 @@ private:
 
     template <typename FromType>
     void executeNumberType(
-        bool from_const, const IColumn * data_column, const NullMap * null_map, typename ColumnVector<ToType>::Container & vec_to) const
+        bool from_const, const DB::IColumn * data_column, const DB::NullMap * null_map, typename DB::ColumnVector<ToType>::Container & vec_to) const
     {
-        using ColVecType = ColumnVectorOrDecimal<FromType>;
+        using ColVecType = DB::ColumnVectorOrDecimal<FromType>;
 
         const ColVecType * col_from = checkAndGetColumn<ColVecType>(data_column);
         if (!col_from)
-            throw Exception(ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
+            throw DB::Exception(DB::ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
 
         size_t size = vec_to.size();
         const typename ColVecType::Container & vec_from = col_from->getData();
@@ -303,11 +300,11 @@ private:
         {
             if constexpr (std::is_arithmetic_v<FromType>)
                 to = applyNumber(value, to);
-            else if constexpr (is_decimal<FromType>)
+            else if constexpr (DB::is_decimal<FromType>)
                 to = applyDecimal(value, to);
             else
-                throw Exception(
-                    ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
+                throw DB::Exception(
+                    DB::ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
         };
 
         if (!from_const)
@@ -329,16 +326,16 @@ private:
         }
     }
 
-    void executeFixedString(bool from_const, const IColumn * data_column, const NullMap * null_map, typename ColumnVector<ToType>::Container & vec_to) const
+    void executeFixedString(bool from_const, const DB::IColumn * data_column, const DB::NullMap * null_map, typename DB::ColumnVector<ToType>::Container & vec_to) const
     {
-        const ColumnFixedString * col_from_fixed = checkAndGetColumn<ColumnFixedString>(data_column);
+        const DB::ColumnFixedString * col_from_fixed = checkAndGetColumn<DB::ColumnFixedString>(data_column);
         if (!col_from_fixed)
-            throw Exception(ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
+            throw DB::Exception(DB::ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
 
         size_t size = vec_to.size();
         if (!from_const)
         {
-            const typename ColumnString::Chars & data = col_from_fixed->getChars();
+            const typename DB::ColumnString::Chars & data = col_from_fixed->getChars();
             size_t n = col_from_fixed->getN();
             for (size_t i = 0; i < size; ++i)
             {
@@ -358,20 +355,20 @@ private:
         }
     }
 
-    void executeString(bool from_const, const IColumn * data_column, const NullMap * null_map, typename ColumnVector<ToType>::Container & vec_to) const
+    void executeString(bool from_const, const DB::IColumn * data_column, const DB::NullMap * null_map, typename DB::ColumnVector<ToType>::Container & vec_to) const
     {
-        const ColumnString * col_from = checkAndGetColumn<ColumnString>(data_column);
+        const DB::ColumnString * col_from = checkAndGetColumn<DB::ColumnString>(data_column);
         if (!col_from)
-            throw Exception(
-                ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
+            throw DB::Exception(
+                DB::ErrorCodes::ILLEGAL_COLUMN, "Illegal column {} of argument of function {}", data_column->getName(), getName());
 
         size_t size = vec_to.size();
         if (!from_const)
         {
-            const typename ColumnString::Chars & data = col_from->getChars();
-            const typename ColumnString::Offsets & offsets = col_from->getOffsets();
+            const typename DB::ColumnString::Chars & data = col_from->getChars();
+            const typename DB::ColumnString::Offsets & offsets = col_from->getOffsets();
 
-            ColumnString::Offset current_offset = 0;
+            DB::ColumnString::Offset current_offset = 0;
             for (size_t i = 0; i < size; ++i)
             {
                 if (!null_map || !(*null_map)[i]) [[likely]]
@@ -393,29 +390,29 @@ private:
         }
     }
 
-    void executeAny(const IDataType * from_type, const IColumn * column, typename ColumnVector<ToType>::Container & vec_to) const
+    void executeAny(const DB::IDataType * from_type, const DB::IColumn * column, typename DB::ColumnVector<ToType>::Container & vec_to) const
     {
         if (column->size() != vec_to.size())
-            throw Exception(ErrorCodes::LOGICAL_ERROR, "Argument column '{}' size {} doesn't match result column size {} of function {}",
+            throw DB::Exception(DB::ErrorCodes::LOGICAL_ERROR, "Argument column '{}' size {} doesn't match result column size {} of function {}",
                     column->getName(), column->size(), vec_to.size(), getName());
 
-        const NullMap * null_map = nullptr;
-        const IColumn * data_column = column;
+        const DB::NullMap * null_map = nullptr;
+        const DB::IColumn * data_column = column;
         bool from_const = false;
 
         if (isColumnConst(*column))
         {
             from_const = true;
-            data_column = &assert_cast<const ColumnConst &>(*column).getDataColumn();
+            data_column = &assert_cast<const DB::ColumnConst &>(*column).getDataColumn();
         }
 
-        if (const ColumnNullable * col_nullable = checkAndGetColumn<ColumnNullable>(data_column))
+        if (const DB::ColumnNullable * col_nullable = checkAndGetColumn<DB::ColumnNullable>(data_column))
         {
             null_map = &col_nullable->getNullMapData();
             data_column = &col_nullable->getNestedColumn();
         }
 
-        WhichDataType which(removeNullable(from_type->shared_from_this()));
+        DB::WhichDataType which(removeNullable(from_type->shared_from_this()));
 
         /// Skip column with type Nullable(Nothing)
         if (which.isNothing())
@@ -447,13 +444,13 @@ private:
         else if (which.isDateTime())
             executeNumberType<UInt32>(from_const, data_column, null_map, vec_to);
         else if (which.isDateTime64())
-            executeNumberType<DateTime64>(from_const, data_column, null_map, vec_to);
+            executeNumberType<DB::DateTime64>(from_const, data_column, null_map, vec_to);
         else if (which.isDecimal32())
-            executeNumberType<Decimal32>(from_const, data_column, null_map, vec_to);
+            executeNumberType<DB::Decimal32>(from_const, data_column, null_map, vec_to);
         else if (which.isDecimal64())
-            executeNumberType<Decimal64>(from_const, data_column, null_map, vec_to);
+            executeNumberType<DB::Decimal64>(from_const, data_column, null_map, vec_to);
         else if (which.isDecimal128())
-            executeNumberType<Decimal128>(from_const, data_column, null_map, vec_to);
+            executeNumberType<DB::Decimal128>(from_const, data_column, null_map, vec_to);
         else if (which.isString())
             executeString(from_const, data_column, null_map, vec_to);
         else if (which.isFixedString())
@@ -468,12 +465,12 @@ private:
             /// Note: No need to implement for uuid/ipv4/ipv6/enum* type in gluten
             /// Note: No need to implement for decimal256 type in gluten
             /// Note: No need to implement for map type as long as spark.sql.legacy.allowHashOnMapType is false(default)
-            throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Function {} hasn't supported type {}", getName(), from_type->getName());
+            throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Function {} hasn't supported type {}", getName(), from_type->getName());
         }
     }
 
     void executeForArgument(
-        const IDataType * type, const IColumn * column, typename ColumnVector<ToType>::Container & vec_to) const
+        const DB::IDataType * type, const DB::IColumn * column, typename DB::ColumnVector<ToType>::Container & vec_to) const
     {
         executeAny(type, column, vec_to);
     }
@@ -487,19 +484,19 @@ public:
     bool isVariadic() const override { return true; }
     size_t getNumberOfArguments() const override { return 0; }
     bool useDefaultImplementationForConstants() const override { return true; }
-    bool isSuitableForShortCircuitArgumentsExecution(const DataTypesWithConstInfo & /*arguments*/) const override { return true; }
+    bool isSuitableForShortCircuitArgumentsExecution(const DB::DataTypesWithConstInfo & /*arguments*/) const override { return true; }
 
-    DataTypePtr getReturnTypeImpl(const DataTypes & /*arguments*/) const override
+    DB::DataTypePtr getReturnTypeImpl(const DB::DataTypes & /*arguments*/) const override
     {
-        return std::make_shared<DataTypeNumber<ToType>>();
+        return std::make_shared<DB::DataTypeNumber<ToType>>();
     }
 
-    ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr &, size_t input_rows_count) const override
+    DB::ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr &, size_t input_rows_count) const override
     {
-        auto col_to = ColumnVector<ToType>::create(input_rows_count);
+        auto col_to = DB::ColumnVector<ToType>::create(input_rows_count);
 
         /// Initial seed is always 42
-        typename ColumnVector<ToType>::Container & vec_to = col_to->getData();
+        typename DB::ColumnVector<ToType>::Container & vec_to = col_to->getData();
         for (size_t i = 0; i < input_rows_count; ++i)
             vec_to[i] = 42;
 
@@ -522,25 +519,25 @@ template <typename Impl>
 class SparkFunctionAnyHash : public TargetSpecific::Default::SparkFunctionAnyHash<Impl>
 {
 public:
-    explicit SparkFunctionAnyHash(ContextPtr context) : selector(context)
+    explicit SparkFunctionAnyHash(DB::ContextPtr context) : selector(context)
     {
-        selector.registerImplementation<TargetArch::Default, TargetSpecific::Default::SparkFunctionAnyHash<Impl>>();
+        selector.registerImplementation<DB::TargetArch::Default, TargetSpecific::Default::SparkFunctionAnyHash<Impl>>();
 
 #if USE_MULTITARGET_CODE
-        selector.registerImplementation<TargetArch::AVX2, TargetSpecific::AVX2::SparkFunctionAnyHash<Impl>>();
-        selector.registerImplementation<TargetArch::AVX512F, TargetSpecific::AVX512F::SparkFunctionAnyHash<Impl>>();
+        selector.registerImplementation<DB::TargetArch::AVX2, TargetSpecific::AVX2::SparkFunctionAnyHash<Impl>>();
+        selector.registerImplementation<DB::TargetArch::AVX512F, TargetSpecific::AVX512F::SparkFunctionAnyHash<Impl>>();
 #endif
     }
 
-    ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr & result_type, size_t input_rows_count) const override
+    DB::ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr & result_type, size_t input_rows_count) const override
     {
         return selector.selectAndExecute(arguments, result_type, input_rows_count);
     }
 
-    static FunctionPtr create(ContextPtr context) { return std::make_shared<SparkFunctionAnyHash>(context); }
+    static DB::FunctionPtr create(DB::ContextPtr context) { return std::make_shared<SparkFunctionAnyHash>(context); }
 
 private:
-    ImplementationSelector<IFunction> selector;
+    DB::ImplementationSelector<DB::IFunction> selector;
 };
 
 

@@ -67,7 +67,7 @@ jobs:
       - name: Upload Artifact Arrow Jar
         uses: actions/upload-artifact@v3
         with:
-          path: /root/.m2/repository/org/apache/arrow/
+          path: ${{ github.workspace }}/.m2/repository/org/apache/arrow/
           name: velox-arrow-jar-centos-7-${{github.sha}}
 
   build-bundle-package-centos8:

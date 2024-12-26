@@ -22,13 +22,17 @@ import org.apache.gluten.substrait.expression.ExpressionNode
 import org.apache.gluten.substrait.plan.{PlanBuilder, PlanNode}
 import org.apache.gluten.substrait.rel.RelBuilder
 
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, BoundReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression}
 
 import com.google.common.collect.Lists
 
+import java.util
+
+import scala.collection.JavaConverters._
+
 object PlanNodesUtil {
 
-  def genProjectionsPlanNode(key: Expression, output: Seq[Attribute]): PlanNode = {
+  def genProjectionsPlanNode(key: Seq[Expression], output: Seq[Attribute]): PlanNode = {
     val context = new SubstraitContext
 
     var operatorId = context.nextOperatorId("ClickHouseBuildSideRelationReadIter")
@@ -36,41 +40,36 @@ object PlanNodesUtil {
     val nameList = ConverterUtils.collectAttributeNamesWithExprId(output)
     val readRel = RelBuilder.makeReadRelForInputIterator(typeList, nameList, context, operatorId)
 
-    // replace attribute to BoundRefernce according to the output
-    val newBoundRefKey = key.transformDown {
-      case expression: AttributeReference =>
-        val columnInOutput = output.zipWithIndex.filter {
-          p: (Attribute, Int) => p._1.exprId == expression.exprId || p._1.name == expression.name
-        }
-        if (columnInOutput.isEmpty) {
-          throw new IllegalStateException(
-            s"Key $expression not found from build side relation output: $output")
-        }
-        if (columnInOutput.size != 1) {
-          throw new IllegalStateException(
-            s"More than one key $expression found from build side relation output: $output")
-        }
-        val boundReference = columnInOutput.head
-        BoundReference(boundReference._2, boundReference._1.dataType, boundReference._1.nullable)
-      case other => other
-    }
-
     // project
     operatorId = context.nextOperatorId("ClickHouseBuildSideRelationProjection")
     val args = context.registeredFunction
 
     val columnarProjExpr = ExpressionConverter
-      .replaceWithExpressionTransformer(newBoundRefKey, attributeSeq = output)
+      .replaceWithExpressionTransformer(key, attributeSeq = output)
 
     val projExprNodeList = new java.util.ArrayList[ExpressionNode]()
-    projExprNodeList.add(columnarProjExpr.doTransform(args))
+    columnarProjExpr.foreach(e => projExprNodeList.add(e.doTransform(args)))
 
     PlanBuilder.makePlan(
       context,
       Lists.newArrayList(
         RelBuilder.makeProjectRel(readRel, projExprNodeList, context, operatorId, output.size)),
-      Lists.newArrayList(
-        ConverterUtils.genColumnNameWithExprId(ConverterUtils.getAttrFromExpr(key)))
+      Lists.newArrayList(genColumnNameWithExprId(key, output))
     )
+  }
+
+  private def genColumnNameWithExprId(
+      key: Seq[Expression],
+      output: Seq[Attribute]): util.List[String] = {
+    key
+      .map {
+        k =>
+          val reference = k.collectFirst { case BoundReference(ordinal, _, _) => output(ordinal) }
+          assert(reference.isDefined)
+          reference.get
+      }
+      .map(ConverterUtils.genColumnNameWithExprId)
+      .toList
+      .asJava
   }
 }

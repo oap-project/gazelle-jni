@@ -17,6 +17,7 @@
 #include "SelectorBuilder.h"
 #include <limits>
 #include <memory>
+#include <Columns/ColumnConst.h>
 #include <Columns/ColumnMap.h>
 #include <Columns/ColumnNullable.h>
 #include <DataTypes/DataTypeArray.h>
@@ -42,6 +43,7 @@ extern const int LOGICAL_ERROR;
 }
 namespace local_engine
 {
+using namespace DB;
 PartitionInfo PartitionInfo::fromSelector(DB::IColumn::Selector selector, size_t partition_num, bool use_external_sort_shuffle)
 {
     if (use_external_sort_shuffle)

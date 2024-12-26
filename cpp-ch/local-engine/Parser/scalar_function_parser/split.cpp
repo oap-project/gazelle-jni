@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include <Parser/FunctionParser.h>
-#include <Common/Exception.h>
 
 namespace local_engine
 {

@@ -100,4 +100,5 @@ std::unique_ptr<common::Filter> SparkExprToSubfieldFilterParser::leafCallToSubfi
   }
   return nullptr;
 }
+
 } // namespace gluten

@@ -16,19 +16,8 @@
  */
 package org.apache.gluten.softaffinity.strategy
 
-import org.apache.gluten.GlutenConfig
-
-import org.apache.spark.SparkEnv
-
-import scala.collection.mutable.ListBuffer
-
 trait SoftAffinityAllocationTrait {
 
-  lazy val softAffinityReplicationNum = SparkEnv.get.conf.getInt(
-    GlutenConfig.GLUTEN_SOFT_AFFINITY_REPLICATIONS_NUM,
-    GlutenConfig.GLUTEN_SOFT_AFFINITY_REPLICATIONS_NUM_DEFAULT_VALUE
-  )
-
-  /** allocate target executors for file */
-  def allocateExecs(file: String, candidates: ListBuffer[(String, String)]): Array[(String, String)]
+  /** Allocate the executors of count number from the candidates. */
+  def allocateExecs(file: String, count: Int): Array[(String, String)]
 }

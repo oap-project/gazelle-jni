@@ -125,12 +125,6 @@ case class CHStringTranslateTransformer(
       throw new GlutenNotSupportException(s"$original not supported yet.")
     }
 
-    val matchingLiteral = matchingNode.asInstanceOf[StringLiteralNode].getValue
-    val replaceLiteral = replaceNode.asInstanceOf[StringLiteralNode].getValue
-    if (matchingLiteral.length() != replaceLiteral.length()) {
-      throw new GlutenNotSupportException(s"$original not supported yet.")
-    }
-
     super.doTransform(args)
   }
 }

@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution
 
 import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.ColumnarBatches
+import org.apache.gluten.execution.WriteFilesExecTransformer
+import org.apache.gluten.extension.ValidationResult
 import org.apache.gluten.memory.arrow.alloc.ArrowBufferAllocators
 
 import org.apache.spark.{Partition, SparkException, TaskContext, TaskOutputFileAlreadyExistException}
@@ -250,12 +252,17 @@ class VeloxColumnarWriteFilesRDD(
 case class VeloxColumnarWriteFilesExec private (
     override val left: SparkPlan,
     override val right: SparkPlan,
+    t: WriteFilesExecTransformer,
     fileFormat: FileFormat,
     partitionColumns: Seq[Attribute],
     bucketSpec: Option[BucketSpec],
     options: Map[String, String],
     staticPartitions: TablePartitionSpec)
   extends ColumnarWriteFilesExec(left, right) {
+
+  override protected def doValidateInternal(): ValidationResult = {
+    t.doValidateInternal()
+  }
 
   override def doExecuteWrite(writeFilesSpec: WriteFilesSpec): RDD[WriterCommitMessage] = {
     assert(child.supportsColumnar)
@@ -276,5 +283,5 @@ case class VeloxColumnarWriteFilesExec private (
   override protected def withNewChildrenInternal(
       newLeft: SparkPlan,
       newRight: SparkPlan): SparkPlan =
-    copy(newLeft, newRight, fileFormat, partitionColumns, bucketSpec, options, staticPartitions)
+    copy(newLeft, newRight, t, fileFormat, partitionColumns, bucketSpec, options, staticPartitions)
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.gluten
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.RuntimeConfig
 import org.apache.gluten.benchmarks.GenTPCHTableScripts
 
 import org.apache.spark.sql.SparkSession
@@ -101,7 +101,7 @@ object RunTPCHTest {
       .config("spark.sql.columnVector.offheap.enabled", "true")
       .config("spark.memory.offHeap.enabled", "true")
       .config("spark.memory.offHeap.size", offHeapSize)
-      .config(CHConf.runtimeConfig("logger.level"), "error")
+      .config(RuntimeConfig.LOGGER_LEVEL.key, "error")
       .config("spark.sql.warehouse.dir", warehouse)
       .config(
         "javax.jdo.option.ConnectionURL",

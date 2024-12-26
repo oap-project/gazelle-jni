@@ -188,7 +188,8 @@ case class ColumnarPartialProjectExec(original: ProjectExec, child: SparkPlan)(
               Iterator.empty
             } else {
               val start = System.currentTimeMillis()
-              val childData = ColumnarBatches.select(batch, projectIndexInChild.toArray)
+              val childData = ColumnarBatches
+                .select(BackendsApiManager.getBackendName, batch, projectIndexInChild.toArray)
               val projectedBatch = getProjectedBatchArrow(childData, c2a, a2c)
 
               val batchIterator = projectedBatch.map {

@@ -192,10 +192,11 @@ SplittableBzip2ReadBuffer::SplittableBzip2ReadBuffer(
     changeStateToProcessABlock();
     LOG_DEBUG(
         getLogger("SplittableBzip2ReadBuffer"),
-        "adjusted_start:{} first_block_need_special_process:{} last_block_need_special_process:{}",
+        "adjusted_start:{} first_block_need_special_process:{} last_block_need_special_process:{} buf_size:{}",
         *adjusted_start,
         first_block_need_special_process,
-        last_block_need_special_process);
+        last_block_need_special_process,
+        buf_size);
 }
 
 Int32 SplittableBzip2ReadBuffer::read(char * dest, size_t dest_size, size_t offs, size_t len)
@@ -444,8 +445,6 @@ void SplittableBzip2ReadBuffer::changeStateToProcessABlock()
 
 void SplittableBzip2ReadBuffer::initBlock()
 {
-    auto * seekable = dynamic_cast<SeekableReadBuffer*>(in.get());
-    size_t position = seekable->getPosition();
     storedBlockCRC = bsGetInt();
     blockRandomised = (bsR(1) == 1);
 

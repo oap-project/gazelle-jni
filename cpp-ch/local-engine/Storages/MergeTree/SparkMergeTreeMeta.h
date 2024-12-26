@@ -16,11 +16,9 @@
  */
 #pragma once
 
+#include <Interpreters/MergeTreeTransaction.h>
 #include <Interpreters/TableJoin.h>
 #include <Interpreters/TreeRewriter.h>
-
-#include <Interpreters/MergeTreeTransaction.h>
-#include <Storages/MergeTree/MergeTreeSettings.h>
 #include <Storages/MergeTree/RangesInDataPart.h>
 #include <Storages/SelectQueryInfo.h>
 #include <Storages/StorageInMemoryMetadata.h>
@@ -35,7 +33,6 @@ namespace local_engine
 class Write;
 class SparkStorageMergeTree;
 using SparkStorageMergeTreePtr = std::shared_ptr<SparkStorageMergeTree>;
-using namespace DB;
 
 struct MergeTreePart
 {
@@ -68,16 +65,16 @@ struct MergeTreeTable
 
     bool sameTable(const MergeTreeTable & other) const;
 
-    SparkStorageMergeTreePtr getStorage(ContextMutablePtr context) const;
+    SparkStorageMergeTreePtr getStorage(DB::ContextMutablePtr context) const;
 
     /// Create random table name and table path and use default storage policy.
     /// In insert case, mergetree data can be uploaded after merges in default storage(Local Disk).
-    SparkStorageMergeTreePtr copyToDefaultPolicyStorage(const ContextMutablePtr & context) const;
+    SparkStorageMergeTreePtr copyToDefaultPolicyStorage(const DB::ContextMutablePtr & context) const;
 
     /// Use same table path and data path as the original table.
-    SparkStorageMergeTreePtr copyToVirtualStorage(const ContextMutablePtr & context) const;
+    SparkStorageMergeTreePtr copyToVirtualStorage(const DB::ContextMutablePtr & context) const;
 
-    std::shared_ptr<DB::StorageInMemoryMetadata> buildMetaData(const DB::Block & header, const ContextPtr & context) const;
+    std::shared_ptr<DB::StorageInMemoryMetadata> buildMetaData(const DB::Block & header, const DB::ContextPtr & context) const;
 
     MergeTreeTable() = default;
     MergeTreeTable(const local_engine::Write & write, const substrait::NamedStruct & table_schema);
@@ -87,16 +84,14 @@ struct MergeTreeTableInstance : MergeTreeTable
 {
     std::vector<MergeTreePart> parts;
     std::unordered_set<std::string> getPartNames() const;
-    RangesInDataParts extractRange(DataPartsVector parts_vector) const;
+    DB::RangesInDataParts extractRange(DB::DataPartsVector parts_vector) const;
 
-    SparkStorageMergeTreePtr restoreStorage(const ContextMutablePtr & context) const;
+    SparkStorageMergeTreePtr restoreStorage(const DB::ContextMutablePtr & context) const;
 
     explicit MergeTreeTableInstance(const google::protobuf::Any & any);
     explicit MergeTreeTableInstance(const substrait::ReadRel::ExtensionTable & extension_table);
     explicit MergeTreeTableInstance(const std::string & info);
 };
 
-std::unique_ptr<MergeTreeSettings> buildMergeTreeSettings(const MergeTreeTableSettings & config);
-
-std::unique_ptr<SelectQueryInfo> buildQueryInfo(NamesAndTypesList & names_and_types_list);
+std::unique_ptr<DB::SelectQueryInfo> buildQueryInfo(DB::NamesAndTypesList & names_and_types_list);
 }

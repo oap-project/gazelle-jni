@@ -94,4 +94,5 @@ void ParquetBufferedReaderIterator::collectBatches() {
   auto endTime = std::chrono::steady_clock::now();
   collectBatchTime_ += std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime).count();
 }
+
 } // namespace gluten

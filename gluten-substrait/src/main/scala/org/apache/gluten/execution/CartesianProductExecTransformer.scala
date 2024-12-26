@@ -111,6 +111,14 @@ case class CartesianProductExecTransformer(
   }
 
   override protected def doValidateInternal(): ValidationResult = {
+    if (
+      !BackendsApiManager.getSettings.supportCartesianProductExecWithCondition() &&
+      condition.nonEmpty
+    ) {
+      return ValidationResult.failed(
+        "CartesianProductExecTransformer with condition is not supported in this backend.")
+    }
+
     if (!BackendsApiManager.getSettings.supportCartesianProductExec()) {
       return ValidationResult.failed("Cartesian product is not supported in this backend")
     }

@@ -38,6 +38,9 @@ SparkMergeTreeWriteSettings::SparkMergeTreeWriteSettings(const DB::ContextPtr & 
 
     if (DB::Field limit_cnt_field; settings.tryGet("mergetree.max_num_part_per_merge_task", limit_cnt_field))
         merge_limit_parts = limit_cnt_field.safeGet<Int64>() <= 0 ? merge_limit_parts : limit_cnt_field.safeGet<Int64>();
+
+    if (settingsEqual(context->getSettingsRef(), MergeTreeConf::OPTIMIZE_TASK, "true"))
+        is_optimize_task = true;
 }
 
 }

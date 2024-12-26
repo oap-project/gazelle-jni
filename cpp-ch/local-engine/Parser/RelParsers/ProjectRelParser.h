@@ -40,7 +40,7 @@ private:
 
     bool isReplicateRows(substrait::GenerateRel rel);
 
-    DB::QueryPlanPtr parseReplicateRows(QueryPlanPtr query_plan, substrait::GenerateRel generate_rel);
+    DB::QueryPlanPtr parseReplicateRows(DB::QueryPlanPtr query_plan, substrait::GenerateRel generate_rel);
 
     std::optional<const substrait::Rel *> getSingleInput(const substrait::Rel & rel) override
     {

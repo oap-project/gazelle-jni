@@ -9,13 +9,18 @@
                 "optimization": {
                   "@type": "type.googleapis.com/local_engine.Write",
                   "common": {
-                    "format": "mergetree"
+                    "format": "mergetree",
+                    "partitionColIndex": [
+                      10,
+                      8
+                    ]
                   },
                   "mergetree": {
                     "database": "default",
-                    "table": "lineitem_mergetree_insertoverwrite2",
-                    "snapshotId": "1731309448915_0",
-                    "orderByKey": "tuple()",
+                    "table": "lineitem_mergetree_partition",
+                    "snapshotId": "1734145864855_0",
+                    "orderByKey": "l_orderkey",
+                    "primaryKey": "l_orderkey",
                     "storagePolicy": "default"
                   }
                 },
@@ -221,7 +226,7 @@
                 "NORMAL_COL",
                 "NORMAL_COL",
                 "NORMAL_COL",
-                "NORMAL_COL",
+                "PARTITION_COL",
                 "NORMAL_COL",
                 "PARTITION_COL",
                 "NORMAL_COL",
@@ -232,138 +237,171 @@
               ]
             },
             "input": {
-              "read": {
+              "sort": {
                 "common": {
                   "direct": {}
                 },
-                "baseSchema": {
-                  "names": [
-                    "l_orderkey",
-                    "l_partkey",
-                    "l_suppkey",
-                    "l_linenumber",
-                    "l_quantity",
-                    "l_extendedprice",
-                    "l_discount",
-                    "l_tax",
-                    "l_returnflag",
-                    "l_linestatus",
-                    "l_shipdate",
-                    "l_commitdate",
-                    "l_receiptdate",
-                    "l_shipinstruct",
-                    "l_shipmode",
-                    "l_comment"
-                  ],
-                  "struct": {
-                    "types": [
-                      {
-                        "i64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
+                "input": {
+                  "read": {
+                    "common": {
+                      "direct": {}
+                    },
+                    "baseSchema": {
+                      "names": [
+                        "l_orderkey",
+                        "l_partkey",
+                        "l_suppkey",
+                        "l_linenumber",
+                        "l_quantity",
+                        "l_extendedprice",
+                        "l_discount",
+                        "l_tax",
+                        "l_returnflag",
+                        "l_linestatus",
+                        "l_shipdate",
+                        "l_commitdate",
+                        "l_receiptdate",
+                        "l_shipinstruct",
+                        "l_shipmode",
+                        "l_comment"
+                      ],
+                      "struct": {
+                        "types": [
+                          {
+                            "i64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "i64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "i64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "i64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "fp64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "fp64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "fp64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "fp64": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "date": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "date": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "date": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          }
+                        ]
                       },
-                      {
-                        "i64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "i64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "i64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "fp64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "fp64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "fp64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "fp64": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "string": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "string": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "date": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "date": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "date": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "string": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "string": {
-                          "nullability": "NULLABILITY_NULLABLE"
-                        }
-                      },
-                      {
-                        "string": {
-                          "nullability": "NULLABILITY_NULLABLE"
+                      "columnTypes": [
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL"
+                      ]
+                    },
+                    "advancedExtension": {
+                      "optimization": {
+                        "@type": "type.googleapis.com/google.protobuf.StringValue",
+                        "value": "isMergeTree=0\n"
+                      }
+                    }
+                  }
+                },
+                "sorts": [
+                  {
+                    "expr": {
+                      "selection": {
+                        "directReference": {
+                          "structField": {
+                            "field": 10
+                          }
                         }
                       }
-                    ]
+                    },
+                    "direction": "SORT_DIRECTION_ASC_NULLS_FIRST"
                   },
-                  "columnTypes": [
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL",
-                    "NORMAL_COL"
-                  ]
-                },
-                "advancedExtension": {
-                  "optimization": {
-                    "@type": "type.googleapis.com/google.protobuf.StringValue",
-                    "value": "isMergeTree=0\n"
+                  {
+                    "expr": {
+                      "selection": {
+                        "directReference": {
+                          "structField": {
+                            "field": 8
+                          }
+                        }
+                      }
+                    },
+                    "direction": "SORT_DIRECTION_ASC_NULLS_FIRST"
                   }
-                }
+                ]
               }
             }
           }

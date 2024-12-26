@@ -16,6 +16,7 @@
  */
 package org.apache.gluten.execution
 
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.{ColumnarBatches, VeloxColumnarBatches}
 import org.apache.gluten.exception.GlutenNotSupportException
 import org.apache.gluten.extension.ValidationResult
@@ -122,7 +123,7 @@ object VeloxColumnarToRowExec {
       return Iterator.empty
     }
 
-    val runtime = Runtimes.contextInstance("ColumnarToRow")
+    val runtime = Runtimes.contextInstance(BackendsApiManager.getBackendName, "ColumnarToRow")
     // TODO: Pass the jni jniWrapper and arrowSchema and serializeSchema method by broadcast.
     val jniWrapper = NativeColumnarToRowJniWrapper.create(runtime)
     val c2rId = jniWrapper.nativeColumnarToRowInit()
@@ -156,7 +157,7 @@ object VeloxColumnarToRowExec {
         val cols = batch.numCols()
         val rows = batch.numRows()
         val beforeConvert = System.currentTimeMillis()
-        val batchHandle = ColumnarBatches.getNativeHandle(batch)
+        val batchHandle = ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName, batch)
         var info =
           jniWrapper.nativeColumnarToRowConvert(c2rId, batchHandle, 0)
 

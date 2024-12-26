@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution
 
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.ColumnarBatches
 import org.apache.gluten.runtime.Runtimes
 import org.apache.gluten.sql.shims.SparkShimLoader
@@ -105,7 +106,8 @@ object BroadcastUtils {
           }
           ColumnarBuildSideRelation(
             SparkShimLoader.getSparkShims.attributesFromStruct(schema),
-            serialized)
+            serialized,
+            mode)
         }
         // Rebroadcast Velox relation.
         context.broadcast(toRelation).asInstanceOf[Broadcast[T]]
@@ -123,7 +125,8 @@ object BroadcastUtils {
           }
           ColumnarBuildSideRelation(
             SparkShimLoader.getSparkShims.attributesFromStruct(schema),
-            serialized)
+            serialized,
+            mode)
         }
         // Rebroadcast Velox relation.
         context.broadcast(toRelation).asInstanceOf[Broadcast[T]]
@@ -152,11 +155,14 @@ object BroadcastUtils {
     if (filtered.isEmpty) {
       return ColumnarBatchSerializeResult.EMPTY
     }
-    val handleArray = filtered.map(ColumnarBatches.getNativeHandle)
+    val handleArray =
+      filtered.map(b => ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName, b))
     val serializeResult =
       try {
         ColumnarBatchSerializerJniWrapper
-          .create(Runtimes.contextInstance("BroadcastUtils#serializeStream"))
+          .create(
+            Runtimes
+              .contextInstance(BackendsApiManager.getBackendName, "BroadcastUtils#serializeStream"))
           .serialize(handleArray)
       } finally {
         filtered.foreach(ColumnarBatches.release)

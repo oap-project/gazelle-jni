@@ -14,14 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <Parser/FunctionParser.h>
-
 #include <Core/Field.h>
-#include <DataTypes/IDataType.h>
+#include <Parser/FunctionParser.h>
 
 namespace DB
 {
-
 namespace ErrorCodes
 {
     extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
@@ -30,7 +27,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 class FunctionParserArrayDistinct : public FunctionParser
 {
 public:

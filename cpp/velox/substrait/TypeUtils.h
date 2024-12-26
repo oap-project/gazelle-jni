@@ -22,6 +22,7 @@
 using namespace facebook::velox;
 
 namespace gluten {
+
 #ifndef RANGETRAITS_H
 #define RANGETRAITS_H
 

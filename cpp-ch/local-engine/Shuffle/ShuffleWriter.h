@@ -27,7 +27,7 @@ public:
         jobject output_stream, jbyteArray buffer, const std::string & codecStr, jint level, bool enable_compression, size_t customize_buffer_size);
     virtual ~ShuffleWriter();
     void write(const DB::Block & block);
-    void flush();
+    void flush() const;
 
 private:
     std::unique_ptr<DB::WriteBuffer> compressed_out;

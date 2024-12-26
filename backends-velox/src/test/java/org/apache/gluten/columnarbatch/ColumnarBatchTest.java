@@ -16,6 +16,7 @@
  */
 package org.apache.gluten.columnarbatch;
 
+import org.apache.gluten.backendsapi.BackendsApiManager;
 import org.apache.gluten.execution.RowToVeloxColumnarExec;
 import org.apache.gluten.memory.arrow.alloc.ArrowBufferAllocators;
 import org.apache.gluten.test.VeloxBackendTestBase;
@@ -114,9 +115,12 @@ public class ColumnarBatchTest extends VeloxBackendTestBase {
           final ColumnarBatch offloaded =
               ColumnarBatches.offload(ArrowBufferAllocators.contextInstance(), batch);
           Assert.assertEquals(1, ColumnarBatches.getRefCnt(offloaded));
-          final long handle = ColumnarBatches.getNativeHandle(offloaded);
+          final long handle =
+              ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName(), offloaded);
           final ColumnarBatch created = ColumnarBatches.create(handle);
-          Assert.assertEquals(handle, ColumnarBatches.getNativeHandle(created));
+          Assert.assertEquals(
+              handle,
+              ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName(), created));
           Assert.assertEquals(1, ColumnarBatches.getRefCnt(offloaded));
           Assert.assertEquals(1, ColumnarBatches.getRefCnt(created));
           ColumnarBatches.retain(created);

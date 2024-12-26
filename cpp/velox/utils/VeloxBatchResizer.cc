@@ -18,8 +18,8 @@
 #include "VeloxBatchResizer.h"
 
 namespace gluten {
-
 namespace {
+
 class SliceRowVector : public ColumnarBatchIterator {
  public:
   SliceRowVector(int32_t maxOutputBatchSize, facebook::velox::RowVectorPtr in)
@@ -115,4 +115,5 @@ std::shared_ptr<ColumnarBatch> VeloxBatchResizer::next() {
 int64_t VeloxBatchResizer::spillFixedSize(int64_t size) {
   return in_->spillFixedSize(size);
 }
+
 } // namespace gluten

@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypeNumberBase.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <Parser/FunctionParser.h>
 #include <Common/Exception.h>
-#include <DataTypes/DataTypeNumberBase.h>
-#include <DataTypes/DataTypeNullable.h>
 
 namespace DB::ErrorCodes
 {
@@ -41,7 +42,7 @@ public:
         if (args.size() != 2)
             throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Spark function extract requires two args, function:{}", func.ShortDebugString());
         const auto & extract_field = args.at(0);
-        String ch_function_name = "";
+        String ch_function_name;
         if (extract_field.value().has_literal())
         {
             const auto & field_value = extract_field.value().literal().string();

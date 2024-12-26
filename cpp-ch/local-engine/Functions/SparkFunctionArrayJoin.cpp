@@ -14,13 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <base/StringRef.h>
-#include <Interpreters/Context_fwd.h>
-#include <Columns/ColumnString.h>
+#include <Columns/ColumnArray.h>
+#include <Columns/ColumnConst.h>
 #include <Columns/ColumnNullable.h>
-#include <Functions/IFunction.h>
-#include <Functions/FunctionFactory.h>
+#include <Columns/ColumnString.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypeString.h>
+#include <Functions/FunctionFactory.h>
+#include <Functions/IFunction.h>
+#include <Interpreters/Context_fwd.h>
+#include <base/StringRef.h>
 
 using namespace DB;
 

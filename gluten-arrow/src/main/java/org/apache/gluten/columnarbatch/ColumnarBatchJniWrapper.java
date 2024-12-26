@@ -30,23 +30,25 @@ public class ColumnarBatchJniWrapper implements RuntimeAware {
     return new ColumnarBatchJniWrapper(runtime);
   }
 
+  // Static methods.
+  public static native String getType(long batch);
+
+  public static native long numColumns(long batch);
+
+  public static native long numRows(long batch);
+
+  public static native long numBytes(long batch);
+
+  public static native void exportToArrow(long batch, long cSchema, long cArray);
+
+  public static native void close(long batch);
+
+  // Member methods in which native code relies on the backend's runtime API implementation.
   public native long createWithArrowArray(long cSchema, long cArray);
 
   public native long getForEmptySchema(int numRows);
 
-  public native String getType(long batch);
-
-  public native long numColumns(long batch);
-
-  public native long numRows(long batch);
-
-  public native long numBytes(long batch);
-
-  public native void exportToArrow(long batch, long cSchema, long cArray);
-
   public native long select(long batch, int[] columnIndices);
-
-  public native void close(long batch);
 
   @Override
   public long rtHandle() {

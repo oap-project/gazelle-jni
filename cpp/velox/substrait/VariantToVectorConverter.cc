@@ -67,4 +67,5 @@ VectorPtr setVectorFromVariantsByKind<TypeKind::VARCHAR>(
 VectorPtr setVectorFromVariants(const TypePtr& type, const std::vector<variant>& values, memory::MemoryPool* pool) {
   return VELOX_DYNAMIC_SCALAR_TYPE_DISPATCH(setVectorFromVariantsByKind, type->kind(), values, type, pool);
 }
+
 } // namespace gluten

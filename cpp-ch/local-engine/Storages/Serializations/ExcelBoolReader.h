@@ -18,15 +18,13 @@
 
 #include <Columns/IColumn.h>
 #include <Formats/FormatSettings.h>
-#include <IO/ReadBuffer.h>
 
-
+namespace DB
+{
+class ReadBuffer;
+}
 namespace local_engine
 {
-using namespace DB;
-
-
-
-void deserializeExcelBoolTextCSV(IColumn & column, ReadBuffer & istr, const FormatSettings & settings);
+void deserializeExcelBoolTextCSV(DB::IColumn & column, DB::ReadBuffer & istr, const DB::FormatSettings & settings);
 
 }

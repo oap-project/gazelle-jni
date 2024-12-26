@@ -17,6 +17,7 @@
 package org.apache.spark.shuffle
 
 import org.apache.gluten.GlutenConfig
+import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.ColumnarBatches
 import org.apache.gluten.memory.memtarget.{MemoryTarget, Spiller, Spillers}
 import org.apache.gluten.runtime.Runtimes
@@ -91,15 +92,15 @@ class ColumnarShuffleWriter[K, V](
   private val compressionLevel =
     GlutenShuffleUtils.getCompressionLevel(conf, compressionCodec, compressionCodecBackend)
 
-  private val compressionBufferSize =
-    GlutenShuffleUtils.getCompressionBufferSize(conf, compressionCodec)
+  private val sortEvictBufferSize =
+    GlutenShuffleUtils.getSortEvictBufferSize(conf, compressionCodec)
 
   private val bufferCompressThreshold =
     GlutenConfig.getConf.columnarShuffleCompressionThreshold
 
   private val reallocThreshold = GlutenConfig.getConf.columnarShuffleReallocThreshold
 
-  private val runtime = Runtimes.contextInstance("ShuffleWriter")
+  private val runtime = Runtimes.contextInstance(BackendsApiManager.getBackendName, "ShuffleWriter")
 
   private val jniWrapper = ShuffleWriterJniWrapper.create(runtime)
 
@@ -135,7 +136,7 @@ class ColumnarShuffleWriter[K, V](
         logInfo(s"Skip ColumnarBatch of ${cb.numRows} rows, ${cb.numCols} cols")
       } else {
         val rows = cb.numRows()
-        val handle = ColumnarBatches.getNativeHandle(cb)
+        val handle = ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName, cb)
         if (nativeShuffleWriter == -1L) {
           nativeShuffleWriter = jniWrapper.make(
             dep.nativePartitioning.getShortName,
@@ -146,7 +147,7 @@ class ColumnarShuffleWriter[K, V](
             compressionCodec,
             compressionCodecBackend,
             compressionLevel,
-            compressionBufferSize,
+            sortEvictBufferSize,
             bufferCompressThreshold,
             GlutenConfig.getConf.columnarShuffleCompressionMode,
             conf.get(SHUFFLE_SORT_INIT_BUFFER_SIZE).toInt,

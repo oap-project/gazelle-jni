@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.extension.columnar.heuristic
 
-import org.apache.gluten.backend.Backend
+import org.apache.gluten.component.Component
 import org.apache.gluten.exception.GlutenException
 import org.apache.gluten.extension.columnar.ColumnarRuleApplier.ColumnarRuleCall
 import org.apache.gluten.extension.columnar.offload.OffloadSingleNode
@@ -26,6 +26,7 @@ import org.apache.gluten.extension.injector.Injector
 import org.apache.gluten.extension.util.AdaptiveContext
 import org.apache.gluten.logging.LogLevelUtil
 
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{SparkSession, SparkSessionExtensions}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.SparkPlan
@@ -64,7 +65,39 @@ object HeuristicTransform {
     new HeuristicTransform(all)
   }
 
-  case class Single(
+  /**
+   * A simple heuristic transform rule with a validator and some offload rules.
+   *
+   * Validator will be called before applying the offload rules.
+   */
+  case class Simple(validator: Validator, offloadRules: Seq[OffloadSingleNode])
+    extends Rule[SparkPlan]
+    with Logging {
+    override def apply(plan: SparkPlan): SparkPlan = {
+      offloadRules.foldLeft(plan) {
+        case (p, rule) =>
+          p.transformUp {
+            node =>
+              validator.validate(node) match {
+                case Validator.Passed =>
+                  rule.offload(node)
+                case Validator.Failed(reason) =>
+                  logDebug(s"Validation failed by reason: $reason on query plan: ${node.nodeName}")
+                  node
+              }
+          }
+      }
+    }
+  }
+
+  /**
+   * A heuristic transform rule with given rewrite rules. Fallback tags will be used in the
+   * procedure to determine which part of the plan is or is not eligible to be offloaded. The tags
+   * should also be correctly handled in the offload rules.
+   *
+   * TODO: Handle tags internally. Remove tag handling code in user offload rules.
+   */
+  case class WithRewrites(
       validator: Validator,
       rewriteRules: Seq[RewriteSingleNode],
       offloadRules: Seq[OffloadSingleNode])
@@ -88,7 +121,8 @@ object HeuristicTransform {
   def static(): HeuristicTransform = {
     val exts = new SparkSessionExtensions()
     val dummyInjector = new Injector(exts)
-    Backend.get().injectRules(dummyInjector)
+    // Components should override Backend's rules. Hence, reversed injection order is applied.
+    Component.sorted().reverse.foreach(_.injectRules(dummyInjector))
     val session = SparkSession.getActiveSession.getOrElse(
       throw new GlutenException(
         "HeuristicTransform#static can only be called when an active Spark session exists"))

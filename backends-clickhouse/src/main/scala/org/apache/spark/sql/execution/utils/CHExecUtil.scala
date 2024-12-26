@@ -158,6 +158,7 @@ object CHExecUtil extends Logging {
       columns: Int,
       rows: Int): Iterator[InternalRow] = {
     val rowInfo = CHBlockConverterJniWrapper.convertColumnarToRow(blockAddress, null)
+    assert(rowInfo.fieldsNum == columns)
     getRowIterFromSparkRowInfo(rowInfo, columns, rows)
   }
 
@@ -311,7 +312,7 @@ object CHExecUtil extends Logging {
           rddForSampling,
           sortingExpressions,
           childOutputAttributes)
-        val orderingAndRangeBounds = generator.getRangeBoundsJsonString
+        val rangeBoundsInfo = generator.getRangeBoundsJsonString
         val attributePos = if (projectOutputAttributes != null) {
           projectOutputAttributes.map(
             attr =>
@@ -324,10 +325,11 @@ object CHExecUtil extends Logging {
         }
         new NativePartitioning(
           GlutenShuffleUtils.RangePartitioningShortName,
-          numPartitions,
+          rangeBoundsInfo.boundsSize + 1,
           Array.empty[Byte],
-          orderingAndRangeBounds.getBytes(),
-          attributePos.mkString(",").getBytes)
+          rangeBoundsInfo.json.getBytes,
+          attributePos.mkString(",").getBytes
+        )
       case p =>
         throw new IllegalStateException(s"Unknow partition type: ${p.getClass.toString}")
     }
@@ -368,7 +370,7 @@ object CHExecUtil extends Logging {
     val dependency =
       new ColumnarShuffleDependency[Int, ColumnarBatch, ColumnarBatch](
         rddWithPartitionKey,
-        new PartitionIdPassthrough(newPartitioning.numPartitions),
+        new PartitionIdPassthrough(nativePartitioning.getNumPartitions),
         serializer,
         shuffleWriterProcessor = ShuffleExchangeExec.createShuffleWriteProcessor(writeMetrics),
         nativePartitioning = nativePartitioning,

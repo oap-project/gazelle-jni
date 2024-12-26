@@ -34,4 +34,5 @@ class SparkExprToSubfieldFilterParser : public facebook::velox::exec::ExprToSubf
   // Compared to the upstream 'toSubfield', the push-down of filter on nested field is disabled.
   bool toSparkSubfield(const facebook::velox::core::ITypedExpr* field, facebook::velox::common::Subfield& subfield);
 };
+
 } // namespace gluten

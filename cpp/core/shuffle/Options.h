@@ -30,7 +30,7 @@ static constexpr int64_t kDefaultSortBufferThreshold = 64 << 20;
 static constexpr int64_t kDefaultPushMemoryThreshold = 4096;
 static constexpr int32_t kDefaultNumSubDirs = 64;
 static constexpr int32_t kDefaultCompressionThreshold = 100;
-static constexpr int32_t kDefaultCompressionBufferSize = 32 * 1024;
+static constexpr int32_t kDefaultSortEvictBufferSize = 32 * 1024;
 static const std::string kDefaultCompressionTypeStr = "lz4";
 static constexpr int32_t kDefaultBufferAlignment = 64;
 static constexpr double kDefaultBufferReallocThreshold = 0.25;
@@ -66,7 +66,7 @@ struct ShuffleWriterOptions {
 
   // Sort shuffle writer.
   int32_t sortBufferInitialSize = kDefaultSortBufferSize;
-  int32_t compressionBufferSize = kDefaultCompressionBufferSize;
+  int32_t sortEvictBufferSize = kDefaultSortEvictBufferSize;
   bool useRadixSort = kDefaultUseRadixSort;
 };
 

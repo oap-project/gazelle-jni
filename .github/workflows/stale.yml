@@ -20,6 +20,7 @@ on:
 
 jobs:
   stale:
+    if: ${{ startsWith(github.repository, 'apache/') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v8

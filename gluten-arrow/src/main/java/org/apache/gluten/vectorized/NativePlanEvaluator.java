@@ -32,17 +32,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class NativePlanEvaluator {
   private static final AtomicInteger id = new AtomicInteger(0);
-  private final Runtime runtime =
-      Runtimes.contextInstance(String.format("NativePlanEvaluator-%d", id.getAndIncrement()));
 
+  private final Runtime runtime;
   private final PlanEvaluatorJniWrapper jniWrapper;
 
-  private NativePlanEvaluator() {
-    jniWrapper = PlanEvaluatorJniWrapper.create(runtime);
+  private NativePlanEvaluator(Runtime runtime) {
+    this.runtime = runtime;
+    this.jniWrapper = PlanEvaluatorJniWrapper.create(runtime);
   }
 
-  public static NativePlanEvaluator create() {
-    return new NativePlanEvaluator();
+  public static NativePlanEvaluator create(String backendName) {
+    return new NativePlanEvaluator(
+        Runtimes.contextInstance(
+            backendName, String.format("NativePlanEvaluator-%d", id.getAndIncrement())));
   }
 
   public NativePlanValidationInfo doNativeValidateWithFailureReason(byte[] subPlan) {

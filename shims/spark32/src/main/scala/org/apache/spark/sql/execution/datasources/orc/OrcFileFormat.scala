@@ -95,14 +95,14 @@ class OrcFileFormat extends FileFormat with DataSourceRegister with Serializable
 
     conf.set(MAPRED_OUTPUT_SCHEMA.getAttribute, OrcFileFormat.getQuotedSchemaString(dataSchema))
 
+    // Pass compression to job conf so that the file extension can be aware of it.
     conf.set(COMPRESS.getAttribute, orcOptions.compressionCodec)
 
     conf
       .asInstanceOf[JobConf]
       .setOutputFormat(classOf[org.apache.orc.mapred.OrcOutputFormat[OrcStruct]])
 
-    if ("true" == sparkSession.sparkContext.getLocalProperty("isNativeApplicable")) {
-      // pass compression to job conf so that the file extension can be aware of it.
+    if (sparkSession.sparkContext.getLocalProperty("isNativeApplicable") == "true") {
       val nativeConf =
         GlutenFormatFactory(shortName()).nativeConf(options, orcOptions.compressionCodec)
 

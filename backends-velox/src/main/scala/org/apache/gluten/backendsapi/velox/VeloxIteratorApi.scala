@@ -183,9 +183,9 @@ class VeloxIteratorApi extends IteratorApi with Logging {
 
     val columnarNativeIterators =
       new JArrayList[ColumnarBatchInIterator](inputIterators.map {
-        iter => new ColumnarBatchInIterator(iter.asJava)
+        iter => new ColumnarBatchInIterator(BackendsApiManager.getBackendName, iter.asJava)
       }.asJava)
-    val transKernel = NativePlanEvaluator.create()
+    val transKernel = NativePlanEvaluator.create(BackendsApiManager.getBackendName)
 
     val splitInfoByteArray = inputPartition
       .asInstanceOf[GlutenPartition]
@@ -235,10 +235,10 @@ class VeloxIteratorApi extends IteratorApi with Logging {
 
     ExecutorManager.tryTaskSet(numaBindingInfo)
 
-    val transKernel = NativePlanEvaluator.create()
+    val transKernel = NativePlanEvaluator.create(BackendsApiManager.getBackendName)
     val columnarNativeIterator =
       new JArrayList[ColumnarBatchInIterator](inputIterators.map {
-        iter => new ColumnarBatchInIterator(iter.asJava)
+        iter => new ColumnarBatchInIterator(BackendsApiManager.getBackendName, iter.asJava)
       }.asJava)
     val spillDirPath = SparkDirectoryUtil
       .get()

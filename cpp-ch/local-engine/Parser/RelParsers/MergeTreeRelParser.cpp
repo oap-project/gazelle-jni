@@ -165,7 +165,7 @@ DB::QueryPlanPtr MergeTreeRelParser::parseReadRel(
     return query_plan;
 }
 
-PrewhereInfoPtr MergeTreeRelParser::parsePreWhereInfo(const substrait::Expression & rel, Block & input)
+PrewhereInfoPtr MergeTreeRelParser::parsePreWhereInfo(const substrait::Expression & rel, const Block & input)
 {
     std::string filter_name;
     auto prewhere_info = std::make_shared<PrewhereInfo>();
@@ -179,7 +179,7 @@ PrewhereInfoPtr MergeTreeRelParser::parsePreWhereInfo(const substrait::Expressio
     return prewhere_info;
 }
 
-DB::ActionsDAG MergeTreeRelParser::optimizePrewhereAction(const substrait::Expression & rel, std::string & filter_name, Block & block)
+DB::ActionsDAG MergeTreeRelParser::optimizePrewhereAction(const substrait::Expression & rel, std::string & filter_name, const Block & block)
 {
     Conditions res;
     std::set<Int64> pk_positions;
@@ -244,7 +244,7 @@ void MergeTreeRelParser::parseToAction(ActionsDAG & filter_action, const substra
 }
 
 void MergeTreeRelParser::analyzeExpressions(
-    Conditions & res, const substrait::Expression & rel, std::set<Int64> & pk_positions, Block & block)
+    Conditions & res, const substrait::Expression & rel, std::set<Int64> & pk_positions, const Block & block)
 {
     if (rel.has_scalar_function() && getCHFunctionName(rel.scalar_function()) == "and")
     {
@@ -282,7 +282,7 @@ UInt64 MergeTreeRelParser::getColumnsSize(const NameSet & columns)
     return size;
 }
 
-void MergeTreeRelParser::collectColumns(const substrait::Expression & rel, NameSet & columns, Block & block)
+void MergeTreeRelParser::collectColumns(const substrait::Expression & rel, NameSet & columns, const Block & block)
 {
     switch (rel.rex_type_case())
     {

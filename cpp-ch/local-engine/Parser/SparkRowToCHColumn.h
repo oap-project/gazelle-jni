@@ -40,27 +40,26 @@ namespace ErrorCodes
 }
 namespace local_engine
 {
-using namespace DB;
-using namespace std;
+
 struct SparkRowToCHColumnHelper
 {
-    DataTypes data_types;
-    Block header;
-    MutableColumns mutable_columns;
+    DB::DataTypes data_types;
+    DB::Block header;
+    DB::MutableColumns mutable_columns;
     UInt64 rows;
 
-    SparkRowToCHColumnHelper(vector<string> & names, vector<string> & types) : data_types(names.size())
+    SparkRowToCHColumnHelper(std::vector<std::string> & names, std::vector<std::string> & types) : data_types(names.size())
     {
         assert(names.size() == types.size());
 
-        ColumnsWithTypeAndName columns(names.size());
+        DB::ColumnsWithTypeAndName columns(names.size());
         for (size_t i = 0; i < names.size(); ++i)
         {
             data_types[i] = parseType(types[i]);
-            columns[i] = ColumnWithTypeAndName(data_types[i], names[i]);
+            columns[i] = DB::ColumnWithTypeAndName(data_types[i], names[i]);
         }
 
-        header = Block(columns);
+        header = DB::Block(columns);
         resetMutableColumns();
     }
 
@@ -72,12 +71,12 @@ struct SparkRowToCHColumnHelper
         mutable_columns = header.mutateColumns();
     }
 
-    static DataTypePtr parseType(const string & type)
+    static DB::DataTypePtr parseType(const std::string & type)
     {
         auto substrait_type = std::make_unique<substrait::Type>();
         auto ok = substrait_type->ParseFromString(type);
         if (!ok)
-            throw Exception(ErrorCodes::CANNOT_PARSE_PROTOBUF_SCHEMA, "Parse substrait::Type from string failed");
+            throw DB::Exception(DB::ErrorCodes::CANNOT_PARSE_PROTOBUF_SCHEMA, "Parse substrait::Type from string failed");
         return TypeParser::parseType(*substrait_type);
     }
 };
@@ -91,10 +90,10 @@ public:
     static jmethodID spark_row_iterator_nextBatch;
 
     // case 1: rows are batched (this is often directly converted from Block)
-    static std::unique_ptr<Block> convertSparkRowInfoToCHColumn(const SparkRowInfo & spark_row_info, const Block & header);
+    static std::unique_ptr<DB::Block> convertSparkRowInfoToCHColumn(const SparkRowInfo & spark_row_info, const DB::Block & header);
 
     // case 2: provided with a sequence of spark UnsafeRow, convert them to a Block
-    static Block * convertSparkRowItrToCHColumn(jobject java_iter, vector<string> & names, vector<string> & types)
+    static DB::Block * convertSparkRowItrToCHColumn(jobject java_iter, std::vector<std::string> & names, std::vector<std::string> & types)
     {
         SparkRowToCHColumnHelper helper(names, types);
 
@@ -122,7 +121,7 @@ public:
         return getBlock(helper);
     }
 
-    static void freeBlock(Block * block)
+    static void freeBlock(DB::Block * block)
     {
         delete block;
         block = nullptr;
@@ -130,28 +129,28 @@ public:
 
 private:
     static void appendSparkRowToCHColumn(SparkRowToCHColumnHelper & helper, char * buffer, int32_t length);
-    static Block * getBlock(SparkRowToCHColumnHelper & helper);
+    static DB::Block * getBlock(SparkRowToCHColumnHelper & helper);
 };
 
 class VariableLengthDataReader
 {
 public:
-    explicit VariableLengthDataReader(const DataTypePtr & type_);
+    explicit VariableLengthDataReader(const DB::DataTypePtr & type_);
     virtual ~VariableLengthDataReader() = default;
 
-    virtual Field read(const char * buffer, size_t length) const;
+    virtual DB::Field read(const char * buffer, size_t length) const;
     virtual StringRef readUnalignedBytes(const char * buffer, size_t length) const;
 
 private:
-    virtual Field readDecimal(const char * buffer, size_t length) const;
-    virtual Field readString(const char * buffer, size_t length) const;
-    virtual Field readArray(const char * buffer, size_t length) const;
-    virtual Field readMap(const char * buffer, size_t length) const;
-    virtual Field readStruct(const char * buffer, size_t length) const;
+    virtual DB::Field readDecimal(const char * buffer, size_t length) const;
+    virtual DB::Field readString(const char * buffer, size_t length) const;
+    virtual DB::Field readArray(const char * buffer, size_t length) const;
+    virtual DB::Field readMap(const char * buffer, size_t length) const;
+    virtual DB::Field readStruct(const char * buffer, size_t length) const;
 
-    const DataTypePtr type;
-    const DataTypePtr type_without_nullable;
-    const WhichDataType which;
+    const DB::DataTypePtr type;
+    const DB::DataTypePtr type_without_nullable;
+    const DB::WhichDataType which;
 };
 
 class FixedLengthDataReader
@@ -160,7 +159,7 @@ public:
     explicit FixedLengthDataReader(const DB::DataTypePtr & type_);
     virtual ~FixedLengthDataReader() = default;
 
-    virtual Field read(const char * buffer) const;
+    virtual DB::Field read(const char * buffer) const;
     virtual StringRef unsafeRead(const char * buffer) const;
 
 private:
@@ -172,7 +171,7 @@ private:
 class SparkRowReader
 {
 public:
-    explicit SparkRowReader(const DataTypes & field_types_)
+    explicit SparkRowReader(const DB::DataTypes & field_types_)
         : field_types(field_types_)
         , num_fields(field_types.size())
         , bit_set_width_in_bytes(static_cast<int32_t>(calculateBitSetWidthInBytes(num_fields)))
@@ -184,7 +183,7 @@ public:
     {
         for (size_t ordinal = 0; ordinal < num_fields; ++ordinal)
         {
-            const auto type_without_nullable = removeNullable(field_types[ordinal]);
+            const auto type_without_nullable = DB::removeNullable(field_types[ordinal]);
             field_offsets[ordinal] = bit_set_width_in_bytes + ordinal * 8L;
             support_raw_datas[ordinal] = BackingDataLengthCalculator::isDataTypeSupportRawData(type_without_nullable);
             is_big_endians_in_spark_row[ordinal] = BackingDataLengthCalculator::isBigEndianInSparkRow(type_without_nullable);
@@ -193,11 +192,11 @@ public:
             else if (BackingDataLengthCalculator::isVariableLengthDataType(type_without_nullable))
                 variable_length_data_readers[ordinal] = std::make_shared<VariableLengthDataReader>(field_types[ordinal]);
             else
-                throw Exception(ErrorCodes::UNKNOWN_TYPE, "SparkRowReader doesn't support type {}", field_types[ordinal]->getName());
+                throw DB::Exception(DB::ErrorCodes::UNKNOWN_TYPE, "SparkRowReader doesn't support type {}", field_types[ordinal]->getName());
         }
     }
 
-    const DataTypes & getFieldTypes() const { return field_types; }
+    const DB::DataTypes & getFieldTypes() const { return field_types; }
 
     bool supportRawData(size_t ordinal) const
     {
@@ -320,8 +319,8 @@ public:
     {
         assertIndexIsValid(ordinal);
         if (!support_raw_datas[ordinal])
-            throw Exception(
-                ErrorCodes::UNKNOWN_TYPE, "SparkRowReader::getStringRef doesn't support type {}", field_types[ordinal]->getName());
+            throw DB::Exception(
+                DB::ErrorCodes::UNKNOWN_TYPE, "SparkRowReader::getStringRef doesn't support type {}", field_types[ordinal]->getName());
 
         if (isNullAt(ordinal))
             return StringRef();
@@ -339,16 +338,16 @@ public:
             return variable_length_data_reader->readUnalignedBytes(buffer + offset, size);
         }
         else
-            throw Exception(
-                ErrorCodes::UNKNOWN_TYPE, "SparkRowReader::getStringRef doesn't support type {}", field_types[ordinal]->getName());
+            throw DB::Exception(
+                DB::ErrorCodes::UNKNOWN_TYPE, "SparkRowReader::getStringRef doesn't support type {}", field_types[ordinal]->getName());
     }
 
-    Field getField(size_t ordinal) const
+    DB::Field getField(size_t ordinal) const
     {
         assertIndexIsValid(ordinal);
 
         if (isNullAt(ordinal))
-            return Null{};
+            return DB::Null{};
 
         const auto & fixed_length_data_reader = fixed_length_data_readers[ordinal];
         const auto & variable_length_data_reader = variable_length_data_readers[ordinal];
@@ -364,13 +363,13 @@ public:
             return variable_length_data_reader->read(buffer + offset, size);
         }
         else
-            throw Exception(ErrorCodes::UNKNOWN_TYPE, "SparkRowReader::getField doesn't support type {}", field_types[ordinal]->getName());
+            throw DB::Exception(DB::ErrorCodes::UNKNOWN_TYPE, "SparkRowReader::getField doesn't support type {}", field_types[ordinal]->getName());
     }
 
 private:
     const char * getFieldOffset(size_t ordinal) const { return buffer + field_offsets[ordinal]; }
 
-    const DataTypes field_types;
+    const DB::DataTypes field_types;
     const size_t num_fields;
     const int32_t bit_set_width_in_bytes;
     std::vector<int64_t> field_offsets;

@@ -18,7 +18,6 @@ package org.apache.gluten.execution
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.execution.window.WindowExec
 import org.apache.spark.sql.types._
 
 class VeloxWindowExpressionSuite extends WholeStageTransformerSuite {
@@ -134,11 +133,9 @@ class VeloxWindowExpressionSuite extends WholeStageTransformerSuite {
           |FROM
           | t
           |ORDER BY 1, 2;
-          |""".stripMargin,
-        noFallBack = false
+          |""".stripMargin
       ) {
-        // Velox window doesn't support collect_set
-        checkSparkOperatorMatch[WindowExec]
+        checkGlutenOperatorMatch[WindowExecTransformer]
       }
     }
   }

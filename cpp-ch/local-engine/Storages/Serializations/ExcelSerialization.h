@@ -31,85 +31,83 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-using namespace DB;
-
 
 class ExcelSerialization final : public DB::ISerialization
 {
 public:
-    explicit ExcelSerialization(const SerializationPtr & nested_, String escape_) : nested_ptr(nested_), escape(escape_){}
+    explicit ExcelSerialization(const DB::SerializationPtr & nested_, String escape_) : nested_ptr(nested_), escape(escape_){}
 
-    void serializeBinary(const Field &, WriteBuffer &, const FormatSettings &) const override
+    void serializeBinary(const DB::Field &, DB::WriteBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void deserializeBinary(Field &, ReadBuffer &, const FormatSettings &) const override
+    void deserializeBinary(DB::Field &, DB::ReadBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void serializeBinary(const IColumn &, size_t, WriteBuffer &, const FormatSettings &) const override
+    void serializeBinary(const DB::IColumn &, size_t, DB::WriteBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void deserializeBinary(IColumn &, ReadBuffer &, const FormatSettings &) const override
+    void deserializeBinary(DB::IColumn &, DB::ReadBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void serializeText(const IColumn &, size_t, WriteBuffer &, const FormatSettings &) const override
+    void serializeText(const DB::IColumn &, size_t, DB::WriteBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void deserializeWholeText(IColumn &, ReadBuffer &, const FormatSettings &) const override
+    void deserializeWholeText(DB::IColumn &, DB::ReadBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void serializeTextEscaped(const IColumn &, size_t, WriteBuffer &, const FormatSettings &) const override
+    void serializeTextEscaped(const DB::IColumn &, size_t, DB::WriteBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void deserializeTextEscaped(IColumn &, ReadBuffer &, const FormatSettings &) const override
+    void deserializeTextEscaped(DB::IColumn &, DB::ReadBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void serializeTextQuoted(const IColumn &, size_t, WriteBuffer &, const FormatSettings &) const override
+    void serializeTextQuoted(const DB::IColumn &, size_t, DB::WriteBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void deserializeTextQuoted(IColumn &, ReadBuffer &, const FormatSettings &) const override
+    void deserializeTextQuoted(DB::IColumn &, DB::ReadBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void serializeTextJSON(const IColumn &, size_t, WriteBuffer &, const FormatSettings &) const override
+    void serializeTextJSON(const DB::IColumn &, size_t, DB::WriteBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void deserializeTextJSON(IColumn &, ReadBuffer &, const FormatSettings &) const override
+    void deserializeTextJSON(DB::IColumn &, DB::ReadBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void serializeTextCSV(const IColumn &, size_t, WriteBuffer &, const FormatSettings &) const override
+    void serializeTextCSV(const DB::IColumn &, size_t, DB::WriteBuffer &, const DB::FormatSettings &) const override
     {
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
+        throw DB::Exception(DB::ErrorCodes::NOT_IMPLEMENTED, "Not implemented for excel serialization");
     }
-    void deserializeTextCSV(IColumn & column, ReadBuffer & istr, const FormatSettings & settings) const override;
+    void deserializeTextCSV(DB::IColumn & column, DB::ReadBuffer & istr, const DB::FormatSettings & settings) const override;
 
 private:
-    void deserializeDate32TextCSV(IColumn & column, ReadBuffer & istr, const FormatSettings & settings) const;
+    void deserializeDate32TextCSV(DB::IColumn & column, DB::ReadBuffer & istr, const DB::FormatSettings & settings) const;
 
     template <typename T>
     requires is_arithmetic_v<T>
-    void deserializeNumberTextCSV(IColumn & column, ReadBuffer & istr, const FormatSettings &) const;
+    void deserializeNumberTextCSV(DB::IColumn & column, DB::ReadBuffer & istr, const DB::FormatSettings &) const;
 
     template <typename T>
     void deserializeDatetimeTextCSV(
-        IColumn & column,
-        ReadBuffer & istr,
-        const FormatSettings & settings,
+        DB::IColumn & column,
+        DB::ReadBuffer & istr,
+        const DB::FormatSettings & settings,
         const DateLUTImpl & time_zone,
         const DateLUTImpl & utc_time_zone) const;
 
 private:
-    SerializationPtr nested_ptr;
+    DB::SerializationPtr nested_ptr;
     String escape;
 };
 }

@@ -16,7 +16,11 @@
  */
 
 #include <DataTypes/DataTypeMap.h>
+#include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypeString.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <DataTypes/IDataType.h>
+#include <Functions/FunctionHelpers.h>
 #include <Parser/FunctionParser.h>
 
 namespace DB
@@ -39,7 +43,7 @@ public:
     static constexpr auto name = "element_at";
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, ActionsDAG & actions_dag) const override
+    const DB::ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, DB::ActionsDAG & actions_dag) const override
     {
         /*
             parse element_at(arr, idx) as
@@ -52,17 +56,17 @@ public:
         */
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
 
         auto arg_type = removeNullable(parsed_args[0]->result_type);
         if (isMap(arg_type))
         {
             const auto * map_arg = parsed_args[0];
-            const DataTypeMap * map_type = checkAndGetDataType<DataTypeMap>(removeNullable(map_arg->result_type).get());
+            const DB::DataTypeMap * map_type = checkAndGetDataType<DB::DataTypeMap>(removeNullable(map_arg->result_type).get());
             if (isNothing(map_type->getKeyType()))
             {
-                const DataTypePtr value_type = map_type->getValueType();
-                const auto * null_const_node = addColumnToActionsDAG(actions_dag, makeNullable(value_type), Field{});
+                const DB::DataTypePtr value_type = map_type->getValueType();
+                const auto * null_const_node = addColumnToActionsDAG(actions_dag, makeNullable(value_type), DB::Field{});
                 return null_const_node;
             }
             const auto * key_arg = parsed_args[1];
@@ -74,10 +78,10 @@ public:
             const auto * arr_arg = parsed_args[0];
             const auto * idx_arg = parsed_args[1];
 
-            const auto * zero_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeInt32>(), 0);
+            const auto * zero_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 0);
             const auto * equal_zero_node = toFunctionNode(actions_dag, "equals", {idx_arg, zero_node});
             const auto * throw_message
-                = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeString>(), "SQL array indices start at 1");
+                = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), "SQL array indices start at 1");
             /// throwIf(idx == 0, 'SQL array indices start at 1')
             const auto * throw_if_node = toFunctionNode(actions_dag, "throwIf", {equal_zero_node, throw_message});
 
@@ -86,7 +90,7 @@ public:
             const auto * if_node = toFunctionNode(actions_dag, "if", {throw_if_node, array_element_node, array_element_node});
             return convertNodeTypeIfNeeded(substrait_func, if_node, actions_dag);
         }
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "First argument of function {} must be an array or a map", getName());
+        throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "First argument of function {} must be an array or a map", getName());
     }
 };
 

@@ -45,6 +45,7 @@ import java.util.NoSuchElementException;
 import scala.collection.JavaConverters;
 
 public final class ColumnarBatches {
+  private static final String INTERNAL_BACKEND_KIND = "internal";
 
   private ColumnarBatches() {}
 
@@ -108,8 +109,8 @@ public final class ColumnarBatches {
    * This method will always return a velox based ColumnarBatch. This method will close the input
    * column batch.
    */
-  public static ColumnarBatch select(ColumnarBatch batch, int[] columnIndices) {
-    final Runtime runtime = Runtimes.contextInstance("ColumnarBatches#select");
+  public static ColumnarBatch select(String backendName, ColumnarBatch batch, int[] columnIndices) {
+    final Runtime runtime = Runtimes.contextInstance(backendName, "ColumnarBatches#select");
     switch (identifyBatchType(batch)) {
       case LIGHT:
         final IndicatorVector iv = getIndicatorVector(batch);
@@ -188,8 +189,8 @@ public final class ColumnarBatches {
         ArrowArray cArray = ArrowArray.allocateNew(allocator);
         ArrowSchema arrowSchema = ArrowSchema.allocateNew(allocator);
         CDataDictionaryProvider provider = new CDataDictionaryProvider()) {
-      ColumnarBatchJniWrapper.create(Runtimes.contextInstance("ColumnarBatches#load"))
-          .exportToArrow(iv.handle(), cSchema.memoryAddress(), cArray.memoryAddress());
+      ColumnarBatchJniWrapper.exportToArrow(
+          iv.handle(), cSchema.memoryAddress(), cArray.memoryAddress());
 
       Data.exportSchema(
           allocator, ArrowUtil.toArrowSchema(cSchema, allocator, provider), provider, arrowSchema);
@@ -229,7 +230,10 @@ public final class ColumnarBatches {
     if (input.numCols() == 0) {
       throw new IllegalArgumentException("batch with zero columns cannot be offloaded");
     }
-    final Runtime runtime = Runtimes.contextInstance("ColumnarBatches#offload");
+    // Batch-offloading doesn't involve any backend-specific native code. Use the internal
+    // backend to store native batch references only.
+    final Runtime runtime =
+        Runtimes.contextInstance(INTERNAL_BACKEND_KIND, "ColumnarBatches#offload");
     try (ArrowArray cArray = ArrowArray.allocateNew(allocator);
         ArrowSchema cSchema = ArrowSchema.allocateNew(allocator)) {
       ArrowAbiUtil.exportFromSparkColumnarBatch(allocator, input, cSchema, cArray);
@@ -383,11 +387,11 @@ public final class ColumnarBatches {
     return (IndicatorVector) input.column(0);
   }
 
-  public static long getNativeHandle(ColumnarBatch batch) {
+  public static long getNativeHandle(String backendName, ColumnarBatch batch) {
     if (isZeroColumnBatch(batch)) {
       final ColumnarBatchJniWrapper jniWrapper =
           ColumnarBatchJniWrapper.create(
-              Runtimes.contextInstance("ColumnarBatches#getNativeHandle"));
+              Runtimes.contextInstance(backendName, "ColumnarBatches#getNativeHandle"));
       return jniWrapper.getForEmptySchema(batch.numRows());
     }
     return getIndicatorVector(batch).handle();

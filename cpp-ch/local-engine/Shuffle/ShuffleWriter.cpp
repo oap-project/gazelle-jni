@@ -53,23 +53,20 @@ void ShuffleWriter::write(const Block & block)
         native_writer->write(block);
     }
 }
-void ShuffleWriter::flush()
+void ShuffleWriter::flush() const
 {
     if (native_writer)
-    {
         native_writer->flush();
-    }
 }
+
 ShuffleWriter::~ShuffleWriter()
 {
     if (native_writer)
-    {
         native_writer->flush();
-        if (compression_enable)
-        {
-            compressed_out->finalize();
-        }
-        write_buffer->finalize();
-    }
+
+    if (compression_enable)
+        compressed_out->finalize();
+
+    write_buffer->finalize();
 }
 }

@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-#include <Parser/FunctionParser.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <DataTypes/IDataType.h>
+#include <Parser/FunctionParser.h>
 
 namespace DB
 {
@@ -40,18 +41,18 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, ActionsDAG & actions_dag) const override
+    const DB::ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, DB::ActionsDAG & actions_dag) const override
     {
         /// Parse size(child, true) as ifNull(length(child), -1)
         /// Parse size(child, false) as length(child)
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
 
         const auto * arg = parsed_args[0];
         const auto * legacy_arg = parsed_args[1];
-        if (legacy_arg->type != ActionsDAG::ActionType::COLUMN || !isColumnConst(*legacy_arg->column))
-            throw Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Second argument of function {} must be a constant boolean", getName());
+        if (legacy_arg->type != DB::ActionsDAG::ActionType::COLUMN || !isColumnConst(*legacy_arg->column))
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Second argument of function {} must be a constant boolean", getName());
 
         const auto * length_node = toFunctionNode(actions_dag, "length", {arg});
         const auto * result_node = length_node;
@@ -61,7 +62,7 @@ public:
             /// To avoid Exceptions like below, we played a trick here
             /// "There is no supertype for types Int32, UInt64 because some of them are signed integers and some are unsigned integers, but there is no signed integer type, that can exactly represent all required unsigned integer values"
             const auto * default_size_node
-                = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeUInt64>(), static_cast<UInt64>(-1));
+                = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeUInt64>(), static_cast<UInt64>(-1));
             const auto * if_null_node = toFunctionNode(actions_dag, "ifNull", {length_node, default_size_node});
             result_node = if_null_node;
         }

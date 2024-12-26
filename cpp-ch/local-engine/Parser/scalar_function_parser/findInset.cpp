@@ -43,9 +43,9 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(
+    const DB::ActionsDAG::Node * parse(
         const substrait::Expression_ScalarFunction & substrait_func,
-        ActionsDAG & actions_dag) const override
+        DB::ActionsDAG & actions_dag) const override
     {
         /*
             parse find_in_set(str, str_array) as
@@ -57,7 +57,7 @@ public:
         */
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 2)
-            throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly two arguments", getName());
 
         const auto * str_arg = parsed_args[0];
         const auto * str_array_arg = parsed_args[1];
@@ -65,7 +65,7 @@ public:
         auto str_is_nullable = str_arg->result_type->isNullable();
         auto str_array_is_nullable = str_array_arg->result_type->isNullable();
 
-        const auto * comma_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeString>(), ",");
+        const auto * comma_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), ",");
         const auto * split_node = toFunctionNode(actions_dag, "splitByChar", {comma_const_node, str_array_arg});
         const auto * split_not_null_node = toFunctionNode(actions_dag, "assumeNotNull", {split_node});
         const auto * index_of_node = toFunctionNode(actions_dag, "indexOf", {split_not_null_node, str_arg});
@@ -76,7 +76,7 @@ public:
         auto nullable_result_type = makeNullable(INT());
         const auto * nullable_index_of_node = ActionsDAGUtil::convertNodeType(
             actions_dag, index_of_node, nullable_result_type, index_of_node->result_name);
-        const auto * null_const_node = addColumnToActionsDAG(actions_dag, nullable_result_type, Field());
+        const auto * null_const_node = addColumnToActionsDAG(actions_dag, nullable_result_type, DB::Field());
 
         const auto * str_is_null_node = toFunctionNode(actions_dag, "isNull", {str_arg});
         const auto * str_array_is_null_node = toFunctionNode(actions_dag, "isNull", {str_array_arg});

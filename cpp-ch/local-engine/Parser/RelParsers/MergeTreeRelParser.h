@@ -18,9 +18,9 @@
 
 #include <memory>
 #include <optional>
-#include <substrait/algebra.pb.h>
-
 #include <Parser/RelParsers/RelParser.h>
+#include <Storages/SelectQueryInfo.h>
+#include <substrait/algebra.pb.h>
 
 namespace DB
 {
@@ -32,12 +32,11 @@ extern const int LOGICAL_ERROR;
 
 namespace local_engine
 {
-using namespace DB;
 
 class MergeTreeRelParser : public RelParser
 {
 public:
-    explicit MergeTreeRelParser(ParserContextPtr parser_context_, const ContextPtr & context_)
+    explicit MergeTreeRelParser(ParserContextPtr parser_context_, const DB::ContextPtr & context_)
         : RelParser(parser_context_), context(context_)
     {
     }
@@ -46,7 +45,7 @@ public:
 
     DB::QueryPlanPtr parse(DB::QueryPlanPtr query_plan, const substrait::Rel & rel, std::list<const substrait::Rel *> & rel_stack_) override
     {
-        throw Exception(ErrorCodes::LOGICAL_ERROR, "MergeTreeRelParser can't call parse(), call parseReadRel instead.");
+        throw DB::Exception(DB::ErrorCodes::LOGICAL_ERROR, "MergeTreeRelParser can't call parse(), call parseReadRel instead.");
     }
 
     DB::QueryPlanPtr parseReadRel(
@@ -54,7 +53,7 @@ public:
 
     std::optional<const substrait::Rel *> getSingleInput(const substrait::Rel &) override
     {
-        throw Exception(ErrorCodes::LOGICAL_ERROR, "MergeTreeRelParser can't call getSingleInput().");
+        throw DB::Exception(DB::ErrorCodes::LOGICAL_ERROR, "MergeTreeRelParser can't call getSingleInput().");
     }
 
     String filterRangesOnDriver(const substrait::ReadRel & read_rel);
@@ -65,7 +64,7 @@ public:
 
         const substrait::Expression node;
         size_t columns_size = 0;
-        NameSet table_columns;
+        DB::NameSet table_columns;
         Int64 min_position_in_primary_key = std::numeric_limits<Int64>::max() - 1;
 
         auto tuple() const { return std::make_tuple(-min_position_in_primary_key, columns_size, table_columns.size()); }
@@ -75,20 +74,20 @@ public:
     using Conditions = std::list<Condition>;
 
     // visable for test
-    void analyzeExpressions(Conditions & res, const substrait::Expression & rel, std::set<Int64> & pk_positions, Block & block);
+    void analyzeExpressions(Conditions & res, const substrait::Expression & rel, std::set<Int64> & pk_positions, const DB::Block & block);
 
 public:
     std::unordered_map<std::string, UInt64> column_sizes;
 
 private:
-    void parseToAction(ActionsDAG & filter_action, const substrait::Expression & rel, std::string & filter_name);
-    PrewhereInfoPtr parsePreWhereInfo(const substrait::Expression & rel, Block & input);
-    ActionsDAG optimizePrewhereAction(const substrait::Expression & rel, std::string & filter_name, Block & block);
+    void parseToAction(DB::ActionsDAG & filter_action, const substrait::Expression & rel, std::string & filter_name);
+    DB::PrewhereInfoPtr parsePreWhereInfo(const substrait::Expression & rel, const DB::Block & input);
+    DB::ActionsDAG optimizePrewhereAction(const substrait::Expression & rel, std::string & filter_name, const DB::Block & block);
     String getCHFunctionName(const substrait::Expression_ScalarFunction & substrait_func) const;
-    static void collectColumns(const substrait::Expression & rel, NameSet & columns, Block & block);
-    UInt64 getColumnsSize(const NameSet & columns);
+    static void collectColumns(const substrait::Expression & rel, DB::NameSet & columns, const DB::Block & block);
+    UInt64 getColumnsSize(const DB::NameSet & columns);
 
-    ContextPtr context;
+    DB::ContextPtr context;
 };
 
 }

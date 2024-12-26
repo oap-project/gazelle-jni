@@ -22,7 +22,6 @@ ENABLE_GCS=OFF
 ENABLE_S3=OFF
 ENABLE_HDFS=OFF
 ENABLE_ABFS=OFF
-ENABLE_EP_CACHE=OFF
 ENABLE_VCPKG=OFF
 RUN_SETUP_SCRIPT=ON
 VELOX_REPO=""
@@ -94,10 +93,6 @@ do
         ;;
         --enable_abfs=*)
         ENABLE_ABFS=("${arg#*=}")
-        shift # Remove argument name from processing
-        ;;
-        --enable_ep_cache=*)
-        ENABLE_EP_CACHE=("${arg#*=}")
         shift # Remove argument name from processing
         ;;
         --enable_vcpkg=*)
@@ -192,7 +187,7 @@ function build_velox {
   cd $GLUTEN_DIR/ep/build-velox/src
   # When BUILD_TESTS is on for gluten cpp, we need turn on VELOX_BUILD_TEST_UTILS via build_test_utils.
   ./build_velox.sh --enable_s3=$ENABLE_S3 --enable_gcs=$ENABLE_GCS --build_type=$BUILD_TYPE --enable_hdfs=$ENABLE_HDFS \
-                   --enable_abfs=$ENABLE_ABFS --enable_ep_cache=$ENABLE_EP_CACHE --build_test_utils=$BUILD_TESTS \
+                   --enable_abfs=$ENABLE_ABFS --build_test_utils=$BUILD_TESTS \
                    --build_tests=$BUILD_VELOX_TESTS --build_benchmarks=$BUILD_VELOX_BENCHMARKS --num_threads=$NUM_THREADS \
                    --velox_home=$VELOX_HOME
 }

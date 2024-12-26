@@ -61,6 +61,9 @@ class SubstraitToVeloxPlanValidator {
   /// Used to validate whether the computing of this WindowGroupLimit is supported.
   bool validate(const ::substrait::WindowGroupLimitRel& windowGroupLimitRel);
 
+  /// Used to validate whether the computing of this Set is supported.
+  bool validate(const ::substrait::SetRel& setRel);
+
   /// Used to validate whether the computing of this Aggregation is supported.
   bool validate(const ::substrait::AggregateRel& aggRel);
 
@@ -103,9 +106,17 @@ class SubstraitToVeloxPlanValidator {
 
   std::vector<std::string> validateLog_;
 
-  /// Used to get types from advanced extension and validate them.
-  bool validateInputTypes(const ::substrait::extensions::AdvancedExtension& extension, std::vector<TypePtr>& types);
+  /// Used to get types from advanced extension and validate them, then convert to a Velox type that has arbitrary
+  /// levels of nesting.
+  bool parseVeloxType(const ::substrait::extensions::AdvancedExtension& extension, TypePtr& out);
 
+  /// Flattens a Velox type with single level of nesting into a std::vector of child types.
+  bool flattenSingleLevel(const TypePtr& type, std::vector<TypePtr>& out);
+
+  /// Flattens a Velox type with two level of nesting into a dual-nested std::vector of child types.
+  bool flattenDualLevel(const TypePtr& type, std::vector<std::vector<TypePtr>>& out);
+
+  /// Validate aggregate rel.
   bool validateAggRelFunctionType(const ::substrait::AggregateRel& substraitAgg);
 
   /// Validate the round scalar function.

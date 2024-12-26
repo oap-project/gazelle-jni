@@ -17,13 +17,13 @@
 
 #include <DataTypes/DataTypeAggregateFunction.h>
 #include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <Functions/FunctionHelpers.h>
 #include <Interpreters/ActionsDAG.h>
 #include <Parser/AggregateFunctionParser.h>
 #include <Parser/aggregate_function_parser/PercentileParserBase.h>
-#include <Common/CHUtil.h>
-
 #include <substrait/algebra.pb.h>
+#include <Common/CHUtil.h>
 
 namespace DB
 {
@@ -36,7 +36,7 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-
+using namespace DB;
 void PercentileParserBase::assertArgumentsSize(substrait::AggregationPhase phase, size_t size, size_t expect) const
 {
     if (size != expect)

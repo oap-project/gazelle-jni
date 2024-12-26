@@ -15,21 +15,17 @@
  * limitations under the License.
  */
 #pragma once
-#include <Common/LocalDate.h>
-#include <Common/DateLUT.h>
-#include <Common/DateLUTImpl.h>
-#include <Columns/ColumnsDateTime.h>
 #include <Columns/ColumnNullable.h>
+#include <Columns/ColumnsDateTime.h>
 #include <Columns/ColumnsNumber.h>
 #include <DataTypes/DataTypeDateTime64.h>
 #include <Functions/FunctionFactory.h>
 #include <Functions/FunctionHelpers.h>
 #include <Functions/extractTimeZoneFromFunctionArguments.h>
 #include <IO/ReadBufferFromMemory.h>
-#include <IO/parseDateTimeBestEffort.h>
 #include <IO/ReadHelpers.h>
-
-using namespace DB;
+#include <IO/parseDateTimeBestEffort.h>
+#include <Common/DateLUT.h>
 
 namespace DB
 {
@@ -43,14 +39,15 @@ namespace ErrorCodes
 
 namespace local_engine
 {
-class SparkFunctionConvertToDateTime : public IFunction
+
+class SparkFunctionConvertToDateTime : public DB::IFunction
 {
 public:
     static constexpr auto name = "sparkToDateTime";
     static DB::FunctionPtr create(DB::ContextPtr) { return std::make_shared<SparkFunctionConvertToDateTime>(); }
     SparkFunctionConvertToDateTime() = default;
     ~SparkFunctionConvertToDateTime() override = default;
-    bool isSuitableForShortCircuitArgumentsExecution(const DataTypesWithConstInfo &) const override { return true; }
+    bool isSuitableForShortCircuitArgumentsExecution(const DB::DataTypesWithConstInfo &) const override { return true; }
     size_t getNumberOfArguments() const override { return 0; }
     bool isVariadic() const override { return true; }
     bool useDefaultImplementationForConstants() const override { return true; }
@@ -116,28 +113,29 @@ public:
         return true;
     }
 
-    inline UInt32 extractDecimalScale(const ColumnWithTypeAndName & named_column) const
+    inline UInt32 extractDecimalScale(const DB::ColumnWithTypeAndName & named_column) const
     {
         const auto * arg_type = named_column.type.get();
-        bool ok = checkAndGetDataType<DataTypeUInt64>(arg_type)
-            || checkAndGetDataType<DataTypeUInt32>(arg_type)
-            || checkAndGetDataType<DataTypeUInt16>(arg_type)
-            || checkAndGetDataType<DataTypeUInt8>(arg_type);
+        bool ok = checkAndGetDataType<DB::DataTypeUInt64>(arg_type)
+            || checkAndGetDataType<DB::DataTypeUInt32>(arg_type)
+            || checkAndGetDataType<DB::DataTypeUInt16>(arg_type)
+            || checkAndGetDataType<DB::DataTypeUInt8>(arg_type);
         if (!ok)
-            throw Exception(ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Illegal type of toDecimal() scale {}", named_column.type->getName());
+            throw DB::Exception(
+                DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Illegal type of toDecimal() scale {}", named_column.type->getName());
 
-        Field field;
+        DB::Field field;
         named_column.column->get(0, field);
         return static_cast<UInt32>(field.safeGet<UInt32>());
     }
 
-    DB::DataTypePtr getReturnTypeImpl(const ColumnsWithTypeAndName & arguments) const override
+    DB::DataTypePtr getReturnTypeImpl(const DB::ColumnsWithTypeAndName & arguments) const override
     {
         UInt32 scale = 6;
         if (arguments.size() > 1)
             scale = extractDecimalScale(arguments[1]);
         const auto timezone = extractTimeZoneNameFromFunctionArguments(arguments, 2, 0, false);
-        return makeNullable(std::make_shared<DataTypeDateTime64>(scale, timezone));
+        return makeNullable(std::make_shared<DB::DataTypeDateTime64>(scale, timezone));
     }
 
     DB::ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr & result_type, size_t input_rows) const override
@@ -157,7 +155,9 @@ public:
         return DB::ColumnNullable::create(std::move(data_col), std::move(null_map_col));
     }
 
-    void executeInternal(const DB::ColumnPtr & src, const UInt32 & scale, PaddedPODArray<DB::DateTime64> & dst_data, PaddedPODArray<UInt8> & null_map_data) const
+    void executeInternal(const DB::ColumnPtr & src, const UInt32 & scale,
+        DB::PaddedPODArray<DB::DateTime64> & dst_data,
+        DB::PaddedPODArray<UInt8> & null_map_data) const
     {
         const DateLUTImpl * local_time_zone = &DateLUT::instance();
         const DateLUTImpl * utc_time_zone = &DateLUT::instance("UTC");

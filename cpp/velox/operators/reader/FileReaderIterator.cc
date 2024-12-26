@@ -49,4 +49,5 @@ std::shared_ptr<gluten::ResultIterator> FileReaderIterator::getInputIteratorFrom
   }
   throw new GlutenException("Unreachable.");
 }
+
 } // namespace gluten

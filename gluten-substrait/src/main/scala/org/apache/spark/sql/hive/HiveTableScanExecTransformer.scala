@@ -18,7 +18,6 @@ package org.apache.spark.sql.hive
 
 import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.execution.BasicScanExecTransformer
-import org.apache.gluten.extension.ValidationResult
 import org.apache.gluten.metrics.MetricsUpdater
 import org.apache.gluten.substrait.rel.LocalFilesNode.ReadFileFormat
 
@@ -181,8 +180,8 @@ case class HiveTableScanExecTransformer(
 
 object HiveTableScanExecTransformer {
 
-  val NULL_VALUE: Char = 0x00
-  val DEFAULT_FIELD_DELIMITER: Char = 0x01
+  private val NULL_VALUE: Char = 0x00
+  private val DEFAULT_FIELD_DELIMITER: Char = 0x01
   val TEXT_INPUT_FORMAT_CLASS: Class[TextInputFormat] =
     Utils.classForName("org.apache.hadoop.mapred.TextInputFormat")
   val ORC_INPUT_FORMAT_CLASS: Class[OrcInputFormat] =
@@ -191,24 +190,6 @@ object HiveTableScanExecTransformer {
     Utils.classForName("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")
   def isHiveTableScan(plan: SparkPlan): Boolean = {
     plan.isInstanceOf[HiveTableScanExec]
-  }
-
-  def copyWith(plan: SparkPlan, newPartitionFilters: Seq[Expression]): SparkPlan = {
-    val hiveTableScanExec = plan.asInstanceOf[HiveTableScanExec]
-    hiveTableScanExec.copy(partitionPruningPred = newPartitionFilters)(sparkSession =
-      hiveTableScanExec.session)
-  }
-
-  def validate(plan: SparkPlan): ValidationResult = {
-    plan match {
-      case hiveTableScan: HiveTableScanExec =>
-        val hiveTableScanTransformer = new HiveTableScanExecTransformer(
-          hiveTableScan.requestedAttributes,
-          hiveTableScan.relation,
-          hiveTableScan.partitionPruningPred)(hiveTableScan.session)
-        hiveTableScanTransformer.doValidate()
-      case _ => ValidationResult.failed("Is not a Hive scan")
-    }
   }
 
   def apply(plan: SparkPlan): HiveTableScanExecTransformer = {

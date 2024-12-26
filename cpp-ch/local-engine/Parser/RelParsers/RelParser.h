@@ -27,7 +27,6 @@
 #include <Parser/SerializedPlanParser.h>
 #include <Processors/QueryPlan/QueryPlan.h>
 #include <base/types.h>
-#include <substrait/extensions/extensions.pb.h>
 #include <substrait/plan.pb.h>
 
 namespace local_engine
@@ -47,16 +46,16 @@ public:
     parse(std::vector<DB::QueryPlanPtr> & input_plans_, const substrait::Rel & rel, std::list<const substrait::Rel *> & rel_stack_);
     virtual std::vector<const substrait::Rel *> getInputs(const substrait::Rel & rel);
     virtual std::optional<const substrait::Rel *> getSingleInput(const substrait::Rel & rel) = 0;
-    const std::vector<IQueryPlanStep *> & getSteps() const { return steps; }
+    const std::vector<DB::IQueryPlanStep *> & getSteps() const { return steps; }
 
-    static AggregateFunctionPtr getAggregateFunction(
+    static DB::AggregateFunctionPtr getAggregateFunction(
         const String & name, DB::DataTypes arg_types, DB::AggregateFunctionProperties & properties, const DB::Array & parameters = {});
 
     virtual std::vector<DB::QueryPlanPtr> extraPlans() { return {}; }
 
 protected:
     // inline SerializedPlanParser * getPlanParser() const { return plan_parser; }
-    inline ContextPtr getContext() const { return parser_context->queryContext(); }
+    inline DB::ContextPtr getContext() const { return parser_context->queryContext(); }
 
     String getUniqueName(const std::string & name) const;
 
@@ -64,18 +63,18 @@ protected:
     // Get coresponding function name in ClickHouse.
     std::optional<String> parseFunctionName(const substrait::Expression_ScalarFunction & function) const;
 
-    const DB::ActionsDAG::Node * parseArgument(ActionsDAG & action_dag, const substrait::Expression & rel) const;
+    const DB::ActionsDAG::Node * parseArgument(DB::ActionsDAG & action_dag, const substrait::Expression & rel) const;
 
-    const DB::ActionsDAG::Node * parseExpression(ActionsDAG & action_dag, const substrait::Expression & rel) const;
+    const DB::ActionsDAG::Node * parseExpression(DB::ActionsDAG & action_dag, const substrait::Expression & rel) const;
 
     DB::ActionsDAG expressionsToActionsDAG(const std::vector<substrait::Expression> & expressions, const DB::Block & header) const;
 
-    std::pair<DataTypePtr, Field> parseLiteral(const substrait::Expression_Literal & literal) const;
+    std::pair<DB::DataTypePtr, DB::Field> parseLiteral(const substrait::Expression_Literal & literal) const;
     // collect all steps for metrics
-    std::vector<IQueryPlanStep *> steps;
+    std::vector<DB::IQueryPlanStep *> steps;
 
-    const ActionsDAG::Node *
-    buildFunctionNode(ActionsDAG & action_dag, const String & function, const DB::ActionsDAG::NodeRawConstPtrs & args) const;
+    const DB::ActionsDAG::Node *
+    buildFunctionNode(DB::ActionsDAG & action_dag, const String & function, const DB::ActionsDAG::NodeRawConstPtrs & args) const;
 
     ParserContextPtr parser_context;
     std::unique_ptr<ExpressionParser> expression_parser;

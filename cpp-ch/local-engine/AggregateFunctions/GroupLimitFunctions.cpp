@@ -16,8 +16,6 @@
  */
 #include <vector>
 #include <AggregateFunctions/AggregateFunctionFactory.h>
-#include <AggregateFunctions/FactoryHelpers.h>
-#include <AggregateFunctions/Helpers.h>
 #include <AggregateFunctions/IAggregateFunction.h>
 #include <AggregateFunctions/IAggregateFunction_fwd.h>
 #include <Columns/ColumnArray.h>
@@ -28,17 +26,14 @@
 #include <DataTypes/DataTypesNumber.h>
 #include <DataTypes/IDataType.h>
 #include <DataTypes/Serializations/ISerialization.h>
+#include <IO/VarInt.h>
 #include <Interpreters/Context.h>
 #include <Parsers/ASTExpressionList.h>
 #include <Parsers/ASTIdentifier.h>
 #include <Parsers/ASTOrderByElement.h>
-#include <Parsers/ExpressionElementParsers.h>
 #include <Parsers/ExpressionListParsers.h>
 #include <Parsers/parseQuery.h>
-#include <Parsers/queryToString.h>
 #include <Common/Exception.h>
-
-#include <Poco/Logger.h>
 #include <Common/logger_useful.h>
 
 namespace DB::ErrorCodes

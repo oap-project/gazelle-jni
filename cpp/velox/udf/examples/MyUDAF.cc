@@ -173,6 +173,7 @@ class MyAvgRegisterer final : public gluten::UdafRegisterer {
 
   const char* myAvgIntermediateType_ = "struct<a:double,b:bigint>";
 };
+
 } // namespace myavg
 
 std::vector<std::shared_ptr<gluten::UdafRegisterer>>& globalRegisters() {

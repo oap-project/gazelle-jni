@@ -53,7 +53,7 @@ extern const int ILLEGAL_TYPE_OF_ARGUMENT;
 }
 namespace local_engine
 {
-
+using namespace DB;
 AggregateRelParser::AggregateRelParser(ParserContextPtr parser_context_) : RelParser(parser_context_)
 {
 }

@@ -54,7 +54,7 @@ extern const Metric LocalThreadScheduled;
 
 namespace local_engine
 {
-
+using namespace DB;
 jclass CacheManager::cache_result_class = nullptr;
 jmethodID CacheManager::cache_result_constructor = nullptr;
 

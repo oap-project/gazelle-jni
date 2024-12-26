@@ -26,8 +26,10 @@
 #include <google/protobuf/json/json.h>
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/wrappers.pb.h>
+#include <Common/BlockTypeUtils.h>
 #include <Common/CHUtil.h>
 #include <Common/QueryContext.h>
+#include <Common/formatReadable.h>
 #include <Common/logger_useful.h>
 
 namespace pb_util = google::protobuf::util;
@@ -289,6 +291,17 @@ static std::string showString(const NameAndColumns & block, size_t numRows, size
 
 ///
 
+void dumpMemoryUsage(const char * type)
+{
+    auto logger = getLogger("QueryContextManager");
+    if (!logger)
+        return;
+    auto task_id = local_engine::QueryContext::instance().currentTaskIdOrEmpty();
+    task_id = task_id.empty() ? "" : "(" + task_id + ")";
+    auto usage = local_engine::currentThreadGroupMemoryUsage();
+    LOG_ERROR(logger, "{}{} Memory Usage {}", type, task_id, formatReadableSizeWithBinarySuffix(usage));
+}
+
 void dumpPlan(DB::QueryPlan & plan, const char * type, bool force, LoggerPtr logger)
 {
     if (!logger)
@@ -337,6 +350,24 @@ void dumpMessage(const google::protobuf::Message & message, const char * type, b
 void headBlock(const DB::Block & block, size_t count)
 {
     std::cerr << showString(block, count) << std::endl;
+}
+
+void printBlockHeader(const DB::Block & block, const std::string & prefix)
+{
+    auto nameColumn = local_engine::STRING()->createColumn();
+    auto typeColumn = local_engine::STRING()->createColumn();
+
+    for (const auto & column : block.getColumnsWithTypeAndName())
+    {
+        nameColumn->insert(column.name);
+        typeColumn->insert(column.type->getName());
+    }
+
+    if (!prefix.empty())
+        std::cerr << prefix << std::endl;
+
+    std::cerr << Utils::showString({{"[Name]", nameColumn->getPtr()}, {"[type]", typeColumn->getPtr()}}, nameColumn->size(), 100, false)
+              << std::endl;
 }
 
 void headColumn(const DB::ColumnPtr & column, size_t count)

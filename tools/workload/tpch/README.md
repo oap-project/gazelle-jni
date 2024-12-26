@@ -48,6 +48,6 @@ val dwrf_file_path = "/PATH/TO/TPCH_DWRF_PATH"
 ```
 
 ## Test Queries
-We provide the test queries in [TPC-H queries](../../../gluten-core/src/test/resources/tpch-queries).
+We provide the test queries in [TPC-H queries](../../../tools/gluten-it/common/src/main/resources/tpch-queries).
 We also provide a scala script in [Run TPC-H](./run_tpch/) directory about how to run TPC-H queries.
 Please note if you are using DWRF test, please remember to set the file format to DWRF in the code.

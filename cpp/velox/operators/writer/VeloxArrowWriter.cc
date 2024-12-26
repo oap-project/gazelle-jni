@@ -35,4 +35,5 @@ std::shared_ptr<ColumnarBatch> VeloxArrowWriter::retrieveColumnarBatch() {
   }
   return reader_->next();
 }
+
 } // namespace gluten

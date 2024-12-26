@@ -14,18 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
-#include <Common/NaNUtils.h>
-#include <DataTypes/IDataType.h>
+#include <Columns/ColumnNullable.h>
+#include <Columns/ColumnVector.h>
+#include <Columns/ColumnsNumber.h>
 #include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypesNumber.h>
-#include <Functions/IFunction.h>
+#include <DataTypes/IDataType.h>
 #include <Functions/FunctionFactory.h>
-#include <Columns/ColumnsNumber.h>
-#include <Columns/ColumnVector.h>
-#include <Columns/ColumnNullable.h>
-
-using namespace DB;
+#include <Functions/IFunction.h>
+#include <Common/NaNUtils.h>
 
 namespace DB
 {
@@ -51,7 +50,7 @@ public:
     ~SparkFunctionCastFloatToInt() override = default;
     String getName() const override { return name; }
     bool useDefaultImplementationForConstants() const override { return true; }
-    bool isSuitableForShortCircuitArgumentsExecution(const DataTypesWithConstInfo & /*arguments*/) const override { return true; }
+    bool isSuitableForShortCircuitArgumentsExecution(const DB::DataTypesWithConstInfo & /*arguments*/) const override { return true; }
 
     DB::DataTypePtr getReturnTypeImpl(const DB::DataTypes &) const override
     {

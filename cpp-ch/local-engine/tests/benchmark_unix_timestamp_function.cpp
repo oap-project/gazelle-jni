@@ -49,7 +49,7 @@ static void BM_CHUnixTimestamp_For_Date32(benchmark::State & state)
     Block block = createDataBlock("Date32", 30000000);
     auto executable = function->build(block.getColumnsWithTypeAndName());
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 static void BM_CHUnixTimestamp_For_Date(benchmark::State & state)
@@ -60,7 +60,7 @@ static void BM_CHUnixTimestamp_For_Date(benchmark::State & state)
     Block block = createDataBlock("Date", 30000000);
     auto executable = function->build(block.getColumnsWithTypeAndName());
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 static void BM_SparkUnixTimestamp_For_Date32(benchmark::State & state)
@@ -71,7 +71,7 @@ static void BM_SparkUnixTimestamp_For_Date32(benchmark::State & state)
     Block block = createDataBlock("Date32", 30000000);
     auto executable = function->build(block.getColumnsWithTypeAndName());
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 static void BM_SparkUnixTimestamp_For_Date(benchmark::State & state)
@@ -82,7 +82,7 @@ static void BM_SparkUnixTimestamp_For_Date(benchmark::State & state)
     Block block = createDataBlock("Date", 30000000);
     auto executable = function->build(block.getColumnsWithTypeAndName());
     for (auto _ : state) [[maybe_unused]]
-        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows());
+        auto result = executable->execute(block.getColumnsWithTypeAndName(), executable->getResultType(), block.rows(), false);
 }
 
 BENCHMARK(BM_CHUnixTimestamp_For_Date32)->Unit(benchmark::kMillisecond)->Iterations(100);

@@ -20,7 +20,6 @@
 #include "utils/Exception.h"
 
 namespace gluten {
-
 namespace {
 
 struct AggregateCompanion {

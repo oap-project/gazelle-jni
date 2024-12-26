@@ -41,6 +41,9 @@ const std::string kSkippedStrides = "skippedStrides";
 const std::string kProcessedStrides = "processedStrides";
 const std::string kRemainingFilterTime = "totalRemainingFilterTime";
 const std::string kIoWaitTime = "ioWaitWallNanos";
+const std::string kStorageReadBytes = "storageReadBytes";
+const std::string kLocalReadBytes = "localReadBytes";
+const std::string kRamReadBytes = "ramReadBytes";
 const std::string kPreloadSplits = "readyPreloadedSplits";
 const std::string kNumWrittenFiles = "numWrittenFiles";
 const std::string kWriteIOTime = "writeIOTime";
@@ -91,7 +94,7 @@ WholeStageResultIterator::WholeStageResultIterator(
       std::move(queryCtx),
       velox::exec::Task::ExecutionMode::kSerial);
   if (!task_->supportSerialExecutionMode()) {
-    throw std::runtime_error("Task doesn't support single thread execution: " + planNode->toString());
+    throw std::runtime_error("Task doesn't support single threaded execution: " + planNode->toString());
   }
   auto fileSystem = velox::filesystems::getFileSystem(spillDir, nullptr);
   GLUTEN_CHECK(fileSystem != nullptr, "File System for spilling is null!");
@@ -248,14 +251,46 @@ void WholeStageResultIterator::getOrderedNodeIds(
     const std::shared_ptr<const velox::core::PlanNode>& planNode,
     std::vector<velox::core::PlanNodeId>& nodeIds) {
   bool isProjectNode = (std::dynamic_pointer_cast<const velox::core::ProjectNode>(planNode) != nullptr);
+  bool isLocalExchangeNode = (std::dynamic_pointer_cast<const velox::core::LocalPartitionNode>(planNode) != nullptr);
+  bool isUnionNode = isLocalExchangeNode &&
+      std::dynamic_pointer_cast<const velox::core::LocalPartitionNode>(planNode)->type() ==
+          velox::core::LocalPartitionNode::Type::kGather;
   const auto& sourceNodes = planNode->sources();
-  for (const auto& sourceNode : sourceNodes) {
+  if (isProjectNode) {
+    GLUTEN_CHECK(sourceNodes.size() == 1, "Illegal state");
+    const auto sourceNode = sourceNodes.at(0);
     // Filter over Project are mapped into FilterProject operator in Velox.
     // Metrics are all applied on Project node, and the metrics for Filter node
     // do not exist.
-    if (isProjectNode && std::dynamic_pointer_cast<const velox::core::FilterNode>(sourceNode)) {
+    if (std::dynamic_pointer_cast<const velox::core::FilterNode>(sourceNode)) {
       omittedNodeIds_.insert(sourceNode->id());
     }
+    getOrderedNodeIds(sourceNode, nodeIds);
+    nodeIds.emplace_back(planNode->id());
+    return;
+  }
+
+  if (isUnionNode) {
+    // FIXME: The whole metrics system in gluten-substrait is magic. Passing metrics trees through JNI with a trivial
+    //  array is possible but requires for a solid design. Apparently we haven't had it. All the code requires complete
+    //  rework.
+    // Union was interpreted as LocalPartition + LocalExchange + 2 fake projects as children in Velox. So we only fetch
+    // metrics from the root node.
+    std::vector<std::shared_ptr<const velox::core::PlanNode>> unionChildren{};
+    for (const auto& source : planNode->sources()) {
+      const auto projectedChild = std::dynamic_pointer_cast<const velox::core::ProjectNode>(source);
+      GLUTEN_CHECK(projectedChild != nullptr, "Illegal state");
+      const auto projectSources = projectedChild->sources();
+      GLUTEN_CHECK(projectSources.size() == 1, "Illegal state");
+      const auto projectSource = projectSources.at(0);
+      getOrderedNodeIds(projectSource, nodeIds);
+    }
+    nodeIds.emplace_back(planNode->id());
+    return;
+  }
+
+  for (const auto& sourceNode : sourceNodes) {
+    // Post-order traversal.
     getOrderedNodeIds(sourceNode, nodeIds);
   }
   nodeIds.emplace_back(planNode->id());
@@ -350,9 +385,9 @@ void WholeStageResultIterator::collectMetrics() {
       continue;
     }
 
-    const auto& status = planStats.at(nodeId);
-    // Add each operator status into metrics.
-    for (const auto& entry : status.operatorStats) {
+    const auto& stats = planStats.at(nodeId);
+    // Add each operator stats into metrics.
+    for (const auto& entry : stats.operatorStats) {
       const auto& second = entry.second;
       metrics_->get(Metrics::kInputRows)[metricIndex] = second->inputRows;
       metrics_->get(Metrics::kInputVectors)[metricIndex] = second->inputVectors;
@@ -390,6 +425,10 @@ void WholeStageResultIterator::collectMetrics() {
       metrics_->get(Metrics::kRemainingFilterTime)[metricIndex] =
           runtimeMetric("sum", second->customStats, kRemainingFilterTime);
       metrics_->get(Metrics::kIoWaitTime)[metricIndex] = runtimeMetric("sum", second->customStats, kIoWaitTime);
+      metrics_->get(Metrics::kStorageReadBytes)[metricIndex] =
+          runtimeMetric("sum", second->customStats, kStorageReadBytes);
+      metrics_->get(Metrics::kLocalReadBytes)[metricIndex] = runtimeMetric("sum", second->customStats, kLocalReadBytes);
+      metrics_->get(Metrics::kRamReadBytes)[metricIndex] = runtimeMetric("sum", second->customStats, kRamReadBytes);
       metrics_->get(Metrics::kPreloadSplits)[metricIndex] =
           runtimeMetric("sum", entry.second->customStats, kPreloadSplits);
       metrics_->get(Metrics::kNumWrittenFiles)[metricIndex] =
@@ -446,9 +485,9 @@ std::unordered_map<std::string, std::string> WholeStageResultIterator::getQueryC
       // partial aggregation memory config
       auto offHeapMemory = veloxCfg_->get<int64_t>(kSparkTaskOffHeapMemory, facebook::velox::memory::kMaxMemory);
       auto maxPartialAggregationMemory =
-          (long)(veloxCfg_->get<double>(kMaxPartialAggregationMemoryRatio, 0.1) * offHeapMemory);
+          static_cast<long>((veloxCfg_->get<double>(kMaxPartialAggregationMemoryRatio, 0.1) * offHeapMemory));
       auto maxExtendedPartialAggregationMemory =
-          (long)(veloxCfg_->get<double>(kMaxExtendedPartialAggregationMemoryRatio, 0.15) * offHeapMemory);
+          static_cast<long>((veloxCfg_->get<double>(kMaxExtendedPartialAggregationMemoryRatio, 0.15) * offHeapMemory));
       configs[velox::core::QueryConfig::kMaxPartialAggregationMemory] = std::to_string(maxPartialAggregationMemory);
       configs[velox::core::QueryConfig::kMaxExtendedPartialAggregationMemory] =
           std::to_string(maxExtendedPartialAggregationMemory);
@@ -477,15 +516,23 @@ std::unordered_map<std::string, std::string> WholeStageResultIterator::getQueryC
     configs[velox::core::QueryConfig::kMaxSpillBytes] =
         std::to_string(veloxCfg_->get<uint64_t>(kMaxSpillBytes, 107374182400LL));
     configs[velox::core::QueryConfig::kSpillWriteBufferSize] =
-        std::to_string(veloxCfg_->get<uint64_t>(kSpillWriteBufferSize, 4L * 1024 * 1024));
+        std::to_string(veloxCfg_->get<uint64_t>(kShuffleSpillDiskWriteBufferSize, 1L * 1024 * 1024));
+    configs[velox::core::QueryConfig::kSpillReadBufferSize] =
+        std::to_string(veloxCfg_->get<int32_t>(kSpillReadBufferSize, 1L * 1024 * 1024));
     configs[velox::core::QueryConfig::kSpillStartPartitionBit] =
         std::to_string(veloxCfg_->get<uint8_t>(kSpillStartPartitionBit, 29));
     configs[velox::core::QueryConfig::kSpillNumPartitionBits] =
         std::to_string(veloxCfg_->get<uint8_t>(kSpillPartitionBits, 3));
     configs[velox::core::QueryConfig::kSpillableReservationGrowthPct] =
         std::to_string(veloxCfg_->get<uint8_t>(kSpillableReservationGrowthPct, 25));
-    configs[velox::core::QueryConfig::kSpillCompressionKind] =
-        veloxCfg_->get<std::string>(kSpillCompressionKind, "lz4");
+    configs[velox::core::QueryConfig::kSpillPrefixSortEnabled] =
+        veloxCfg_->get<std::string>(kSpillPrefixSortEnabled, "false");
+    if (veloxCfg_->get<bool>(kSparkShuffleSpillCompress, true)) {
+      configs[velox::core::QueryConfig::kSpillCompressionKind] =
+          veloxCfg_->get<std::string>(kSpillCompressionKind, veloxCfg_->get<std::string>(kCompressionKind, "lz4"));
+    } else {
+      configs[velox::core::QueryConfig::kSpillCompressionKind] = "none";
+    }
     configs[velox::core::QueryConfig::kSparkBloomFilterExpectedNumItems] =
         std::to_string(veloxCfg_->get<int64_t>(kBloomFilterExpectedNumItems, 1000000));
     configs[velox::core::QueryConfig::kSparkBloomFilterNumBits] =

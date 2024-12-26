@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-#include <Parser/FunctionParser.h>
+#include <DataTypes/DataTypeNullable.h>
+#include <DataTypes/DataTypeString.h>
 #include <DataTypes/IDataType.h>
+#include <Parser/FunctionParser.h>
 
 namespace DB
 {
@@ -38,21 +40,21 @@ public:
 
     String getName() const override { return name; }
 
-    const ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, ActionsDAG & actions_dag) const override
+    const DB::ActionsDAG::Node * parse(const substrait::Expression_ScalarFunction & substrait_func, DB::ActionsDAG & actions_dag) const override
     {
         auto parsed_args = parseFunctionArguments(substrait_func, actions_dag);
         if (parsed_args.size() != 1)
-            throw Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
+            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {} requires exactly one arguments", getName());
 
         const auto * arg = parsed_args[0];
         const auto * new_arg = arg;
         if (isInt(DB::removeNullable(arg->result_type)))
         {
-            const auto * string_type_node = addColumnToActionsDAG(actions_dag, std::make_shared<DataTypeString>(), "Nullable(String)");
+            const auto * string_type_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), "Nullable(String)");
             new_arg = toFunctionNode(actions_dag, "CAST", {arg, string_type_node});
         }
         const auto * octet_length_node = toFunctionNode(actions_dag, "octet_length", {new_arg});
-        return convertNodeTypeIfNeeded(substrait_func, octet_length_node, actions_dag);;
+        return convertNodeTypeIfNeeded(substrait_func, octet_length_node, actions_dag);
     }
 };
 
