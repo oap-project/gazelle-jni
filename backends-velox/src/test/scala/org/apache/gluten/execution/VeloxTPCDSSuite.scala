@@ -35,7 +35,7 @@ class VeloxTPCDSSuite extends VeloxWholeStageTransformerSuite {
   override protected val fileFormat: String = "parquet"
 
   private val queryPath = System.getProperty("user.dir") +
-    "/tools/gluten-it/common/src/main/resources/tpcds-queries"
+    "/tools/gluten-it/common/src/main/resources/tpcds-queries/"
 
   protected var queryTables: Map[String, DataFrame] = _
 
@@ -51,7 +51,7 @@ class VeloxTPCDSSuite extends VeloxWholeStageTransformerSuite {
       .set("spark.sql.shuffle.partitions", "256")
       .set("spark.memory.offHeap.size", "200g")
       .set("spark.unsafe.exceptionOnMemoryLeak", "true")
-      .set("spark.sql.autoBroadcastJoinThreshold", "10M")
+      .set("spark.sql.autoBroadcastJoinThreshold", "-1")
       .set("spark.driver.maxResultSize", "4g")
       .set("spark.sql.sources.useV1SourceList", "avro")
       .set("spark.sql.adaptive.enabled", "true")
@@ -99,14 +99,16 @@ class VeloxTPCDSSuite extends VeloxWholeStageTransformerSuite {
     }.toMap
   }
 
-  ignore("q7") {
-    val source = Source.fromFile(queryPath + "q7.sql")
+  test("q97") {
+    val source = Source.fromFile(queryPath + "q14a.sql")
     val sql = source.mkString
     source.close()
     runQueryAndCompare(sql)(_ => {})
   }
 
-  ignore("all query") {
+  test("all query") {
+//    All failed queries
+//      [q38.sql, q14a.sql, q87.sql, q14b.sql, q47.sql]
     val s = new util.ArrayList[String]()
     new File(queryPath)
       .listFiles()

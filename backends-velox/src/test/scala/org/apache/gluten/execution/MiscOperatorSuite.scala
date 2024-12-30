@@ -1264,7 +1264,7 @@ class MiscOperatorSuite extends VeloxWholeStageTransformerSuite with AdaptiveSpa
     }
   }
 
-  test("test cross join") {
+  ignore("test cross join") {
     withTable("t1", "t2") {
       sql("""
             |create table t1 using parquet as

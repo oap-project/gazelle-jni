@@ -1001,7 +1001,7 @@ object GlutenConfig {
     buildConf("spark.gluten.sql.columnar.forceShuffledHashJoin")
       .internal()
       .booleanConf
-      .createWithDefault(true)
+      .createWithDefault(false)
 
   val COLUMNAR_SHUFFLED_HASH_JOIN_ENABLED =
     buildConf("spark.gluten.sql.columnar.shuffledHashJoin")

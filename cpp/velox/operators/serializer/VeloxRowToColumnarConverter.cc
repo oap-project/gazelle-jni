@@ -300,6 +300,9 @@ VeloxRowToColumnarConverter::convertPrimitive(int64_t numRows, int64_t* rowLengt
   }
 
   auto rowVector = std::make_shared<RowVector>(pool_.get(), rowType_, BufferPtr(nullptr), numRows, std::move(columns));
+  if (rowVector) {
+    std::cout << this <<" the fall back full outer result is " << rowVector->toString(0, rowVector->size()) << "\n";
+  } 
   return std::make_shared<VeloxColumnarBatch>(rowVector);
 }
 

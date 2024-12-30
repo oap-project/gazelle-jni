@@ -250,11 +250,13 @@ case class SortMergeJoinExecTransformer(
     projectList) {
 
   override protected def doValidateInternal(): ValidationResult = {
-    // Firstly, need to check if the Substrait plan for this operator can be successfully generated.
-    if (substraitJoinType == JoinRel.JoinType.JOIN_TYPE_OUTER) {
-      return ValidationResult
-        .failed(s"Found unsupported join type of $joinType for velox smj: $substraitJoinType")
-    }
+    // // Firstly, need to check if the Substrait plan for this operator
+    // can be successfully generated.
+    // if (substraitJoinType == JoinRel.JoinType.JOIN_TYPE_OUTER) {
+    //   return ValidationResult
+    //     .failed(s"Found unsupported join type of $joinType for velox smj:
+    // $substraitJoinType")
+    // }
     super.doValidateInternal()
   }
 

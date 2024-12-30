@@ -2,6 +2,7 @@ vcpkg_download_distfile(ARCHIVE
     URLS "https://fossies.org/linux/misc/old/libelf-0.8.13.tar.gz"
     FILENAME "libelf-0.8.13.tar.gz"
     SHA512 d2a4ea8ccc0bbfecac38fa20fbd96aefa8e86f8af38691fb6991cd9c5a03f587475ecc2365fc89a4954c11a679d93460ee9a5890693112f6133719af3e6582fe
+    OPTIONS "--insecure"
 )
 
 vcpkg_extract_source_archive(

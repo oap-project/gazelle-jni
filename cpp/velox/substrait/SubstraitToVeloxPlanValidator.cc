@@ -980,6 +980,7 @@ bool SubstraitToVeloxPlanValidator::validate(const ::substrait::JoinRel& joinRel
       SubstraitParser::configSetInOptimization(joinRel.advanced_extension(), "isSMJ=")) {
     switch (joinRel.type()) {
       case ::substrait::JoinRel_JoinType_JOIN_TYPE_INNER:
+      case ::substrait::JoinRel_JoinType_JOIN_TYPE_OUTER:
       case ::substrait::JoinRel_JoinType_JOIN_TYPE_LEFT:
       case ::substrait::JoinRel_JoinType_JOIN_TYPE_RIGHT:
       case ::substrait::JoinRel_JoinType_JOIN_TYPE_LEFT_SEMI:
