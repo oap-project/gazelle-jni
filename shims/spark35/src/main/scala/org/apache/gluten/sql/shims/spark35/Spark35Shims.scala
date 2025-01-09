@@ -549,4 +549,9 @@ class Spark35Shims extends SparkShims {
   override def unsetOperatorId(plan: QueryPlan[_]): Unit = {
     QueryPlan.localIdMap.get().remove(plan)
   }
+
+  override def fromJsonSupportPartialResults: Boolean = {
+    // 'jsonEnablePartialResults' is introduced after spark 3.4.
+    SQLConf.get.jsonEnablePartialResults
+  }
 }

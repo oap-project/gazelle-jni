@@ -285,4 +285,6 @@ trait SparkShims {
 
   /** Shim method for usages from GlutenExplainUtils.scala. */
   def unsetOperatorId(plan: QueryPlan[_]): Unit
+
+  def fromJsonSupportPartialResults: Boolean = false
 }

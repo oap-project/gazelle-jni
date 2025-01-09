@@ -159,6 +159,13 @@ trait SparkPlanExecApi {
     GenericExpressionTransformer(substraitExprName, children, expr)
   }
 
+  def genFromJsonTransformer(
+      substraitExprName: String,
+      children: Seq[ExpressionTransformer],
+      expr: JsonToStructs): ExpressionTransformer = {
+    GenericExpressionTransformer(substraitExprName, children, expr)
+  }
+
   /** Transform GetArrayItem to Substrait. */
   def genGetArrayItemTransformer(
       substraitExprName: String,

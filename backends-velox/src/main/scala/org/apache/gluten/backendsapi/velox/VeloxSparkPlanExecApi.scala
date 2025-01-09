@@ -58,6 +58,8 @@ import org.apache.commons.lang3.ClassUtils
 
 import javax.ws.rs.core.UriBuilder
 
+import java.util.Locale
+
 class VeloxSparkPlanExecApi extends SparkPlanExecApi {
 
   /** Transform GetArrayItem to Substrait. */
@@ -696,6 +698,52 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
         != SQLConf.MapKeyDedupPolicy.EXCEPTION.toString
     ) {
       throw new GlutenNotSupportException("Only EXCEPTION policy is supported!")
+    }
+    GenericExpressionTransformer(substraitExprName, children, expr)
+  }
+
+  /** Generate an expression transformer to transform JsonToStructs to Substrait. */
+  override def genFromJsonTransformer(
+      substraitExprName: String,
+      children: Seq[ExpressionTransformer],
+      expr: JsonToStructs): ExpressionTransformer = {
+    if (!SparkShimLoader.getSparkShims.fromJsonSupportPartialResults) {
+      throw new GlutenNotSupportException("'from_json' is not supported in Velox")
+    }
+    if (!expr.options.isEmpty) {
+      throw new GlutenNotSupportException("'from_json' with options is not supported in Velox")
+    }
+    if (SQLConf.get.caseSensitiveAnalysis) {
+      throw new GlutenNotSupportException(
+        "'from_json' with 'spark.sql.caseSensitive = true' is not supported in Velox")
+    }
+
+    val hasDuplicateKey = expr.schema match {
+      case s: StructType =>
+        s.names.distinct.size != s.names.size ||
+        !s.filter(
+          f =>
+            !s.names
+              .filter(
+                n => n != f.name && n.toLowerCase(Locale.ROOT) == f.name.toLowerCase(Locale.ROOT))
+              .isEmpty)
+          .isEmpty
+      case other =>
+        false
+    }
+    if (hasDuplicateKey) {
+      throw new GlutenNotSupportException(
+        "'from_json' with duplicate keys is not supported in Velox")
+    }
+    val hasCorruptRecord = expr.schema match {
+      case s: StructType =>
+        !s.filter(_.name == SQLConf.get.getConf(SQLConf.COLUMN_NAME_OF_CORRUPT_RECORD)).isEmpty
+      case other =>
+        false
+    }
+    if (hasCorruptRecord) {
+      throw new GlutenNotSupportException(
+        "'from_json' with column corrupt record is not supported in Velox")
     }
     GenericExpressionTransformer(substraitExprName, children, expr)
   }
