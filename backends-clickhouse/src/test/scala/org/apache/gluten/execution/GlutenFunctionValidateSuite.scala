@@ -271,7 +271,7 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     }
   }
 
-  test("GLUTEN-8304: Optimize nested get_json_object") {
+  test("GLUTEN-8304: Optimize nested functions") {
     def checkExpression(expr: Expression, path: String): Boolean = {
       expr match {
         case g: GetJsonObject
@@ -298,55 +298,94 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
           plan.children.exists(c => checkPlan(c, path))
         }
     }
-    def checkGetJsonObjectPath(df: DataFrame, path: String): Boolean = {
-      checkPlan(df.queryExecution.analyzed, path)
+    def checkGetJsonObjectPath(
+        df: DataFrame,
+        path: String,
+        collapsedGetJsonObjectEnabled: Boolean): Boolean = {
+      if (collapsedGetJsonObjectEnabled) {
+        checkPlan(df.queryExecution.analyzed, path)
+      } else {
+        true
+      }
     }
-    withSQLConf(("spark.gluten.sql.collapseGetJsonObject.enabled", "true")) {
+
+    def runCheck(collapseGetJsonObjectEnabled: Boolean): Unit = {
       runQueryAndCompare(
         "select get_json_object(get_json_object(string_field1, '$.a'), '$.y') " +
           " from json_test where int_field1 = 6") {
-        x => assert(checkGetJsonObjectPath(x, "$.a.y"))
+        x => assert(checkGetJsonObjectPath(x, "$.a.y", collapseGetJsonObjectEnabled))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(string_field1, '$[a]'), '$[y]') " +
           " from json_test where int_field1 = 6") {
-        x => assert(checkGetJsonObjectPath(x, "$[a][y]"))
+        x => assert(checkGetJsonObjectPath(x, "$[a][y]", collapseGetJsonObjectEnabled))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, " +
           "'$.a'), '$.y'), '$.z') from json_test where int_field1 = 6") {
-        x => assert(checkGetJsonObjectPath(x, "$.a.y.z"))
+        x => assert(checkGetJsonObjectPath(x, "$.a.y.z", collapseGetJsonObjectEnabled))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, '$.a')," +
           " string_field1), '$.z') from json_test where int_field1 = 6",
         noFallBack = false
-      )(x => assert(checkGetJsonObjectPath(x, "$.a") && checkGetJsonObjectPath(x, "$.z")))
+      )(
+        x =>
+          assert(
+            checkGetJsonObjectPath(
+              x,
+              "$.a",
+              collapseGetJsonObjectEnabled) && checkGetJsonObjectPath(
+              x,
+              "$.z",
+              collapseGetJsonObjectEnabled)))
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, " +
           " string_field1), '$.a'), '$.z') from json_test where int_field1 = 6",
         noFallBack = false
-      )(x => assert(checkGetJsonObjectPath(x, "$.a.z")))
+      )(x => assert(checkGetJsonObjectPath(x, "$.a.z", collapseGetJsonObjectEnabled)))
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(" +
           " substring(string_field1, 10), '$.a'), '$.z'), string_field1) " +
           " from json_test where int_field1 = 6",
         noFallBack = false
-      )(x => assert(checkGetJsonObjectPath(x, "$.a.z")))
+      )(x => assert(checkGetJsonObjectPath(x, "$.a.z", collapseGetJsonObjectEnabled)))
       runQueryAndCompare(
         "select get_json_object(get_json_object(string_field1, '$.a[0]'), '$.y') " +
           " from json_test where int_field1 = 7") {
-        x => assert(checkGetJsonObjectPath(x, "$.a[0].y"))
+        x => assert(checkGetJsonObjectPath(x, "$.a[0].y", collapseGetJsonObjectEnabled))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, " +
           " '$.a[1]'), '$.z[1]'), '$.n') from json_test where int_field1 = 7") {
-        x => assert(checkGetJsonObjectPath(x, "$.a[1].z[1].n"))
+        x => assert(checkGetJsonObjectPath(x, "$.a[1].z[1].n", collapseGetJsonObjectEnabled))
       }
       runQueryAndCompare(
         "select * from json_test where " +
           " get_json_object(get_json_object(get_json_object(string_field1, '$.a'), " +
-          "'$.y'), '$.z') != null")(x => assert(checkGetJsonObjectPath(x, "$.a.y.z")))
+          "'$.y'), '$.z') != null")(
+        x => assert(checkGetJsonObjectPath(x, "$.a.y.z", collapseGetJsonObjectEnabled)))
+      runQueryAndCompare(
+        "select get_json_object(get_json_object(get_json_object(string_field1, " +
+          " '$.a[1]'), '$.z[1]'), '$.n') from json_test where int_field1 = 7 or int_field1 = 5") {
+        _ =>
+      }
+
+      runQueryAndCompare(
+        "select get_json_object(get_json_object(get_json_object(string_field1, " +
+          " '$.a[1]'), '$.z[1]'), '$.n') from json_test where int_field1 > 3 and int_field1 != 5 " +
+          " or int_field1 < 2") { _ => }
+    }
+    withSQLConf(
+      ("spark.gluten.sql.collapseGetJsonObject.enabled", "true"),
+      ("spark.gluten.sql.supported.collapseNestedFunctions", "")) {
+      runCheck(true)
+    }
+    withSQLConf(
+      (
+        "spark.gluten.sql.supported.collapseNestedFunctions",
+        "get_json_object,get_struct_field,and,or")) {
+      runCheck(false)
     }
   }
 

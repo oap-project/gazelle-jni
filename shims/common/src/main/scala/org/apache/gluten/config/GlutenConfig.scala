@@ -837,6 +837,13 @@ object GlutenConfig {
     .stringConf
     .createWithDefault("")
 
+  val GLUTEN_SUPPORTED_COLLAPSED_FUNCTIONS =
+    buildConf("spark.gluten.sql.supported.collapseNestedFunctions")
+      .internal()
+      .doc("Collapse nested functions as one for optimization.")
+      .stringConf
+      .createWithDefault("and,or,get_struct_field,get_json_object");
+
   val GLUTEN_SOFT_AFFINITY_ENABLED =
     buildConf("spark.gluten.soft-affinity.enabled")
       .doc("Whether to enable Soft Affinity scheduling.")

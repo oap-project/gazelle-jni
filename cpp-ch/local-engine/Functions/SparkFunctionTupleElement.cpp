@@ -19,14 +19,15 @@
 #include <Columns/ColumnString.h>
 #include <Columns/ColumnTuple.h>
 #include <Columns/ColumnsNumber.h>
+#include <Columns/ColumnNullable.h>
 #include <DataTypes/DataTypeArray.h>
+#include <DataTypes/DataTypeString.h>
 #include <DataTypes/DataTypeTuple.h>
 #include <DataTypes/IDataType.h>
 #include <Functions/FunctionFactory.h>
 #include <Functions/FunctionHelpers.h>
 #include <Functions/IFunction.h>
 #include <Common/assert_cast.h>
-#include "Columns/ColumnNullable.h"
 
 
 namespace DB
@@ -67,14 +68,6 @@ public:
     DataTypePtr getReturnTypeImpl(const ColumnsWithTypeAndName & arguments) const override
     {
         const size_t number_of_arguments = arguments.size();
-
-        if (number_of_arguments < 2 || number_of_arguments > 3)
-            throw Exception(
-                ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH,
-                "Number of arguments for function {} doesn't match: passed {}, should be 2 or 3",
-                getName(),
-                number_of_arguments);
-
         std::vector<bool> arrays_is_nullable;
         DataTypePtr input_type = arguments[0].type;
         while (const DataTypeArray * array = checkAndGetDataType<DataTypeArray>(removeNullable(input_type).get()))
@@ -82,21 +75,48 @@ public:
             arrays_is_nullable.push_back(input_type->isNullable());
             input_type = array->getNestedType();
         }
-
-        const DataTypeTuple * tuple = checkAndGetDataType<DataTypeTuple>(removeNullable(input_type).get());
-        if (!tuple)
-            throw Exception(
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
-                "First argument for function {} must be tuple or array of tuple. Actual {}",
-                getName(),
-                arguments[0].type->getName());
-
-        std::optional<size_t> index = getElementIndex(arguments[1].column, *tuple, number_of_arguments);
-        if (index.has_value())
+        
+        DataTypePtr return_type = nullptr;
+        const DataTypeTuple * tuple = nullptr;
+        size_t index_value = 0;
+        for (size_t i = 0; i < number_of_arguments - 1; ++i)
         {
-            DataTypePtr return_type = tuple->getElements()[index.value()];
-
-            /// Tuple may be wrapped in Nullable
+            if (i == 0)
+                tuple = checkAndGetDataType<DataTypeTuple>(removeNullable(input_type).get());
+            else if (tuple)
+            {
+                DataTypePtr element_type = tuple->getElements()[index_value];
+                tuple = checkAndGetDataType<DataTypeTuple>(removeNullable(element_type).get());
+            }
+            if (!tuple)
+                throw Exception(
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+                    "The {}th argument for function {} must be tuple or array of tuple. Actual {}",
+                    i,
+                    getName(),
+                    arguments[i].type->getName());
+            
+            std::optional<size_t> index = getElementIndex(arguments[i+1].column, *tuple, number_of_arguments);
+            if (index.has_value())
+            {
+                index_value = index.value();
+            }
+            else
+            {
+                return_type = arguments[i+1].type;
+                break;
+            }
+        }
+        if (!return_type)
+        {
+            if (!tuple)
+                throw Exception(
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+                    "The {}th argument for function {} must be tuple or array of tuple. Actual {}",
+                    number_of_arguments - 1,
+                    getName(),
+                    arguments[number_of_arguments - 1].type->getName());
+            return_type = tuple->getElements()[index_value];
             if (input_type->isNullable())
                 return_type = makeNullable(return_type);
 
@@ -107,13 +127,8 @@ public:
                 if (*it)
                     return_type = makeNullable(return_type);
             }
-
-            // std::cout << "return_type:" << return_type->getName() << std::endl;
-
-            return return_type;
         }
-        else
-            return arguments[2].type;
+        return return_type;
     }
 
     ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr &, size_t input_rows_count) const override
@@ -143,30 +158,41 @@ public:
             input_col = &array_col->getData();
         }
 
-        const DataTypeTuple * input_type_as_tuple = checkAndGetDataType<DataTypeTuple>(removeNullable(input_type).get());
-        if (!input_type_as_tuple)
-            throw Exception(
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
-                "First argument for function {} must be tuple or array of tuple. Actual {}",
-                getName(),
-                input_arg.type->getName());
+        const DataTypeTuple * input_type_as_tuple = nullptr;
+        const ColumnNullable * input_col_as_nullable_tuple = nullptr;
+        const ColumnTuple * input_col_as_tuple = nullptr;
+        size_t index_value = 0;
+        for (size_t i = 0; i < arguments.size() - 1; ++i)
+        {
+            if (i != 0)
+            {
+                if (!input_col_as_tuple || !input_type_as_tuple)
+                    throw Exception(ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "The {}th of arguments column must be tuple", i);
 
-        const ColumnNullable * input_col_as_nullable_tuple
-            = input_type->isNullable() ? checkAndGetColumn<ColumnNullable>(input_col) : nullptr;
-        const ColumnTuple * input_col_as_tuple = input_col_as_nullable_tuple
-            ? checkAndGetColumn<ColumnTuple>(&input_col_as_nullable_tuple->getNestedColumn())
-            : checkAndGetColumn<ColumnTuple>(input_col);
-
-        std::optional<size_t> index = getElementIndex(arguments[1].column, *input_type_as_tuple, arguments.size());
-        if (!index.has_value())
-            return arguments[2].column;
-
-        ColumnPtr res = input_col_as_tuple->getColumns()[index.value()];
-
+                input_type = input_type_as_tuple->getElements()[index_value];
+                ColumnPtr t = input_col_as_tuple->getColumns()[index_value];
+                input_col = t.get();
+            }
+            input_type_as_tuple = checkAndGetDataType<DataTypeTuple>(removeNullable(input_type).get());
+            input_col_as_nullable_tuple
+                    = input_col->isNullable() ? checkAndGetColumn<ColumnNullable>(input_col) : nullptr;
+            input_col_as_tuple = input_col_as_nullable_tuple
+                    ? checkAndGetColumn<ColumnTuple>(&input_col_as_nullable_tuple->getNestedColumn())
+                    : checkAndGetColumn<ColumnTuple>(input_col);
+            std::optional<size_t> index = getElementIndex(arguments[i+1].column, *input_type_as_tuple, arguments.size());
+            if (!index.has_value())
+                return arguments[i+1].column;
+            else
+                index_value = index.value();
+        }
+        
+        if (!input_col_as_tuple)
+            throw Exception(ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "The {}th of arguments must be tuple", arguments.size() - 1);
+        ColumnPtr res = input_col_as_tuple->getColumns()[index_value];
         /// Wrap into Nullable if needed
         if (input_col_as_nullable_tuple)
         {
-            auto res_type = input_type_as_tuple->getElements()[index.value()];
+            auto res_type = input_type_as_tuple->getElements()[index_value];
             ColumnPtr res_null_map = input_col_as_nullable_tuple->getNullMapColumnPtr();
             if (res_type->isNullable())
             {

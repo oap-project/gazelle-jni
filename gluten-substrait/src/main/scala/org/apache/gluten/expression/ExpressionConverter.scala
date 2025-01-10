@@ -97,7 +97,10 @@ object ExpressionConverter extends SQLConfHelper with Logging {
     if (udf.udfName.isEmpty) {
       throw new GlutenNotSupportException("UDF name is not found!")
     }
-    val substraitExprName = UDFMappings.scalaUDFMap.get(udf.udfName.get)
+    var substraitExprName = UDFMappings.scalaUDFMap.get(udf.udfName.get)
+    if (substraitExprName.isEmpty) {
+      substraitExprName = UDFMappings.collapsedFunctionsMap.get(udf.udfName.get)
+    }
     substraitExprName match {
       case Some(name) =>
         GenericExpressionTransformer(
