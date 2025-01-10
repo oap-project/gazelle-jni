@@ -29,7 +29,7 @@ import org.apache.gluten.vectorized.{ArrowColumnarRow, ArrowWritableColumnVector
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CaseWhen, Coalesce, Expression, If, LambdaFunction, NamedExpression, NaNvl, ScalaUDF}
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.execution.{ExplainUtils, ProjectExec, SparkPlan, UnaryExecNode}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -118,6 +118,9 @@ case class ColumnarPartialProjectExec(original: ProjectExec, child: SparkPlan)(
       case _: DecimalType => true
       case YearMonthIntervalType.DEFAULT => true
       case _: NullType => true
+      case _: ArrayType => true
+      case _: MapType => true
+      case _: StructType => true
       case _ => false
     }
   }
@@ -256,6 +259,7 @@ case class ColumnarPartialProjectExec(original: ProjectExec, child: SparkPlan)(
       targetRow.rowId = i
       proj.target(targetRow).apply(arrowBatch.getRow(i))
     }
+    targetRow.finishWriteRow()
     val targetBatch = new ColumnarBatch(vectors.map(_.asInstanceOf[ColumnVector]), numRows)
     val start2 = System.currentTimeMillis()
     val veloxBatch = VeloxColumnarBatches.toVeloxBatch(
