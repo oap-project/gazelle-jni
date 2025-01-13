@@ -16,15 +16,39 @@
  */
 package org.apache.spark.sql.execution.datasources.clickhouse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.spark.sql.execution.datasources.mergetree.MetaSerializer;
 import org.apache.spark.sql.execution.datasources.mergetree.PartSerializer;
 import org.apache.spark.sql.types.StructType;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import scala.collection.Seq;
+import scala.collection.Seq$;
+
 public class ExtensionTableBuilder {
   private ExtensionTableBuilder() {}
+
+  public static ExtensionTableNode makeExtensionTable(
+      Long start, Long end, Long step, Integer numSlices, Integer sliceIndex)
+      throws JsonProcessingException {
+    ObjectMapper mapper = new ObjectMapper();
+    ObjectNode json = mapper.createObjectNode();
+    json.put("start", start);
+    json.put("end", end);
+    json.put("step", step);
+    json.put("numSlices", numSlices);
+    json.put("sliceIndex", sliceIndex);
+
+    String result;
+    result = mapper.writeValueAsString(json);
+    return new ExtensionTableNode(
+        Collections.emptyList(), result, (Seq<String>) Seq$.MODULE$.<String>empty());
+  }
 
   public static ExtensionTableNode makeExtensionTable(
       String database,

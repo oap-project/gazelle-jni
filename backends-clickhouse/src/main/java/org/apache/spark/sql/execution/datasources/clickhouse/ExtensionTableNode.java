@@ -35,9 +35,9 @@ public class ExtensionTableNode implements SplitInfo {
       List<String> preferredLocations,
       String serializerResult,
       scala.collection.Seq<String> pathList) {
-    this.pathList = pathList;
     this.preferredLocations.addAll(preferredLocations);
     this.serializerResult = serializerResult;
+    this.pathList = pathList;
   }
 
   @Override

@@ -40,7 +40,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, CollectList, CollectSet}
 import org.apache.spark.sql.catalyst.optimizer.BuildSide
-import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans.{logical, JoinType}
 import org.apache.spark.sql.catalyst.plans.physical.{BroadcastMode, HashPartitioning, Partitioning, RangePartitioning}
 import org.apache.spark.sql.delta.files.TahoeFileIndex
 import org.apache.spark.sql.execution._
@@ -942,4 +942,6 @@ class CHSparkPlanExecApi extends SparkPlanExecApi with Logging {
       child: Seq[SparkPlan]): ColumnarRangeBaseExec =
     throw new GlutenNotSupportException("ColumnarRange is not supported in ch backend.")
 
+  override def genRangeExecTransformer(range: logical.Range): SparkPlan =
+    CHRangeExecTransformer(range)
 }
