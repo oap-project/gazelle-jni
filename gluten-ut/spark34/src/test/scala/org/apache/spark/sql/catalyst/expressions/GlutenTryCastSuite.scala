@@ -34,7 +34,9 @@ class GlutenTryCastSuite extends TryCastSuite with GlutenTestsTrait {
     val nts = sts + ".1"
     val ts = withDefaultTimeZone(UTC)(Timestamp.valueOf(nts))
 
-    for (tz <- ALL_TIMEZONES) {
+    // SystemV timezones are a legacy way of specifying timezones in Unix-like OS.
+    // It is not supported by Velox.
+    for (tz <- ALL_TIMEZONES.filterNot(_.getId.contains("SystemV"))) {
       withSQLConf(
         SQLConf.SESSION_LOCAL_TIMEZONE.key -> tz.getId
       ) {
