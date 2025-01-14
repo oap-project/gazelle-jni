@@ -200,6 +200,14 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
     }
   }
 
+  override def genArraySortTransformer(
+      substraitExprName: String,
+      argument: ExpressionTransformer,
+      function: ExpressionTransformer,
+      expr: ArraySort): ExpressionTransformer = {
+    GenericExpressionTransformer(substraitExprName, Seq(argument, function), expr)
+  }
+
   /** Transform array exists to Substrait */
   override def genArrayExistsTransformer(
       substraitExprName: String,

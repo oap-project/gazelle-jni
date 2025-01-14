@@ -1166,6 +1166,18 @@ class MiscOperatorSuite extends VeloxWholeStageTransformerSuite with AdaptiveSpa
     }
   }
 
+  test("array_sort") {
+    withTable("t") {
+      sql("create table t (a array<string>) using parquet")
+      sql("insert into t values (array('a', 'acds', 'bcedf', 'dc'))")
+      runQueryAndCompare(
+        "select array_sort(a, (x, y) -> " +
+          "if(length(x) > length(y), 1, if(length(x) < length(y), -1, 0))) from t") {
+        checkGlutenOperatorMatch[ProjectExecTransformer]
+      }
+    }
+  }
+
   test("Support bool type filter in scan") {
     withTable("t") {
       sql("create table t (id int, b boolean) using parquet")
