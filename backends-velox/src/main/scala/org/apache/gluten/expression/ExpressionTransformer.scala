@@ -16,7 +16,6 @@
  */
 package org.apache.gluten.expression
 
-import org.apache.gluten.exception.GlutenNotSupportException
 import org.apache.gluten.expression.ConverterUtils.FunctionConfig
 import org.apache.gluten.expression.ExpressionConverter.replaceWithExpressionTransformer
 import org.apache.gluten.substrait.`type`.StructNode
@@ -56,7 +55,9 @@ case class VeloxGetStructFieldTransformer(
     child: ExpressionTransformer,
     ordinal: Int,
     original: GetStructField)
-  extends UnaryExpressionTransformer {
+  extends BinaryExpressionTransformer {
+  override def left: ExpressionTransformer = child
+  override def right: ExpressionTransformer = LiteralTransformer(ordinal)
   override def doTransform(args: Object): ExpressionNode = {
     val childNode = child.doTransform(args)
     childNode match {
@@ -70,8 +71,7 @@ case class VeloxGetStructFieldTransformer(
           node.getTypeNode.asInstanceOf[StructNode].getFieldTypes.get(ordinal)
         ExpressionBuilder.makeNullLiteral(nodeType)
       case _ =>
-        throw new GlutenNotSupportException(
-          s"Unsupported child expression of GetStructField: $original.")
+        super.doTransform(args)
     }
   }
 }
