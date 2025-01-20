@@ -18,9 +18,12 @@ package org.apache.spark.sql.execution.datasources
 
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.{GlutenClickHouseWholeStageTransformerSuite, GlutenPlan, SortExecTransformer}
+
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.delta.{DeltaLog, DeltaOptions}
 import org.apache.spark.sql.execution.{SortExec, SparkPlan}
+import org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat
 
 class DeltaV1WritesSuite extends GlutenClickHouseWholeStageTransformerSuite {
 
@@ -29,6 +32,14 @@ class DeltaV1WritesSuite extends GlutenClickHouseWholeStageTransformerSuite {
   override protected def sparkConf: SparkConf = {
     super.sparkConf
       .set(GlutenConfig.NATIVE_WRITER_ENABLED.key, "true")
+      .set(
+        "spark.sql.catalog.spark_catalog",
+        "org.apache.spark.sql.execution.datasources.v2.clickhouse.ClickHouseSparkCatalog")
+      .set("spark.databricks.delta.maxSnapshotLineageLength", "20")
+      .set("spark.databricks.delta.snapshotPartitions", "1")
+      .set("spark.databricks.delta.properties.defaults.checkpointInterval", "5")
+      .set("spark.databricks.delta.stalenessLimit", "3600000")
+      .set("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
   }
 
   override def beforeAll(): Unit = {
@@ -95,6 +106,46 @@ class DeltaV1WritesSuite extends GlutenClickHouseWholeStageTransformerSuite {
     }
     check(df.queryExecution.sparkPlan)
     check(df.orderBy("j", "k").queryExecution.sparkPlan)
+  }
+
+  protected def checkResult(df: DataFrame, numFileCheck: Long => Boolean, dir: String): Unit = {
+    val (_, snapshot) = DeltaLog.forTableWithSnapshot(spark, dir)
+    val files = snapshot.numOfFiles
+    assert(numFileCheck(files), s"file check failed: received $files")
+
+    checkAnswer(
+      spark.read.format("delta").load(dir),
+      df
+    )
+  }
+
+  test("test optimize write") {
+    withTempDir {
+      dir =>
+        val df = sql("select * from t0").toDF()
+        df.write
+          .format("delta")
+          .option(DeltaOptions.OPTIMIZE_WRITE_OPTION, "true")
+          .save(dir.getPath)
+        checkResult(df, numFileCheck = _ === 1, dir.getPath)
+    }
+  }
+
+  test("optimize write - partitioned write") {
+    withTempDir {
+      dir =>
+        val df = spark
+          .range(0, 100, 1, 4)
+          .withColumn("part", 'id % 5)
+
+        df.write
+          .partitionBy("part")
+          .option(DeltaOptions.OPTIMIZE_WRITE_OPTION, "true")
+          .format("delta")
+          .save(dir.getPath)
+
+        checkResult(df, numFileCheck = _ <= 5, dir.getPath)
+    }
   }
 
 }

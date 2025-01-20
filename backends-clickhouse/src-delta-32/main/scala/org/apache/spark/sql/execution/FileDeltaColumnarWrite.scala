@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution
 import org.apache.gluten.backendsapi.clickhouse.RuntimeSettings
 import org.apache.gluten.exception.GlutenNotSupportException
 import org.apache.gluten.vectorized.NativeExpressionEvaluator
-import org.apache.hadoop.fs.Path
+
 import org.apache.spark.internal.Logging
 import org.apache.spark.internal.io.FileCommitProtocol
 import org.apache.spark.sql.catalyst.InternalRow
@@ -29,6 +29,8 @@ import org.apache.spark.sql.delta.files.{FileDelayedCommitProtocol, MergeTreeDel
 import org.apache.spark.sql.delta.stats.{DeltaFileStatistics, DeltaJobStatisticsTracker}
 import org.apache.spark.sql.execution.datasources.{ExecutedWriteSummary, WriteJobDescription, WriteTaskResult}
 import org.apache.spark.util.Utils
+
+import org.apache.hadoop.fs.Path
 
 import scala.collection.mutable.ArrayBuffer
 
