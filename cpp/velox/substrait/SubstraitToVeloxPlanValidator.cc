@@ -270,20 +270,19 @@ bool SubstraitToVeloxPlanValidator::validateCast(
   core::TypedExprPtr input = exprConverter_->toVeloxExpr(castExpr.input(), inputType);
 
   // Only support cast from date or integral type to timestamp.
-  if (toType->kind() == TypeKind::TIMESTAMP)
-    if (!input->type()->isDate()) {
-      switch (input->type()->kind()) {
-        case TypeKind::TINYINT:
-        case TypeKind::SMALLINT:
-        case TypeKind::INTEGER:
-        case TypeKind::BIGINT:
-          break;
-        default:
-          LOG_VALIDATION_MSG(
-              "Casting from " + input->type()->toString() + " to " + toType->toString() + " is not supported.");
-          return false;
-      }
+  if (toType->kind() == TypeKind::TIMESTAMP && !input->type()->isDate()) {
+    switch (input->type()->kind()) {
+      case TypeKind::TINYINT:
+      case TypeKind::SMALLINT:
+      case TypeKind::INTEGER:
+      case TypeKind::BIGINT:
+        break;
+      default:
+        LOG_VALIDATION_MSG(
+            "Casting from " + input->type()->toString() + " to " + toType->toString() + " is not supported.");
+        return false;
     }
+  }
 
   if (toType->isIntervalYearMonth()) {
     LOG_VALIDATION_MSG("Casting to " + toType->toString() + " is not supported.");
