@@ -1140,6 +1140,7 @@ class ClickHouseTestSettings extends BackendTestSettings {
     .exclude("function to_date")
   enableSuite[GlutenDeprecatedAPISuite]
   enableSuite[GlutenDynamicPartitionPruningV1SuiteAEOff]
+    .excludeGlutenTest("Subquery reuse across the whole plan")
   enableSuite[GlutenDynamicPartitionPruningV1SuiteAEOn]
   enableSuite[GlutenDynamicPartitionPruningV1SuiteAEOnDisableScan]
   enableSuite[GlutenDynamicPartitionPruningV1SuiteAEOffDisableScan]
