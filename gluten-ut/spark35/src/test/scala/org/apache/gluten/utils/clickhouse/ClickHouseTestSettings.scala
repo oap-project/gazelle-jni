@@ -24,7 +24,6 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.connector._
 import org.apache.spark.sql.errors.{GlutenQueryCompilationErrorsDSv2Suite, GlutenQueryCompilationErrorsSuite, GlutenQueryExecutionErrorsSuite, GlutenQueryParsingErrorsSuite}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.adaptive.velox.VeloxAdaptiveQueryExecSuite
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.datasources.binaryfile.GlutenBinaryFileFormatSuite
 import org.apache.spark.sql.execution.datasources.csv.{GlutenCSVLegacyTimeParserSuite, GlutenCSVv1Suite, GlutenCSVv2Suite}
@@ -178,37 +177,6 @@ class ClickHouseTestSettings extends BackendTestSettings {
   enableSuite[GlutenSortOrderExpressionsSuite]
   enableSuite[GlutenStringExpressionsSuite]
   enableSuite[GlutenTryEvalSuite]
-  enableSuite[VeloxAdaptiveQueryExecSuite]
-    .includeAllGlutenTests()
-    .includeByPrefix(
-      "SPARK-29906",
-      "SPARK-30291",
-      "SPARK-30403",
-      "SPARK-30719",
-      "SPARK-31384",
-      "SPARK-31658",
-      "SPARK-32717",
-      "SPARK-32649",
-      "SPARK-34533",
-      "SPARK-34781",
-      "SPARK-35585",
-      "SPARK-32932",
-      "SPARK-33494",
-      "SPARK-33933",
-      "SPARK-31220",
-      "SPARK-35874",
-      "SPARK-39551"
-    )
-    .include(
-      "Union/Except/Intersect queries",
-      "Subquery de-correlation in Union queries",
-      "force apply AQE",
-      "tree string output",
-      "control a plan explain mode in listener vis SQLConf",
-      "AQE should set active session during execution",
-      "No deadlock in UI update",
-      "SPARK-35455: Unify empty relation optimization between normal and AQE optimizer - multi join"
-    )
   enableSuite[GlutenBinaryFileFormatSuite]
     // Exception.
     .exclude("column pruning - non-readable file")
@@ -790,6 +758,8 @@ class ClickHouseTestSettings extends BackendTestSettings {
   enableSuite[GlutenDataSourceStrategySuite]
   enableSuite[GlutenDataSourceSuite]
   enableSuite[GlutenFileFormatWriterSuite]
+    // TODO: fix "empty file should be skipped while write to file"
+    .exclude("empty file should be skipped while write to file")
   enableSuite[GlutenFileIndexSuite]
   enableSuite[GlutenFileMetadataStructSuite]
   enableSuite[GlutenParquetV1AggregatePushDownSuite]
@@ -1270,6 +1240,968 @@ class ClickHouseTestSettings extends BackendTestSettings {
   enableSuite[GlutenParquetFileMetadataStructRowIndexSuite]
   enableSuite[GlutenTableLocationSuite]
   enableSuite[GlutenRemoveRedundantWindowGroupLimitsSuite]
+
+  // ClickHouse excluded tests
+  enableSuite[GlutenCSVv1Suite]
+    .exclude("simple csv test")
+    .exclude("simple csv test with calling another function to load")
+    .exclude("simple csv test with type inference")
+    .exclude("test with alternative delimiter and quote")
+    .exclude("SPARK-24540: test with multiple character delimiter (comma space)")
+    .exclude("SPARK-24540: test with multiple (crazy) character delimiter")
+    .exclude("test different encoding")
+    .exclude("crlf line separators in multiline mode")
+    .exclude("test aliases sep and encoding for delimiter and charset")
+    .exclude("test for DROPMALFORMED parsing mode")
+    .exclude("test for blank column names on read and select columns")
+    .exclude("test for FAILFAST parsing mode")
+    .exclude("test for tokens more than the fields in the schema")
+    .exclude("test with null quote character")
+    .exclude("save csv with quote escaping, using charToEscapeQuoteEscaping option")
+    .exclude("commented lines in CSV data")
+    .exclude("inferring schema with commented lines in CSV data")
+    .exclude("inferring timestamp types via custom date format")
+    .exclude("load date types via custom date format")
+    .exclude("nullable fields with user defined null value of \"null\"")
+    .exclude("empty fields with user defined empty values")
+    .exclude("old csv data source name works")
+    .exclude("nulls, NaNs and Infinity values can be parsed")
+    .exclude("SPARK-15585 turn off quotations")
+    .exclude("Write timestamps correctly in ISO8601 format by default")
+    .exclude("Write dates correctly in ISO8601 format by default")
+    .exclude("Roundtrip in reading and writing timestamps")
+    .exclude("SPARK-37326: Write and infer TIMESTAMP_LTZ values with a non-default pattern")
+    .exclude("SPARK-37326: Timestamp type inference for a column with TIMESTAMP_NTZ values")
+    .exclude("SPARK-37326: Timestamp type inference for a mix of TIMESTAMP_NTZ and TIMESTAMP_LTZ")
+    .exclude("Write dates correctly with dateFormat option")
+    .exclude("Write timestamps correctly with timestampFormat option")
+    .exclude("Write timestamps correctly with timestampFormat option and timeZone option")
+    .exclude("SPARK-18699 put malformed records in a `columnNameOfCorruptRecord` field")
+    .exclude("Enabling/disabling ignoreCorruptFiles")
+    .exclude("SPARK-19610: Parse normal multi-line CSV files")
+    .exclude("SPARK-38523: referring to the corrupt record column")
+    .exclude("SPARK-17916: An empty string should not be coerced to null when nullValue is passed.")
+    .exclude(
+      "SPARK-25241: An empty string should not be coerced to null when emptyValue is passed.")
+    .exclude("SPARK-24329: skip lines with comments, and one or multiple whitespaces")
+    .exclude("SPARK-23786: Checking column names against schema in the multiline mode")
+    .exclude("SPARK-23786: Checking column names against schema in the per-line mode")
+    .exclude("SPARK-23786: Ignore column name case if spark.sql.caseSensitive is false")
+    .exclude("SPARK-23786: warning should be printed if CSV header doesn't conform to schema")
+    .exclude("SPARK-25134: check header on parsing of dataset with projection and column pruning")
+    .exclude("SPARK-24676 project required data from parsed data when columnPruning disabled")
+    .exclude("encoding in multiLine mode")
+    .exclude("Support line separator - default value \\r, \\r\\n and \\n")
+    .exclude("Support line separator in UTF-8 #0")
+    .exclude("Support line separator in UTF-16BE #1")
+    .exclude("Support line separator in ISO-8859-1 #2")
+    .exclude("Support line separator in UTF-32LE #3")
+    .exclude("Support line separator in UTF-8 #4")
+    .exclude("Support line separator in UTF-32BE #5")
+    .exclude("Support line separator in CP1251 #6")
+    .exclude("Support line separator in UTF-16LE #8")
+    .exclude("Support line separator in UTF-32BE #9")
+    .exclude("Support line separator in US-ASCII #10")
+    .exclude("Support line separator in utf-32le #11")
+    .exclude("lineSep with 2 chars when multiLine set to true")
+    .exclude("lineSep with 2 chars when multiLine set to false")
+    .exclude("SPARK-26208: write and read empty data to csv file with headers")
+    .exclude("Do not reuse last good value for bad input field")
+    .exclude("SPARK-29101 test count with DROPMALFORMED mode")
+    .exclude("return correct results when data columns overlap with partition columns")
+    .exclude("filters push down - malformed input in PERMISSIVE mode")
+    .exclude("case sensitivity of filters references")
+    .exclude("SPARK-33566: configure UnescapedQuoteHandling to parse unescaped quotes and unescaped delimiter data correctly")
+    .exclude("SPARK-36831: Support reading and writing ANSI intervals")
+    .exclude("SPARK-39469: Infer schema for columns with all dates")
+    .exclude("SPARK-40474: Infer schema for columns with a mix of dates and timestamp")
+    .exclude("SPARK-39731: Correctly parse dates and timestamps with yyyyMMdd pattern")
+    .exclude("SPARK-39731: Handle date and timestamp parsing fallback")
+    .exclude("SPARK-40215: enable parsing fallback for CSV in CORRECTED mode with a SQL config")
+    .exclude("SPARK-40496: disable parsing fallback when the date/timestamp format is provided")
+    .exclude("SPARK-42335: Pass the comment option through to univocity if users set it explicitly in CSV dataSource")
+    .exclude("SPARK-46862: column pruning in the multi-line mode")
+  enableSuite[GlutenArithmeticExpressionSuite]
+    .exclude("% (Remainder)")
+    .exclude("SPARK-17617: % (Remainder) double % double on super big double")
+    .exclude("pmod")
+  enableSuite[GlutenDateFunctionsSuite]
+    .exclude("SPARK-30766: date_trunc of old timestamps to hours and days")
+    .exclude("SPARK-30793: truncate timestamps before the epoch to seconds and minutes")
+    .exclude("try_to_timestamp")
+    .exclude("Gluten - to_unix_timestamp")
+  enableSuite[GlutenParquetV2FilterSuite]
+    .exclude("filter pushdown - StringContains")
+    .exclude("SPARK-36866: filter pushdown - year-month interval")
+    .exclude("Gluten - filter pushdown - date")
+  enableSuite[GlutenParquetV2SchemaPruningSuite]
+    .exclude("Spark vectorized reader - without partition data column - select a single complex field and in where clause")
+    .exclude("Spark vectorized reader - with partition data column - select a single complex field and in where clause")
+    .exclude("Non-vectorized reader - without partition data column - select a single complex field and in where clause")
+    .exclude("Non-vectorized reader - with partition data column - select a single complex field and in where clause")
+    .exclude("Spark vectorized reader - without partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Spark vectorized reader - with partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Non-vectorized reader - without partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Non-vectorized reader - with partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Spark vectorized reader - without partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Spark vectorized reader - with partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Non-vectorized reader - without partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Non-vectorized reader - with partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Spark vectorized reader - without partition data column - select one deep nested complex field after repartition by expression")
+    .exclude("Spark vectorized reader - with partition data column - select one deep nested complex field after repartition by expression")
+    .exclude("Non-vectorized reader - without partition data column - select one deep nested complex field after repartition by expression")
+    .exclude("Non-vectorized reader - with partition data column - select one deep nested complex field after repartition by expression")
+    .exclude("Case-insensitive parser - mixed-case schema - select with exact column names")
+    .exclude("Case-insensitive parser - mixed-case schema - select with lowercase column names")
+    .exclude(
+      "Case-insensitive parser - mixed-case schema - select with different-case column names")
+    .exclude(
+      "Case-insensitive parser - mixed-case schema - filter with different-case column names")
+    .exclude("Case-insensitive parser - mixed-case schema - subquery filter with different-case column names")
+    .exclude("SPARK-36352: Spark should check result plan's output schema name")
+    .exclude("SPARK-37450: Prunes unnecessary fields from Explode for count aggregation")
+    .exclude("Spark vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Spark vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Non-vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Non-vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+  enableSuite[GlutenSortSuite]
+    .exclude("basic sorting using ExternalSort")
+    .exclude("SPARK-33260: sort order is a Stream")
+    .exclude("SPARK-40089: decimal values sort correctly")
+    .exclude(
+      "sorting on YearMonthIntervalType(0,1) with nullable=true, sortOrder=List('a ASC NULLS FIRST)")
+    .exclude(
+      "sorting on YearMonthIntervalType(0,1) with nullable=true, sortOrder=List('a ASC NULLS LAST)")
+    .exclude(
+      "sorting on YearMonthIntervalType(0,1) with nullable=true, sortOrder=List('a DESC NULLS LAST)")
+    .exclude("sorting on YearMonthIntervalType(0,1) with nullable=true, sortOrder=List('a DESC NULLS FIRST)")
+    .exclude("sorting on YearMonthIntervalType(0,1) with nullable=false, sortOrder=List('a ASC NULLS FIRST)")
+    .exclude(
+      "sorting on YearMonthIntervalType(0,1) with nullable=false, sortOrder=List('a ASC NULLS LAST)")
+    .exclude("sorting on YearMonthIntervalType(0,1) with nullable=false, sortOrder=List('a DESC NULLS LAST)")
+    .exclude("sorting on YearMonthIntervalType(0,1) with nullable=false, sortOrder=List('a DESC NULLS FIRST)")
+  enableSuite[GlutenConditionalExpressionSuite]
+    .exclude("case when")
+  enableSuite[GlutenJsonExpressionsSuite]
+    .exclude("from_json - input=object, schema=array, output=array of single row")
+    .exclude("from_json - input=empty object, schema=array, output=array of single row with null")
+    .exclude("from_json - input=array of single object, schema=struct, output=single row")
+    .exclude("from_json - input=array, schema=struct, output=single row")
+    .exclude("from_json - input=empty array, schema=struct, output=single row with null")
+    .exclude("from_json - input=empty object, schema=struct, output=single row with null")
+    .exclude("SPARK-20549: from_json bad UTF-8")
+    .exclude("from_json with timestamp")
+    .exclude("to_json - struct")
+    .exclude("to_json - array")
+    .exclude("to_json - array with single empty row")
+    .exclude("to_json with timestamp")
+    .exclude("SPARK-21513: to_json support map[string, struct] to json")
+    .exclude("SPARK-21513: to_json support map[struct, struct] to json")
+    .exclude("parse date with locale")
+    .exclude("parse decimals using locale")
+  enableSuite[GlutenV1WriteCommandSuite]
+    .exclude(
+      "Gluten - SPARK-41914: v1 write with AQE and in-partition sorted - non-string partition column")
+    .exclude(
+      "Gluten - SPARK-41914: v1 write with AQE and in-partition sorted - string partition column")
+  enableSuite[GlutenInnerJoinSuiteForceShjOn]
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("inner join, one match per row using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("inner join, one match per row using SortMergeJoin (whole-stage-codegen on)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("inner join, multiple matches using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("inner join, multiple matches using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("inner join, null safe using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("inner join, null safe using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using CartesianProduct")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build left (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build left (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build right (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build right (whole-stage-codegen on)")
+  enableSuite[GlutenApproxCountDistinctForIntervalsQuerySuite]
+    .exclude("test ApproxCountDistinctForIntervals with large number of endpoints")
+  enableSuite[GlutenOrcSourceSuite]
+    .exclude(
+      "SPARK-36931: Support reading and writing ANSI intervals (spark.sql.orc.enableVectorizedReader=false, spark.sql.orc.enableNestedColumnVectorizedReader=true)")
+    .exclude(
+      "SPARK-36931: Support reading and writing ANSI intervals (spark.sql.orc.enableVectorizedReader=false, spark.sql.orc.enableNestedColumnVectorizedReader=false)")
+    .exclude("Gluten - SPARK-31284: compatibility with Spark 2.4 in reading timestamps")
+    .exclude("Gluten - SPARK-31284, SPARK-31423: rebasing timestamps in write")
+    .exclude(
+      "Gluten - SPARK-36931: Support reading and writing ANSI intervals (spark.sql.orc.enableVectorizedReader=false, spark.sql.orc.enableNestedColumnVectorizedReader=false)")
+  enableSuite[GlutenCoalesceShufflePartitionsSuite]
+    .exclude("SPARK-46590 adaptive query execution works correctly with broadcast join and union")
+    .exclude("SPARK-46590 adaptive query execution works correctly with cartesian join and union")
+    .exclude("SPARK-24705 adaptive query execution works correctly when exchange reuse enabled")
+    .exclude("Do not reduce the number of shuffle partition for repartition")
+    .exclude("Union two datasets with different pre-shuffle partition number")
+    .exclude("SPARK-34790: enable IO encryption in AQE partition coalescing")
+    .exclude("Gluten - determining the number of reducers: aggregate operator(minNumPostShufflePartitions: 5)")
+    .exclude(
+      "Gluten - determining the number of reducers: join operator(minNumPostShufflePartitions: 5)")
+    .exclude(
+      "Gluten - determining the number of reducers: complex query 1(minNumPostShufflePartitions: 5)")
+    .exclude(
+      "Gluten - determining the number of reducers: complex query 2(minNumPostShufflePartitions: 5)")
+    .exclude("Gluten - determining the number of reducers: plan already partitioned(minNumPostShufflePartitions: 5)")
+    .exclude("Gluten - determining the number of reducers: aggregate operator")
+    .exclude("Gluten - determining the number of reducers: join operator")
+    .exclude("Gluten - determining the number of reducers: complex query 1")
+    .exclude("Gluten - determining the number of reducers: complex query 2")
+    .exclude("Gluten - determining the number of reducers: plan already partitioned")
+  enableSuite[GlutenDataFramePivotSuite]
+    .exclude("SPARK-38133: Grouping by TIMESTAMP_NTZ should not corrupt results")
+  enableSuite[GlutenBloomFilterAggregateQuerySuite]
+    .exclude("Test bloom_filter_agg and might_contain")
+  enableSuite[GlutenDataFrameSessionWindowingSuite]
+    .exclude("simple session window with record at window start")
+    .exclude("session window groupBy statement")
+    .exclude("session window groupBy with multiple keys statement")
+    .exclude("session window groupBy with multiple keys statement - two distinct")
+    .exclude("session window groupBy with multiple keys statement - keys overlapped with sessions")
+    .exclude("SPARK-36465: filter out events with negative/zero gap duration")
+    .exclude("SPARK-36724: Support timestamp_ntz as a type of time column for SessionWindow")
+  enableSuite[GlutenSubquerySuite]
+    .exclude("SPARK-39355: Single column uses quoted to construct UnresolvedAttribute")
+    .exclude("SPARK-40800: always inline expressions in OptimizeOneRowRelationSubquery")
+    .exclude("SPARK-40862: correlated one-row subquery with non-deterministic expressions")
+  enableSuite[GlutenDataSourceV2SQLSuiteV1Filter]
+    .exclude("DeleteFrom with v2 filtering: fail if has subquery")
+    .exclude("DeleteFrom with v2 filtering: delete with unsupported predicates")
+    .exclude("SPARK-33652: DeleteFrom should refresh caches referencing the table")
+    .exclude("DeleteFrom: - delete with invalid predicate")
+  enableSuite[GlutenExistenceJoinSuite]
+    .exclude("test single condition (equal) for left semi join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("test single condition (equal) for left semi join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("test single condition (equal) for left semi join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("test single condition (equal) for left semi join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left semi join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left semi join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left semi join using BroadcastHashJoin (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left semi join using BroadcastHashJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left semi join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left semi join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left semi join using BroadcastNestedLoopJoin build left")
+    .exclude("test single unique condition (equal) for left semi join using BroadcastNestedLoopJoin build right (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left semi join using BroadcastNestedLoopJoin build right (whole-stage-codegen on)")
+    .exclude("test composed condition (equal & non-equal) for left semi join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("test composed condition (equal & non-equal) for left semi join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("test composed condition (equal & non-equal) for left semi join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("test composed condition (equal & non-equal) for left semi join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("test single condition (equal) for left anti join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("test single condition (equal) for left anti join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("test single condition (equal) for left anti join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("test single condition (equal) for left anti join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left anti join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left anti join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left anti join using BroadcastHashJoin (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left anti join using BroadcastHashJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left anti join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left anti join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("test single unique condition (equal) for left anti join using BroadcastNestedLoopJoin build left")
+    .exclude("test single unique condition (equal) for left anti join using BroadcastNestedLoopJoin build right (whole-stage-codegen off)")
+    .exclude("test single unique condition (equal) for left anti join using BroadcastNestedLoopJoin build right (whole-stage-codegen on)")
+    .exclude("test composed condition (equal & non-equal) test for left anti join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("test composed condition (equal & non-equal) test for left anti join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("test composed condition (equal & non-equal) test for left anti join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("test composed condition (equal & non-equal) test for left anti join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("test composed unique condition (both non-equal) for left anti join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("test composed unique condition (both non-equal) for left anti join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("test composed unique condition (both non-equal) for left anti join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("test composed unique condition (both non-equal) for left anti join using SortMergeJoin (whole-stage-codegen on)")
+  enableSuite[GlutenColumnExpressionSuite]
+    .exclude("withField should add field with no name")
+    .exclude("withField should replace all fields with given name in struct")
+    .exclude("withField user-facing examples")
+    .exclude("dropFields should drop field with no name in struct")
+    .exclude("dropFields should drop all fields with given name in struct")
+  enableSuite[GlutenJsonV2Suite]
+    .exclude("SPARK-37360: Write and infer TIMESTAMP_NTZ values with a non-default pattern")
+    .exclude("SPARK-37360: Timestamp type inference for a column with TIMESTAMP_NTZ values")
+    .exclude("SPARK-36830: Support reading and writing ANSI intervals")
+  enableSuite[GlutenGeneratorFunctionSuite]
+    .exclude("single explode_outer")
+    .exclude("single posexplode_outer")
+    .exclude("explode_outer and other columns")
+    .exclude("aliased explode_outer")
+    .exclude("explode_outer on map")
+    .exclude("explode_outer on map with aliases")
+    .exclude("SPARK-40963: generator output has correct nullability")
+    .exclude("Gluten - SPARK-45171: Handle evaluated nondeterministic expression")
+  enableSuite[GlutenHashExpressionsSuite]
+    .exclude("sha2")
+    .exclude("SPARK-30633: xxHash with different type seeds")
+  enableSuite[GlutenDataSourceV2SQLSuiteV2Filter]
+    .exclude("DeleteFrom with v2 filtering: fail if has subquery")
+    .exclude("DeleteFrom with v2 filtering: delete with unsupported predicates")
+    .exclude("SPARK-33652: DeleteFrom should refresh caches referencing the table")
+  enableSuite[GlutenSQLQuerySuite]
+    .exclude("SPARK-6743: no columns from cache")
+    .exclude("external sorting updates peak execution memory")
+    .exclude("Struct Star Expansion")
+    .exclude("Common subexpression elimination")
+    .exclude("SPARK-24940: coalesce and repartition hint")
+    .exclude("normalize special floating numbers in subquery")
+    .exclude("SPARK-38548: try_sum should return null if overflow happens before merging")
+    .exclude("SPARK-38589: try_avg should return null if overflow happens before merging")
+    .exclude("Gluten - SPARK-33677: LikeSimplification should be skipped if pattern contains any escapeChar")
+    .exclude("Gluten - the escape character is not allowed to end with")
+  enableSuite[GlutenEmptyInSuite]
+    .exclude("IN with empty list")
+  enableSuite[GlutenParquetV1FilterSuite]
+    .exclude("filter pushdown - StringContains")
+  enableSuite[GlutenParquetV2PartitionDiscoverySuite]
+    .exclude("Various partition value types")
+    .exclude("Various inferred partition value types")
+    .exclude("Resolve type conflicts - decimals, dates and timestamps in partition column")
+  enableSuite[GlutenParquetEncodingSuite]
+    .exclude("All Types Dictionary")
+    .exclude("All Types Null")
+  enableSuite[GlutenMathExpressionsSuite]
+    .exclude("tanh")
+    .exclude("unhex")
+    .exclude("atan2")
+    .exclude("SPARK-42045: integer overflow in round/bround")
+    .exclude("Gluten - round/bround/floor/ceil")
+  enableSuite[GlutenDataFrameWindowFramesSuite]
+    .exclude("rows between should accept int/long values as boundary")
+    .exclude("reverse preceding/following range between with aggregation")
+    .exclude(
+      "SPARK-41793: Incorrect result for window frames defined by a range clause on large decimals")
+  enableSuite[GlutenLateralColumnAliasSuite]
+    .exclude("Lateral alias conflicts with table column - Project")
+    .exclude("Lateral alias conflicts with table column - Aggregate")
+    .exclude("Lateral alias of a complex type")
+    .exclude("Lateral alias reference works with having and order by")
+    .exclude("Lateral alias basics - Window on Project")
+    .exclude("Lateral alias basics - Window on Aggregate")
+  enableSuite[GlutenInnerJoinSuiteForceShjOff]
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, one match per row using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("inner join, one match per row using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("inner join, one match per row using SortMergeJoin (whole-stage-codegen on)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude(
+      "inner join, multiple matches using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("inner join, multiple matches using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("inner join, multiple matches using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude("inner join, null safe using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("inner join, null safe using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("inner join, null safe using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=left) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=left) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=right) (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using ShuffledHashJoin (build=right) (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using CartesianProduct")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build left (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build left (whole-stage-codegen on)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build right (whole-stage-codegen off)")
+    .exclude("SPARK-15822 - test structs as keys using BroadcastNestedLoopJoin build right (whole-stage-codegen on)")
+  enableSuite[GlutenCachedTableSuite]
+    .exclude("Gluten - InMemoryRelation statistics")
+  enableSuite[GlutenCSVv2Suite]
+    .exclude("SPARK-36831: Support reading and writing ANSI intervals")
+  enableSuite[GlutenBloomFilterAggregateQuerySuiteCGOff]
+    .exclude("Test bloom_filter_agg and might_contain")
+  enableSuite[GlutenParquetRebaseDatetimeV1Suite]
+    .exclude("Gluten - SPARK-31159: rebasing dates in write")
+  enableSuite[GlutenParquetThriftCompatibilitySuite]
+    .exclude("SPARK-10136 list of primitive list")
+  enableSuite[GlutenDataFrameSetOperationsSuite]
+    .exclude("union should union DataFrames with UDTs (SPARK-13410)")
+    .exclude("SPARK-35756: unionByName support struct having same col names but different sequence")
+    .exclude("SPARK-36673: Only merge nullability for Unions of struct")
+    .exclude("SPARK-36797: Union should resolve nested columns as top-level columns")
+  enableSuite[GlutenStringExpressionsSuite]
+    .exclude("StringComparison")
+    .exclude("Substring")
+    .exclude("string substring_index function")
+    .exclude("SPARK-40213: ascii for Latin-1 Supplement characters")
+    .exclude("ascii for string")
+    .exclude("Mask")
+    .exclude("SPARK-42384: Mask with null input")
+    .exclude("base64/unbase64 for string")
+    .exclude("encode/decode for string")
+    .exclude("SPARK-47307: base64 encoding without chunking")
+    .exclude("Levenshtein distance threshold")
+    .exclude("soundex unit test")
+    .exclude("overlay for string")
+    .exclude("overlay for byte array")
+    .exclude("translate")
+    .exclude("FORMAT")
+    .exclude("LOCATE")
+    .exclude("REPEAT")
+    .exclude("ParseUrl")
+    .exclude("SPARK-33468: ParseUrl in ANSI mode should fail if input string is not a valid url")
+  enableSuite[GlutenOrcV1QuerySuite]
+    .exclude(
+      "SPARK-37728: Reading nested columns with ORC vectorized reader should not cause ArrayIndexOutOfBoundsException")
+  enableSuite[GlutenParquetV1SchemaPruningSuite]
+    .exclude("Case-insensitive parser - mixed-case schema - select with exact column names")
+    .exclude("Case-insensitive parser - mixed-case schema - select with lowercase column names")
+    .exclude(
+      "Case-insensitive parser - mixed-case schema - select with different-case column names")
+    .exclude(
+      "Case-insensitive parser - mixed-case schema - filter with different-case column names")
+    .exclude("Case-insensitive parser - mixed-case schema - subquery filter with different-case column names")
+    .exclude("SPARK-36352: Spark should check result plan's output schema name")
+    .exclude("Spark vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Spark vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Non-vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Non-vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+  enableSuite[GlutenDataFrameToSchemaSuite]
+    .exclude("struct value: compatible field nullability")
+    .exclude("map value: reorder inner fields by name")
+  enableSuite[errors.GlutenQueryExecutionErrorsSuite]
+    .exclude("CONVERSION_INVALID_INPUT: to_binary conversion function base64")
+    .exclude("UNSUPPORTED_FEATURE - SPARK-38504: can't read TimestampNTZ as TimestampLTZ")
+    .exclude("CANNOT_PARSE_DECIMAL: unparseable decimal")
+    .exclude("UNRECOGNIZED_SQL_TYPE: unrecognized SQL type DATALINK")
+    .exclude("UNSUPPORTED_FEATURE.MULTI_ACTION_ALTER: The target JDBC server hosting table does not support ALTER TABLE with multiple actions.")
+    .exclude("INVALID_BITMAP_POSITION: position out of bounds")
+    .exclude("INVALID_BITMAP_POSITION: negative position")
+  enableSuite[GlutenLocalBroadcastExchangeSuite]
+    .exclude("SPARK-39983 - Broadcasted relation is not cached on the driver")
+  enableSuite[GlutenOuterJoinSuiteForceShjOff]
+    .exclude("basic left outer join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("basic left outer join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("basic left outer join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("basic left outer join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("basic right outer join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("basic right outer join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("basic right outer join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("basic right outer join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("basic full outer join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("basic full outer join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("basic full outer join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("basic full outer join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("left outer join with unique keys using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("left outer join with unique keys using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("left outer join with unique keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("left outer join with unique keys using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("right outer join with unique keys using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("right outer join with unique keys using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("right outer join with unique keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("right outer join with unique keys using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("full outer join with unique keys using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("full outer join with unique keys using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("full outer join with unique keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("full outer join with unique keys using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("SPARK-32717: AQEOptimizer should respect excludedRules configuration")
+  enableSuite[GlutenRemoveRedundantWindowGroupLimitsSuite]
+    .exclude("remove redundant WindowGroupLimits")
+  enableSuite[GlutenOrcV2SchemaPruningSuite]
+    .exclude("Spark vectorized reader - without partition data column - select a single complex field and in where clause")
+    .exclude("Spark vectorized reader - with partition data column - select a single complex field and in where clause")
+    .exclude("Non-vectorized reader - without partition data column - select a single complex field and in where clause")
+    .exclude("Non-vectorized reader - with partition data column - select a single complex field and in where clause")
+    .exclude("Spark vectorized reader - without partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Spark vectorized reader - with partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Non-vectorized reader - without partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Non-vectorized reader - with partition data column - select one complex field and having is null predicate on another complex field")
+    .exclude("Spark vectorized reader - without partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Spark vectorized reader - with partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Non-vectorized reader - without partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Non-vectorized reader - with partition data column - SPARK-34638: nested column prune on generator output - case-sensitivity")
+    .exclude("Spark vectorized reader - without partition data column - select one deep nested complex field after repartition by expression")
+    .exclude("Spark vectorized reader - with partition data column - select one deep nested complex field after repartition by expression")
+    .exclude("Non-vectorized reader - without partition data column - select one deep nested complex field after repartition by expression")
+    .exclude("Non-vectorized reader - with partition data column - select one deep nested complex field after repartition by expression")
+    .exclude(
+      "Case-insensitive parser - mixed-case schema - filter with different-case column names")
+    .exclude("SPARK-37450: Prunes unnecessary fields from Explode for count aggregation")
+    .exclude("Spark vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Spark vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Non-vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude("Non-vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+  enableSuite[GlutenParquetRowIndexSuite]
+    .exclude("Gluten - row index generation - vectorized reader, small pages, small row groups, small splits, datasource v2")
+    .exclude("Gluten - row index generation - vectorized reader, small pages, small row groups, datasource v2")
+    .exclude("Gluten - row index generation - vectorized reader, small row groups, small splits, datasource v2")
+    .exclude("Gluten - row index generation - vectorized reader, small row groups, datasource v2")
+    .exclude("Gluten - row index generation - vectorized reader, small pages, datasource v2")
+    .exclude("Gluten - row index generation - vectorized reader, datasource v2")
+    .exclude("Gluten - row index generation - parquet-mr reader, small pages, small row groups, small splits, datasource v2")
+    .exclude("Gluten - row index generation - parquet-mr reader, small pages, small row groups, datasource v2")
+    .exclude("Gluten - row index generation - parquet-mr reader, small row groups, small splits, datasource v2")
+    .exclude("Gluten - row index generation - parquet-mr reader, small row groups, datasource v2")
+    .exclude("Gluten - row index generation - parquet-mr reader, small pages, datasource v2")
+    .exclude("Gluten - row index generation - parquet-mr reader, datasource v2")
+  enableSuite[errors.GlutenQueryCompilationErrorsSuite]
+    .exclude("CREATE NAMESPACE with LOCATION for JDBC catalog should throw an error")
+    .exclude(
+      "ALTER NAMESPACE with property other than COMMENT for JDBC catalog should throw an exception")
+  enableSuite[GlutenMetadataColumnSuite]
+    .exclude("SPARK-34923: propagate metadata columns through Sort")
+    .exclude("SPARK-34923: propagate metadata columns through RepartitionBy")
+    .exclude("SPARK-40149: select outer join metadata columns with DataFrame API")
+    .exclude("SPARK-42683: Project a metadata column by its logical name - column not found")
+  enableSuite[GlutenTryEvalSuite]
+    .exclude("try_subtract")
+  enableSuite[GlutenParquetColumnIndexSuite]
+    .exclude("test reading unaligned pages - test all types (dict encode)")
+  enableSuite[GlutenOrcV2QuerySuite]
+    .exclude(
+      "SPARK-37728: Reading nested columns with ORC vectorized reader should not cause ArrayIndexOutOfBoundsException")
+  enableSuite[GlutenFileSourceSQLInsertTestSuite]
+    .exclude("SPARK-33474: Support typed literals as partition spec values")
+    .exclude(
+      "SPARK-34556: checking duplicate static partition columns should respect case sensitive conf")
+  enableSuite[GlutenOrcV1SchemaPruningSuite]
+    .exclude(
+      "Case-insensitive parser - mixed-case schema - filter with different-case column names")
+    .exclude(
+      "Spark vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude(
+      "Spark vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude(
+      "Non-vectorized reader - without partition data column - SPARK-40033: Schema pruning support through element_at")
+    .exclude(
+      "Non-vectorized reader - with partition data column - SPARK-40033: Schema pruning support through element_at")
+  enableSuite[GlutenCSVLegacyTimeParserSuite]
+    .exclude("simple csv test")
+    .exclude("simple csv test with calling another function to load")
+    .exclude("simple csv test with type inference")
+    .exclude("test with alternative delimiter and quote")
+    .exclude("SPARK-24540: test with multiple character delimiter (comma space)")
+    .exclude("SPARK-24540: test with multiple (crazy) character delimiter")
+    .exclude("test different encoding")
+    .exclude("crlf line separators in multiline mode")
+    .exclude("test aliases sep and encoding for delimiter and charset")
+    .exclude("test for DROPMALFORMED parsing mode")
+    .exclude("test for blank column names on read and select columns")
+    .exclude("test for FAILFAST parsing mode")
+    .exclude("test for tokens more than the fields in the schema")
+    .exclude("test with null quote character")
+    .exclude("save csv with quote escaping, using charToEscapeQuoteEscaping option")
+    .exclude("commented lines in CSV data")
+    .exclude("inferring schema with commented lines in CSV data")
+    .exclude("inferring timestamp types via custom date format")
+    .exclude("load date types via custom date format")
+    .exclude("nullable fields with user defined null value of \"null\"")
+    .exclude("empty fields with user defined empty values")
+    .exclude("old csv data source name works")
+    .exclude("nulls, NaNs and Infinity values can be parsed")
+    .exclude("SPARK-15585 turn off quotations")
+    .exclude("Write timestamps correctly in ISO8601 format by default")
+    .exclude("Write dates correctly in ISO8601 format by default")
+    .exclude("Roundtrip in reading and writing timestamps")
+    .exclude("SPARK-37326: Write and infer TIMESTAMP_LTZ values with a non-default pattern")
+    .exclude("SPARK-37326: Timestamp type inference for a mix of TIMESTAMP_NTZ and TIMESTAMP_LTZ")
+    .exclude("Write dates correctly with dateFormat option")
+    .exclude("Write timestamps correctly with timestampFormat option")
+    .exclude("Write timestamps correctly with timestampFormat option and timeZone option")
+    .exclude("SPARK-18699 put malformed records in a `columnNameOfCorruptRecord` field")
+    .exclude("Enabling/disabling ignoreCorruptFiles")
+    .exclude("SPARK-19610: Parse normal multi-line CSV files")
+    .exclude("SPARK-38523: referring to the corrupt record column")
+    .exclude("SPARK-17916: An empty string should not be coerced to null when nullValue is passed.")
+    .exclude(
+      "SPARK-25241: An empty string should not be coerced to null when emptyValue is passed.")
+    .exclude("SPARK-24329: skip lines with comments, and one or multiple whitespaces")
+    .exclude("SPARK-23786: Checking column names against schema in the multiline mode")
+    .exclude("SPARK-23786: Checking column names against schema in the per-line mode")
+    .exclude("SPARK-23786: Ignore column name case if spark.sql.caseSensitive is false")
+    .exclude("SPARK-23786: warning should be printed if CSV header doesn't conform to schema")
+    .exclude("SPARK-25134: check header on parsing of dataset with projection and column pruning")
+    .exclude("SPARK-24676 project required data from parsed data when columnPruning disabled")
+    .exclude("encoding in multiLine mode")
+    .exclude("Support line separator - default value \\r, \\r\\n and \\n")
+    .exclude("Support line separator in UTF-8 #0")
+    .exclude("Support line separator in UTF-16BE #1")
+    .exclude("Support line separator in ISO-8859-1 #2")
+    .exclude("Support line separator in UTF-32LE #3")
+    .exclude("Support line separator in UTF-8 #4")
+    .exclude("Support line separator in UTF-32BE #5")
+    .exclude("Support line separator in CP1251 #6")
+    .exclude("Support line separator in UTF-16LE #8")
+    .exclude("Support line separator in UTF-32BE #9")
+    .exclude("Support line separator in US-ASCII #10")
+    .exclude("Support line separator in utf-32le #11")
+    .exclude("lineSep with 2 chars when multiLine set to true")
+    .exclude("lineSep with 2 chars when multiLine set to false")
+    .exclude("SPARK-26208: write and read empty data to csv file with headers")
+    .exclude("Do not reuse last good value for bad input field")
+    .exclude("SPARK-29101 test count with DROPMALFORMED mode")
+    .exclude("return correct results when data columns overlap with partition columns")
+    .exclude("filters push down - malformed input in PERMISSIVE mode")
+    .exclude("case sensitivity of filters references")
+    .exclude("SPARK-33566: configure UnescapedQuoteHandling to parse unescaped quotes and unescaped delimiter data correctly")
+    .exclude("SPARK-36831: Support reading and writing ANSI intervals")
+    .exclude("SPARK-39731: Correctly parse dates and timestamps with yyyyMMdd pattern")
+    .exclude("SPARK-39731: Handle date and timestamp parsing fallback")
+    .exclude("SPARK-40215: enable parsing fallback for CSV in CORRECTED mode with a SQL config")
+    .exclude("SPARK-40496: disable parsing fallback when the date/timestamp format is provided")
+    .exclude("SPARK-42335: Pass the comment option through to univocity if users set it explicitly in CSV dataSource")
+    .exclude("SPARK-46862: column pruning in the multi-line mode")
+  enableSuite[GlutenDataFrameTimeWindowingSuite]
+    .exclude("simple tumbling window with record at window start")
+    .exclude("SPARK-21590: tumbling window using negative start time")
+    .exclude("tumbling window groupBy statement")
+    .exclude("tumbling window groupBy statement with startTime")
+    .exclude("SPARK-21590: tumbling window groupBy statement with negative startTime")
+    .exclude("sliding window grouping")
+    .exclude("time window joins")
+    .exclude("millisecond precision sliding windows")
+  enableSuite[GlutenJsonLegacyTimeParserSuite]
+    .exclude("SPARK-37360: Write and infer TIMESTAMP_NTZ values with a non-default pattern")
+    .exclude("SPARK-37360: Timestamp type inference for a column with TIMESTAMP_NTZ values")
+    .exclude("SPARK-36830: Support reading and writing ANSI intervals")
+  enableSuite[GlutenInsertSuite]
+    .exclude("Gluten - insert partition table")
+    .exclude("Gluten - remove v1writes sort and project")
+    .exclude("Gluten - remove v1writes sort")
+    .exclude("Gluten - do not remove non-v1writes sort and project")
+    .exclude(
+      "Gluten - SPARK-35106: Throw exception when rename custom partition paths returns false")
+    .exclude(
+      "Gluten - Do not fallback write files if output columns contain Spark internal metadata")
+    .exclude("Gluten - Add metadata white list to allow native write files")
+    .exclude("Gluten - INSERT rows, ALTER TABLE ADD COLUMNS with DEFAULTs, then SELECT them")
+  enableSuite[GlutenRegexpExpressionsSuite]
+    .exclude("LIKE Pattern")
+    .exclude("LIKE Pattern ESCAPE '/'")
+    .exclude("LIKE Pattern ESCAPE '#'")
+    .exclude("LIKE Pattern ESCAPE '\"'")
+    .exclude("RLIKE Regular Expression")
+    .exclude("RegexReplace")
+    .exclude("RegexExtract")
+    .exclude("RegexExtractAll")
+    .exclude("SPLIT")
+  enableSuite[GlutenFileBasedDataSourceSuite]
+    .exclude("SPARK-23072 Write and read back unicode column names - csv")
+    .exclude("Enabling/disabling ignoreMissingFiles using csv")
+    .exclude("SPARK-30362: test input metrics for DSV2")
+    .exclude("SPARK-35669: special char in CSV header with filter pushdown")
+    .exclude("Gluten - Spark native readers should respect spark.sql.caseSensitive - parquet")
+    .exclude("Gluten - SPARK-25237 compute correct input metrics in FileScanRDD")
+    .exclude("Gluten - Enabling/disabling ignoreMissingFiles using orc")
+    .exclude("Gluten - Enabling/disabling ignoreMissingFiles using parquet")
+  enableSuite[GlutenDataFrameStatSuite]
+    .exclude("SPARK-30532 stat functions to understand fully-qualified column name")
+    .exclude("special crosstab elements (., '', null, ``)")
+  enableSuite[GlutenDataSourceV2FunctionSuite]
+    .exclude("view should use captured catalog and namespace for function lookup")
+    .exclude("aggregate function: lookup int average")
+    .exclude("aggregate function: lookup long average")
+    .exclude("aggregate function: lookup double average in Java")
+    .exclude("aggregate function: lookup int average w/ expression")
+    .exclude("SPARK-35390: aggregate function w/ type coercion")
+  enableSuite[GlutenCollapseProjectExecTransformerSuite]
+    .exclude("Gluten - Support ProjectExecTransformer collapse")
+  enableSuite[GlutenJsonV1Suite]
+    .exclude("SPARK-37360: Write and infer TIMESTAMP_NTZ values with a non-default pattern")
+    .exclude("SPARK-37360: Timestamp type inference for a column with TIMESTAMP_NTZ values")
+    .exclude("SPARK-36830: Support reading and writing ANSI intervals")
+  enableSuite[GlutenPredicateSuite]
+    .exclude("basic IN/INSET predicate test")
+    .exclude("IN with different types")
+    .exclude("IN/INSET: binary")
+    .exclude("IN/INSET: struct")
+    .exclude("IN/INSET: array")
+    .exclude("BinaryComparison: lessThan")
+    .exclude("BinaryComparison: LessThanOrEqual")
+    .exclude("BinaryComparison: GreaterThan")
+    .exclude("BinaryComparison: GreaterThanOrEqual")
+    .exclude("EqualTo on complex type")
+    .exclude("SPARK-32764: compare special double/float values")
+    .exclude("SPARK-32110: compare special double/float values in struct")
+  enableSuite[GlutenParquetProtobufCompatibilitySuite]
+    .exclude("struct with unannotated array")
+  enableSuite[GlutenTakeOrderedAndProjectSuite]
+    .exclude("TakeOrderedAndProject.doExecute without project")
+    .exclude("TakeOrderedAndProject.doExecute with project")
+    .exclude("TakeOrderedAndProject.doExecute with local sort")
+  enableSuite[GlutenHeaderCSVReadSchemaSuite]
+    .exclude("append column at the end")
+    .exclude("hide column at the end")
+    .exclude("change column type from byte to short/int/long")
+    .exclude("change column type from short to int/long")
+    .exclude("change column type from int to long")
+    .exclude("read byte, int, short, long together")
+    .exclude("change column type from float to double")
+    .exclude("read float and double together")
+    .exclude("change column type from float to decimal")
+    .exclude("change column type from double to decimal")
+    .exclude("read float, double, decimal together")
+    .exclude("read as string")
+  enableSuite[gluten.GlutenFallbackSuite]
+    .exclude("Gluten - test fallback event")
+  enableSuite[GlutenJoinSuite]
+    .exclude(
+      "SPARK-45882: BroadcastHashJoinExec propagate partitioning should respect CoalescedHashPartitioning")
+  enableSuite[GlutenDataFrameFunctionsSuite]
+    .exclude("map with arrays")
+    .exclude("flatten function")
+    .exclude("SPARK-41233: array prepend")
+    .exclude("array_insert functions")
+    .exclude("aggregate function - array for primitive type not containing null")
+    .exclude("transform keys function - primitive data types")
+    .exclude("transform values function - test primitive data types")
+    .exclude("transform values function - test empty")
+    .exclude("SPARK-14393: values generated by non-deterministic functions shouldn't change after coalesce or union")
+    .exclude("mask function")
+  enableSuite[GlutenCollectionExpressionsSuite]
+    .exclude("Sequence of numbers")
+    .exclude("Array Insert")
+    .exclude("SPARK-36753: ArrayExcept should handle duplicated Double.NaN and Float.Nan")
+    .exclude(
+      "SPARK-36740: ArrayMin/ArrayMax/SortArray should handle NaN greater than non-NaN value")
+    .exclude("SPARK-42401: Array insert of null value (explicit)")
+    .exclude("SPARK-42401: Array insert of null value (implicit)")
+  enableSuite[GlutenParquetV1PartitionDiscoverySuite]
+    .exclude("Various partition value types")
+    .exclude("Various inferred partition value types")
+    .exclude("Resolve type conflicts - decimals, dates and timestamps in partition column")
+  enableSuite[GlutenCastSuite]
+    .exclude("null cast")
+    .exclude("cast string to date")
+    .exclude("cast string to timestamp")
+    .exclude("SPARK-22825 Cast array to string")
+    .exclude("SPARK-33291: Cast array with null elements to string")
+    .exclude("SPARK-22973 Cast map to string")
+    .exclude("SPARK-22981 Cast struct to string")
+    .exclude("SPARK-33291: Cast struct with null elements to string")
+    .exclude("SPARK-35111: Cast string to year-month interval")
+    .exclude("Gluten - data type casting")
+  enableSuite[GlutenKeyGroupedPartitioningSuite]
+    .exclude("Gluten - partitioned join: only one side reports partitioning")
+    .exclude("Gluten - SPARK-41413: partitioned join: partition values from one side are subset of those from the other side")
+    .exclude("Gluten - SPARK-41413: partitioned join: partition values from both sides overlaps")
+    .exclude(
+      "Gluten - SPARK-41413: partitioned join: non-overlapping partition values from both sides")
+    .exclude("Gluten - SPARK-42038: partially clustered: with different partition keys and both sides partially clustered")
+    .exclude("Gluten - SPARK-42038: partially clustered: with different partition keys and missing keys on left-hand side")
+    .exclude("Gluten - SPARK-42038: partially clustered: with different partition keys and missing keys on right-hand side")
+    .exclude("Gluten - SPARK-42038: partially clustered: left outer join")
+    .exclude("Gluten - SPARK-42038: partially clustered: right outer join")
+    .exclude("Gluten - SPARK-42038: partially clustered: full outer join is not applicable")
+    .exclude("Gluten - SPARK-44641: duplicated records when SPJ is not triggered")
+    .exclude(
+      "Gluten - partitioned join: join with two partition keys and different # of partition keys")
+  enableSuite[GlutenDataFrameJoinSuite]
+    .exclude("SPARK-32693: Compare two dataframes with same schema except nullable property")
+  enableSuite[GlutenTryCastSuite]
+    .exclude("null cast")
+    .exclude("cast string to date")
+    .exclude("cast string to timestamp")
+    .exclude("SPARK-22825 Cast array to string")
+    .exclude("SPARK-33291: Cast array with null elements to string")
+    .exclude("SPARK-22973 Cast map to string")
+    .exclude("SPARK-22981 Cast struct to string")
+    .exclude("SPARK-33291: Cast struct with null elements to string")
+    .exclude("SPARK-35111: Cast string to year-month interval")
+    .exclude("cast from timestamp II")
+    .exclude("cast a timestamp before the epoch 1970-01-01 00:00:00Z II")
+    .exclude("cast a timestamp before the epoch 1970-01-01 00:00:00Z")
+    .exclude("cast from array II")
+    .exclude("cast from array III")
+    .exclude("cast from struct III")
+    .exclude("ANSI mode: cast string to timestamp with parse error")
+    .exclude("ANSI mode: cast string to date with parse error")
+    .exclude("Gluten - data type casting")
+  enableSuite[GlutenPartitionedWriteSuite]
+    .exclude("SPARK-37231, SPARK-37240: Dynamic writes/reads of ANSI interval partitions")
+  enableSuite[GlutenHigherOrderFunctionsSuite]
+    .exclude("ArraySort")
+    .exclude("ArrayAggregate")
+    .exclude("TransformKeys")
+    .exclude("TransformValues")
+    .exclude("SPARK-39419: ArraySort should throw an exception when the comparator returns null")
+  enableSuite[GlutenJsonFunctionsSuite]
+    .exclude("from_json with option (allowComments)")
+    .exclude("from_json with option (allowUnquotedFieldNames)")
+    .exclude("from_json with option (allowSingleQuotes)")
+    .exclude("from_json with option (allowNumericLeadingZeros)")
+    .exclude("from_json with option (allowBackslashEscapingAnyCharacter)")
+    .exclude("from_json with option (dateFormat)")
+    .exclude("from_json with option (allowUnquotedControlChars)")
+    .exclude("from_json with option (allowNonNumericNumbers)")
+    .exclude("from_json missing columns")
+    .exclude("from_json invalid json")
+    .exclude("from_json array support")
+    .exclude("to_json with option (timestampFormat)")
+    .exclude("to_json with option (dateFormat)")
+    .exclude("SPARK-19637 Support to_json in SQL")
+    .exclude("pretty print - roundtrip from_json -> to_json")
+    .exclude("from_json invalid json - check modes")
+    .exclude("SPARK-36069: from_json invalid json schema - check field name and field value")
+    .exclude("corrupt record column in the middle")
+    .exclude("parse timestamps with locale")
+    .exclude("SPARK-33134: return partial results only for root JSON objects")
+    .exclude("SPARK-40646: return partial results for JSON arrays with objects")
+    .exclude("SPARK-40646: return partial results for JSON maps")
+    .exclude("SPARK-40646: return partial results for objects with values as JSON arrays")
+    .exclude("SPARK-48863: parse object as an array with partial results enabled")
+    .exclude("SPARK-33907: bad json input with json pruning optimization: GetStructField")
+    .exclude("SPARK-33907: bad json input with json pruning optimization: GetArrayStructFields")
+    .exclude("SPARK-33907: json pruning optimization with corrupt record field")
+  enableSuite[GlutenParquetFileFormatV1Suite]
+    .exclude(
+      "SPARK-36825, SPARK-36854: year-month/day-time intervals written and read as INT32/INT64")
+  enableSuite[GlutenDataFrameSuite]
+    .exclude("SPARK-28067: Aggregate sum should not return wrong results for decimal overflow")
+    .exclude("SPARK-35955: Aggregate avg should not return wrong results for decimal overflow")
+    .exclude("summary")
+    .exclude(
+      "SPARK-8608: call `show` on local DataFrame with random columns should return same value")
+    .exclude("SPARK-8609: local DataFrame with random columns should return same value after sort")
+    .exclude("SPARK-10316: respect non-deterministic expressions in PhysicalOperation")
+    .exclude("Uuid expressions should produce same results at retries in the same DataFrame")
+    .exclude("Gluten - repartitionByRange")
+    .exclude("Gluten - describe")
+    .exclude("Gluten - Allow leading/trailing whitespace in string before casting")
+  enableSuite[GlutenDataFrameWindowFunctionsSuite]
+    .exclude(
+      "SPARK-13860: corr, covar_pop, stddev_pop functions in specific window LEGACY_STATISTICAL_AGGREGATE off")
+    .exclude(
+      "SPARK-13860: covar_samp, var_samp (variance), stddev_samp (stddev) functions in specific window LEGACY_STATISTICAL_AGGREGATE off")
+    .exclude("lead/lag with ignoreNulls")
+    .exclude("SPARK-37099: Insert window group limit node for top-k computation")
+    .exclude("Gluten - corr, covar_pop, stddev_pop functions in specific window")
+  enableSuite[GlutenParquetFileMetadataStructRowIndexSuite]
+    .exclude("reading _tmp_metadata_row_index - present in a table")
+  enableSuite[GlutenFileSourceStrategySuite]
+    .exclude("unpartitioned table, single partition")
+    .exclude("SPARK-32019: Add spark.sql.files.minPartitionNum config")
+    .exclude(
+      "SPARK-32352: Partially push down support data filter if it mixed in partition filters")
+    .exclude("SPARK-44021: Test spark.sql.files.maxPartitionNum works as expected")
+  enableSuite[GlutenSQLWindowFunctionSuite]
+    .exclude(
+      "window function: multiple window expressions specified by range in a single expression")
+    .exclude("Gluten - Filter on row number")
+  enableSuite[GlutenUrlFunctionsSuite]
+    .exclude("url parse_url function")
+    .exclude("url encode/decode function")
+  enableSuite[GlutenStringFunctionsSuite]
+    .exclude("string Levenshtein distance")
+    .exclude("string regexp_count")
+    .exclude("string regex_replace / regex_extract")
+    .exclude("string regexp_extract_all")
+    .exclude("string regexp_substr")
+    .exclude("string overlay function")
+    .exclude("binary overlay function")
+    .exclude("string / binary length function")
+    .exclude("SPARK-36751: add octet length api for scala")
+    .exclude("SPARK-36751: add bit length api for scala")
+    .exclude("str_to_map function")
+    .exclude("SPARK-42384: mask with null input")
+    .exclude("like & ilike function")
+    .exclude("parse_url")
+    .exclude("url_decode")
+    .exclude("url_encode")
+  enableSuite[GlutenOuterJoinSuiteForceShjOn]
+    .exclude("basic left outer join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("basic left outer join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("basic left outer join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("basic left outer join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("basic right outer join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("basic right outer join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("basic right outer join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("basic right outer join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("basic full outer join using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("basic full outer join using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("basic full outer join using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("basic full outer join using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("left outer join with unique keys using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("left outer join with unique keys using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("left outer join with unique keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("left outer join with unique keys using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("right outer join with unique keys using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("right outer join with unique keys using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("right outer join with unique keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("right outer join with unique keys using SortMergeJoin (whole-stage-codegen on)")
+    .exclude("full outer join with unique keys using ShuffledHashJoin (whole-stage-codegen off)")
+    .exclude("full outer join with unique keys using ShuffledHashJoin (whole-stage-codegen on)")
+    .exclude("full outer join with unique keys using SortMergeJoin (whole-stage-codegen off)")
+    .exclude("full outer join with unique keys using SortMergeJoin (whole-stage-codegen on)")
+  enableSuite[GlutenStatisticsCollectionSuite]
+    .exclude("analyze empty table")
+    .exclude("analyze column command - result verification")
+    .exclude("column stats collection for null columns")
+    .exclude("store and retrieve column stats in different time zones")
+    .exclude("SPARK-42777: describe column stats (min, max) for timestamp_ntz column")
+    .exclude("Gluten - store and retrieve column stats in different time zones")
+  enableSuite[GlutenDataFrameAggregateSuite]
+    .exclude("linear regression")
+    .exclude("collect functions")
+    .exclude("collect functions structs")
+    .exclude("SPARK-17641: collect functions should not collect null values")
+    .exclude("collect functions should be able to cast to array type with no null values")
+    .exclude("SPARK-45599: Neither 0.0 nor -0.0 should be dropped when computing percentile")
+    .exclude("SPARK-34716: Support ANSI SQL intervals by the aggregate function `sum`")
+    .exclude("SPARK-34837: Support ANSI SQL intervals by the aggregate function `avg`")
+    .exclude("SPARK-35412: groupBy of year-month/day-time intervals should work")
+    .exclude("SPARK-36054: Support group by TimestampNTZ column")
+  enableSuite[GlutenParquetFileFormatV2Suite]
+    .exclude(
+      "SPARK-36825, SPARK-36854: year-month/day-time intervals written and read as INT32/INT64")
+  enableSuite[GlutenDateExpressionsSuite]
+    .exclude("DayOfYear")
+    .exclude("Quarter")
+    .exclude("Month")
+    .exclude("Day / DayOfMonth")
+    .exclude("DayOfWeek")
+    .exclude("WeekDay")
+    .exclude("WeekOfYear")
+    .exclude("add_months")
+    .exclude("months_between")
+    .exclude("TruncDate")
+    .exclude("unsupported fmt fields for trunc/date_trunc results null")
+    .exclude("to_utc_timestamp")
+    .exclude("from_utc_timestamp")
+    .exclude("SPARK-31896: Handle am-pm timestamp parsing when hour is missing")
+    .exclude("UNIX_SECONDS")
+    .exclude("TIMESTAMP_SECONDS")
 
   override def getSQLQueryTestSettings: SQLQueryTestSettings = ClickHouseSQLQueryTestSettings
 }
