@@ -23,7 +23,7 @@ import org.apache.gluten.substrait.SubstraitContext
 import org.apache.gluten.substrait.expression.ExpressionNode
 
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.catalyst.plans.{FullOuter, InnerLike, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
+import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, FullOuter, InnerLike, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 
 import io.substrait.proto.{CrossRel, JoinRel, NamedStruct, Type}
 
@@ -59,7 +59,7 @@ object SubstraitUtil {
       // the left and right relations are exchanged and the
       // join type is reverted.
       CrossRel.JoinType.JOIN_TYPE_LEFT
-    case LeftSemi =>
+    case LeftSemi | ExistenceJoin(_) =>
       CrossRel.JoinType.JOIN_TYPE_LEFT_SEMI
     case FullOuter =>
       CrossRel.JoinType.JOIN_TYPE_OUTER

@@ -16,13 +16,17 @@
  */
 package org.apache.gluten.execution
 
+import org.apache.gluten.backendsapi.BackendsApiManager
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.optimizer.BuildSide
-import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, JoinType}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.joins.BuildSideRelation
 import org.apache.spark.sql.vectorized.ColumnarBatch
+
+import com.google.protobuf.{Any, StringValue}
 
 case class VeloxBroadcastNestedLoopJoinExecTransformer(
     left: SparkPlan,
@@ -50,5 +54,18 @@ case class VeloxBroadcastNestedLoopJoinExecTransformer(
       newLeft: SparkPlan,
       newRight: SparkPlan): VeloxBroadcastNestedLoopJoinExecTransformer =
     copy(left = newLeft, right = newRight)
+
+  override def genJoinParameters(): Any = {
+    val joinParametersStr = new StringBuffer("JoinParameters:")
+    joinParametersStr
+      .append("isExistenceJoin=")
+      .append(if (joinType.isInstanceOf[ExistenceJoin]) 1 else 0)
+      .append("\n")
+    val message = StringValue
+      .newBuilder()
+      .setValue(joinParametersStr.toString)
+      .build()
+    BackendsApiManager.getTransformerApiInstance.packPBMessage(message)
+  }
 
 }
