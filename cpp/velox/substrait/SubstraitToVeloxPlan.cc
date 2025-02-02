@@ -1281,9 +1281,9 @@ core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::
   std::shared_ptr<connector::hive::HiveTableHandle> tableHandle;
   if (!readRel.has_filter()) {
     tableHandle = std::make_shared<connector::hive::HiveTableHandle>(
-        kHiveConnectorId, "hive_table", filterPushdownEnabled, connector::hive::SubfieldFilters{}, nullptr);
+        kHiveConnectorId, "hive_table", filterPushdownEnabled, common::SubfieldFilters{}, nullptr);
   } else {
-    connector::hive::SubfieldFilters subfieldFilters;
+    common::SubfieldFilters subfieldFilters;
     auto names = colNameList;
     auto types = veloxTypeList;
     auto remainingFilter = exprConverter_->toVeloxExpr(readRel.filter(), ROW(std::move(names), std::move(types)));

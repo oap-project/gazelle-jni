@@ -21,6 +21,7 @@
 #include <Interpreters/TableJoin.h>
 #include <Common/CHUtil.h>
 #include <Common/Exception.h>
+#include <Common/ThreadPool.h>
 #include <Common/logger_useful.h>
 
 namespace DB
@@ -102,7 +103,6 @@ StorageJoinFromReadBuffer::StorageJoinFromReadBuffer(
 
 void StorageJoinFromReadBuffer::buildJoin(Blocks & data, const Block header, std::shared_ptr<DB::TableJoin> analyzed_join)
 {
-
     auto build_join = [&]
     {
         join = std::make_shared<HashJoin>(analyzed_join, header, overwrite, row_count);
@@ -133,7 +133,7 @@ void StorageJoinFromReadBuffer::buildJoinLazily(DB::Block header, std::shared_pt
         if (join)
             return;
         join = std::make_shared<HashJoin>(analyzed_join, header, overwrite, row_count);
-        while(!input_blocks.empty())
+        while (!input_blocks.empty())
         {
             auto & block = *input_blocks.begin();
             DB::ColumnsWithTypeAndName columns;
