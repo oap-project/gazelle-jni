@@ -187,7 +187,6 @@ class ClickHouseTestSettings extends BackendTestSettings {
       "SPARK-30719",
       "SPARK-31384",
       "SPARK-31658",
-      "SPARK-32717",
       "SPARK-32649",
       "SPARK-34533",
       "SPARK-34781",
