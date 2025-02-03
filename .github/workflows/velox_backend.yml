@@ -101,11 +101,11 @@ jobs:
         with:
           path: '${{ env.CCACHE_DIR }}'
           key: ccache-centos7-release-default-${{github.sha}}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: .m2/repository/org/apache/arrow/
@@ -141,12 +141,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -212,12 +212,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -284,12 +284,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: .m2/repository/org/apache/arrow/
@@ -356,12 +356,12 @@ jobs:
           df -h
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /home/runner/.m2/repository/org/apache/arrow/
@@ -471,12 +471,12 @@ jobs:
           df -h
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /home/runner/.m2/repository/org/apache/arrow/
@@ -514,12 +514,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -558,12 +558,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -602,11 +602,11 @@ jobs:
     container: apache/gluten:centos-8
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -644,12 +644,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -672,12 +672,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -716,12 +716,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -746,12 +746,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -795,12 +795,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -831,12 +831,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -874,12 +874,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -911,12 +911,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -940,12 +940,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -976,12 +976,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -1004,12 +1004,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -1040,12 +1040,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/

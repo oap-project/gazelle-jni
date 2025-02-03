@@ -20,6 +20,7 @@
 #include <Parser/SubstraitParserUtils.h>
 #include <Parser/TypeParser.h>
 #include <Storages/Kafka/ReadFromGlutenStorageKafka.h>
+#include <Common/logger_useful.h>
 
 namespace DB
 {
