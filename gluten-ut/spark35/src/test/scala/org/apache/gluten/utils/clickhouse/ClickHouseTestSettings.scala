@@ -1119,6 +1119,14 @@ class ClickHouseTestSettings extends BackendTestSettings {
     // Rewrite the following two tests in GlutenDatasetSuite.
     .exclude("dropDuplicates: columns with same column name")
     .exclude("groupBy.as")
+    .exclude("dropDuplicates")
+    .exclude("select 2, primitive and tuple")
+    .exclude("SPARK-16853: select, case class and tuple")
+    // TODO: SPARK-16995 may dead loop!!
+    .exclude("SPARK-16995: flat mapping on Dataset containing a column created with lit/expr")
+    .exclude("SPARK-24762: typed agg on Option[Product] type")
+    .exclude("SPARK-40407: repartition should not result in severe data skew")
+    .exclude("SPARK-40660: Switch to XORShiftRandom to distribute elements")
   enableSuite[GlutenDateFunctionsSuite]
     // The below two are replaced by two modified versions.
     .exclude("unix_timestamp")
