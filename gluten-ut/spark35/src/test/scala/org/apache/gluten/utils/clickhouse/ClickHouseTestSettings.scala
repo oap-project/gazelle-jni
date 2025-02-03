@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.connector._
 import org.apache.spark.sql.errors.{GlutenQueryCompilationErrorsDSv2Suite, GlutenQueryCompilationErrorsSuite, GlutenQueryExecutionErrorsSuite, GlutenQueryParsingErrorsSuite}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.adaptive.clickhouse.ClickHouseAdaptiveQueryExecSuite
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.datasources.binaryfile.GlutenBinaryFileFormatSuite
 import org.apache.spark.sql.execution.datasources.csv.{GlutenCSVLegacyTimeParserSuite, GlutenCSVv1Suite, GlutenCSVv2Suite}
@@ -177,6 +178,37 @@ class ClickHouseTestSettings extends BackendTestSettings {
   enableSuite[GlutenSortOrderExpressionsSuite]
   enableSuite[GlutenStringExpressionsSuite]
   enableSuite[GlutenTryEvalSuite]
+  enableSuite[ClickHouseAdaptiveQueryExecSuite]
+    .includeAllGlutenTests()
+    .includeByPrefix(
+      "SPARK-29906",
+      "SPARK-30291",
+      "SPARK-30403",
+      "SPARK-30719",
+      "SPARK-31384",
+      "SPARK-31658",
+      "SPARK-32717",
+      "SPARK-32649",
+      "SPARK-34533",
+      "SPARK-34781",
+      "SPARK-35585",
+      "SPARK-32932",
+      "SPARK-33494",
+      "SPARK-33933",
+      "SPARK-31220",
+      "SPARK-35874",
+      "SPARK-39551"
+    )
+    .include(
+      "Union/Except/Intersect queries",
+      "Subquery de-correlation in Union queries",
+      "force apply AQE",
+      "tree string output",
+      "control a plan explain mode in listener vis SQLConf",
+      "AQE should set active session during execution",
+      "No deadlock in UI update",
+      "SPARK-35455: Unify empty relation optimization between normal and AQE optimizer - multi join"
+    )
   enableSuite[GlutenBinaryFileFormatSuite]
     // Exception.
     .exclude("column pruning - non-readable file")
