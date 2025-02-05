@@ -74,4 +74,4 @@ It's name pattern is `gluten-<backend_type>-bundle-spark<spark.bundle.version>_<
 | 3.2.2         | 3.2                  | 2.12                 |
 | 3.3.1         | 3.3                  | 2.12                 |
 | 3.4.4         | 3.4                  | 2.12                 |
-| 3.5.2         | 3.5                  | 2.12                 |
+| 3.5.4         | 3.5                  | 2.12                 |
