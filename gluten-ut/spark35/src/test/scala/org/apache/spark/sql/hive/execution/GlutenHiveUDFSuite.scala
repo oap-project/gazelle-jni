@@ -128,7 +128,8 @@ class GlutenHiveUDFSuite extends GlutenHiveSQLQuerySuiteBase {
           |SELECT
           |  l_orderkey,
           |  l_partkey,
-          |  udf_str_to_map(concat_ws(',', array(concat('hello', l_partkey), 'world')), ',', 'l') as udf_result
+          |  udf_str_to_map(
+          |    concat_ws(',', array(concat('hello', l_partkey), 'world')), ',', 'l') as udf_result
           |FROM lineitem WHERE l_partkey <= 5 and l_orderkey <1000
           |""".stripMargin)
 
