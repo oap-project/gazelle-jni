@@ -17,6 +17,7 @@
 package org.apache.spark.sql.hive.execution
 
 import org.apache.gluten.execution.{ColumnarPartialProjectExec, CustomerUDF}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
 
@@ -33,7 +34,8 @@ class GlutenHiveUDFSuite extends GlutenHiveSQLQuerySuiteBase {
   }
 
   def withTempFunction(funcName: String)(f: => Unit): Unit = {
-    try f finally sql(s"DROP TEMPORARY FUNCTION IF EXISTS $funcName")
+    try f
+    finally sql(s"DROP TEMPORARY FUNCTION IF EXISTS $funcName")
   }
 
   override def beforeAll(): Unit = {
@@ -86,10 +88,9 @@ class GlutenHiveUDFSuite extends GlutenHiveSQLQuerySuiteBase {
   test("udf in filter") {
     withTempFunction("testUDF") {
       sql(s"CREATE TEMPORARY FUNCTION testUDF AS '${classOf[CustomerUDF].getName}'")
-      val df = sql(
-        """
-          |select l_partkey from lineitem where hash(testUDF(l_comment)) = 1961715824
-          |""".stripMargin)
+      val df = sql("""
+                     |select l_partkey from lineitem where hash(testUDF(l_comment)) = 1961715824
+                     |""".stripMargin)
       checkAnswer(df, Seq(Row(1552)))
       checkOperatorMatch[ColumnarPartialProjectExec](df)
     }
