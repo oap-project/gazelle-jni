@@ -23,35 +23,70 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.exchange.ReusedExchangeExec
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{DataType, DataTypes}
 
 case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan] {
 
   override def apply(plan: SparkPlan): SparkPlan = {
-    if (canBeOptimized(plan)) {
-      visitPlan(plan)
-    } else {
-      plan
+    if (
+      hasProjectOrFilter(plan) && !spark.conf
+        .get(SQLConf.OPTIMIZER_EXCLUDED_RULES.key)
+        .contains(classOf[CollapseNestedExpressions].getName)
+    ) {
+      val reusedExchangeExists = hasReuseExchange(plan)
+      if (canBeOptimized(plan, reusedExchangeExists)) {
+        return visitPlan(plan)
+      }
+    }
+    plan
+  }
+
+  private def hasReuseExchange(plan: SparkPlan): Boolean = {
+    def exists(plan: SparkPlan): Boolean = plan match {
+      case _: ReusedExchangeExec => true
+      case _ => plan.children.exists(c => exists(c))
+    }
+    val res = exists(plan)
+    plan.origin.sqlText match {
+      case Some(sql) if !res =>
+        spark.conf.set(
+          SQLConf.OPTIMIZER_EXCLUDED_RULES.key,
+          classOf[CollapseNestedExpressions].getName)
+        val newPlan = spark.sql(sql).queryExecution.executedPlan
+        exists(newPlan)
+      case _ => res
     }
   }
 
-  private def canBeOptimized(plan: SparkPlan): Boolean = plan match {
-    case p: ProjectExecTransformer =>
-      var res = p.projectList.exists(c => canBeOptimized(c))
-      if (!res) {
-        res = p.children.exists(c => canBeOptimized(c))
-      }
-      res
-    case f: FilterExecTransformer =>
-      var res = canBeOptimized(f.condition)
-      if (!res) {
-        res = canBeOptimized(f.child)
-      }
-      res
-    case _ => plan.children.exists(c => canBeOptimized(c))
+  private def hasProjectOrFilter(plan: SparkPlan): Boolean = plan match {
+    case _: ProjectExecTransformer => true
+    case _: FilterExecTransformer => true
+    case _ => plan.children.exists(c => hasProjectOrFilter(c))
   }
 
-  private def canBeOptimized(expr: Expression): Boolean = {
+  private def canBeOptimized(plan: SparkPlan, reusedExchangeExists: Boolean): Boolean =
+    plan match {
+      case p: ProjectExecTransformer =>
+        var res = p.projectList.exists(c => canBeOptimized(c, reusedExchangeExists))
+        if (!res) {
+          res = p.children.exists(c => canBeOptimized(c, reusedExchangeExists))
+        }
+        res
+      case f: FilterExecTransformer =>
+        var res = canBeOptimized(f.condition, reusedExchangeExists)
+        if (!res) {
+          res = canBeOptimized(f.child, reusedExchangeExists)
+        }
+        res
+      case _ => plan.children.exists(c => canBeOptimized(c, reusedExchangeExists))
+    }
+
+  private def canBeOptimized(expr: Expression, reusedExchangeExists: Boolean = false): Boolean = {
+    if (reusedExchangeExists && (expr.isInstanceOf[And] || expr.isInstanceOf[Or])) {
+      return false
+    }
     var exprCall = expr
     expr match {
       case a: Alias => exprCall = a.child
@@ -62,7 +97,7 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
       case None =>
         exprCall match {
           case _: LeafExpression => false
-          case _ => exprCall.children.exists(c => canBeOptimized(c))
+          case _ => exprCall.children.exists(c => canBeOptimized(c, reusedExchangeExists))
         }
       case Some(f) =>
         UDFMappings.collapsedFunctionsMap.contains(f)
