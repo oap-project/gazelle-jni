@@ -367,7 +367,7 @@ object ColumnarPartialProjectExec extends PredicateHelper {
           p => replaceExpressionUDF(p, replacedAliasUdf).asInstanceOf[NamedExpression]
         }
         val partialProject =
-          ColumnarPartialProjectExec(p, p.child)(replacedAliasUdf)
+          ColumnarPartialProjectExec(p, p.child)(replacedAliasUdf.toSeq)
         ProjectExecTransformer(newProjectList, partialProject)
       case f: FilterExec =>
         val replacedAliasUdf: ListBuffer[Alias] = ListBuffer()
@@ -376,7 +376,7 @@ object ColumnarPartialProjectExec extends PredicateHelper {
           .reduceLeftOption(And)
           .orNull
         val partialProject =
-          ColumnarPartialProjectExec(f, f.child)(replacedAliasUdf)
+          ColumnarPartialProjectExec(f, f.child)(replacedAliasUdf.toSeq)
         FilterExecTransformer(newCondition, partialProject)
     }
 
