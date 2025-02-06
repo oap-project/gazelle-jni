@@ -17,10 +17,12 @@
 package org.apache.spark.sql.hive.execution
 
 import org.apache.gluten.execution.{ColumnarPartialProjectExec, CustomerUDF}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
 
 import java.io.File
+
 import scala.collection.mutable
 
 class GlutenHiveUDFSuite extends GlutenHiveSQLQuerySuiteBase {
@@ -34,7 +36,8 @@ class GlutenHiveUDFSuite extends GlutenHiveSQLQuerySuiteBase {
   }
 
   def withTempFunction(funcName: String)(f: => Unit): Unit = {
-    try f finally sql(s"DROP TEMPORARY FUNCTION IF EXISTS $funcName")
+    try f
+    finally sql(s"DROP TEMPORARY FUNCTION IF EXISTS $funcName")
   }
 
   override def beforeAll(): Unit = {
@@ -86,39 +89,39 @@ class GlutenHiveUDFSuite extends GlutenHiveSQLQuerySuiteBase {
 
   test("udf with array") {
     withTempFunction("udf_sort_array") {
-      sql(
-        """
-          |CREATE TEMPORARY FUNCTION udf_sort_array AS
-          |'org.apache.hadoop.hive.ql.udf.generic.GenericUDFSortArray';
-          |""".stripMargin)
+      sql("""
+            |CREATE TEMPORARY FUNCTION udf_sort_array AS
+            |'org.apache.hadoop.hive.ql.udf.generic.GenericUDFSortArray';
+            |""".stripMargin)
 
-      val df = sql(
-        """
-          |SELECT
-          |  l_orderkey,
-          |  l_partkey,
-          |  udf_sort_array(array(10, l_orderkey, 1)) as udf_result
-          |FROM lineitem WHERE l_partkey <= 5 and l_orderkey <1000
-          |""".stripMargin)
+      val df = sql("""
+                     |SELECT
+                     |  l_orderkey,
+                     |  l_partkey,
+                     |  udf_sort_array(array(10, l_orderkey, 1)) as udf_result
+                     |FROM lineitem WHERE l_partkey <= 5 and l_orderkey <1000
+                     |""".stripMargin)
 
-      checkAnswer(df, Seq(
-        Row(35, 5, mutable.WrappedArray.make(Array(1, 10, 35))),
-        Row(321, 4, mutable.WrappedArray.make(Array(1, 10, 321))),
-        Row(548, 2, mutable.WrappedArray.make(Array(1, 10, 548))),
-        Row(640, 5, mutable.WrappedArray.make(Array(1, 10, 640))),
-        Row(807, 2, mutable.WrappedArray.make(Array(1, 10, 807))),
-      ))
+      checkAnswer(
+        df,
+        Seq(
+          Row(35, 5, mutable.WrappedArray.make(Array(1, 10, 35))),
+          Row(321, 4, mutable.WrappedArray.make(Array(1, 10, 321))),
+          Row(548, 2, mutable.WrappedArray.make(Array(1, 10, 548))),
+          Row(640, 5, mutable.WrappedArray.make(Array(1, 10, 640))),
+          Row(807, 2, mutable.WrappedArray.make(Array(1, 10, 807)))
+        )
+      )
       checkOperatorMatch[ColumnarPartialProjectExec](df)
     }
   }
 
   test("udf with map") {
     withTempFunction("udf_str_to_map") {
-      sql(
-        """
-          |CREATE TEMPORARY FUNCTION udf_str_to_map AS
-          |'org.apache.hadoop.hive.ql.udf.generic.GenericUDFStringToMap';
-          |""".stripMargin)
+      sql("""
+            |CREATE TEMPORARY FUNCTION udf_str_to_map AS
+            |'org.apache.hadoop.hive.ql.udf.generic.GenericUDFStringToMap';
+            |""".stripMargin)
 
       val df = sql(
         """
@@ -129,13 +132,16 @@ class GlutenHiveUDFSuite extends GlutenHiveSQLQuerySuiteBase {
           |FROM lineitem WHERE l_partkey <= 5 and l_orderkey <1000
           |""".stripMargin)
 
-      checkAnswer(df, Seq(
-        Row(321, 4, Map("he" -> "lo4", "wor" -> "d")),
-        Row(35, 5, Map("he" -> "lo5", "wor" -> "d")),
-        Row(548, 2, Map("he" -> "lo2", "wor" -> "d")),
-        Row(640, 5, Map("he" -> "lo5", "wor" -> "d")),
-        Row(807, 2, Map("he" -> "lo2", "wor" -> "d"))
-      ))
+      checkAnswer(
+        df,
+        Seq(
+          Row(321, 4, Map("he" -> "lo4", "wor" -> "d")),
+          Row(35, 5, Map("he" -> "lo5", "wor" -> "d")),
+          Row(548, 2, Map("he" -> "lo2", "wor" -> "d")),
+          Row(640, 5, Map("he" -> "lo5", "wor" -> "d")),
+          Row(807, 2, Map("he" -> "lo2", "wor" -> "d"))
+        )
+      )
       checkOperatorMatch[ColumnarPartialProjectExec](df)
     }
   }
