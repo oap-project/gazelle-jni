@@ -533,6 +533,7 @@ std::unordered_map<std::string, std::string> WholeStageResultIterator::getQueryC
         std::to_string(veloxCfg_->get<uint8_t>(kSpillableReservationGrowthPct, 25));
     configs[velox::core::QueryConfig::kSpillPrefixSortEnabled] =
         veloxCfg_->get<std::string>(kSpillPrefixSortEnabled, "false");
+    configs[velox::core::QueryConfig::kTableScanScaledProcessingEnabled] = "true";
     if (veloxCfg_->get<bool>(kSparkShuffleSpillCompress, true)) {
       configs[velox::core::QueryConfig::kSpillCompressionKind] =
           veloxCfg_->get<std::string>(kSpillCompressionKind, veloxCfg_->get<std::string>(kCompressionKind, "lz4"));
