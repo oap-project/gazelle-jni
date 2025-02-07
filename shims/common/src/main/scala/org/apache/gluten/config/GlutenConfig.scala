@@ -576,9 +576,7 @@ object GlutenConfig {
   val SPARK_REDACTION_REGEX = "spark.redaction.regex"
   val SPARK_SHUFFLE_FILE_BUFFER = "spark.shuffle.file.buffer"
   val SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE = "spark.unsafe.sorter.spill.reader.buffer.size"
-  val SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE_DEFAULT: Int = 1024 * 1024
   val SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE = "spark.shuffle.spill.diskWriteBufferSize"
-  val SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE_DEFAULT: Int = 1024 * 1024
   val SPARK_SHUFFLE_SPILL_COMPRESS = "spark.shuffle.spill.compress"
   val SPARK_SHUFFLE_SPILL_COMPRESS_DEFAULT: Boolean = true
 
@@ -650,16 +648,26 @@ object GlutenConfig {
       (
         GLUTEN_COLUMNAR_TO_ROW_MEM_THRESHOLD.key,
         GLUTEN_COLUMNAR_TO_ROW_MEM_THRESHOLD.defaultValue.get.toString),
-      (
-        SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE,
-        SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE_DEFAULT.toString),
-      (
-        SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE,
-        SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE_DEFAULT.toString),
       (SPARK_SHUFFLE_SPILL_COMPRESS, SPARK_SHUFFLE_SPILL_COMPRESS_DEFAULT.toString)
     )
     keyWithDefault.forEach(e => nativeConfMap.put(e._1, conf.getOrElse(e._1, e._2)))
 
+    conf
+      .get(SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE)
+      .foreach(
+        v =>
+          nativeConfMap
+            .put(
+              SPARK_UNSAFE_SORTER_SPILL_READER_BUFFER_SIZE,
+              JavaUtils.byteStringAs(v, ByteUnit.BYTE).toString))
+    conf
+      .get(SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE)
+      .foreach(
+        v =>
+          nativeConfMap
+            .put(
+              SPARK_SHUFFLE_SPILL_DISK_WRITE_BUFFER_SIZE,
+              JavaUtils.byteStringAs(v, ByteUnit.BYTE).toString))
     conf
       .get(SPARK_SHUFFLE_FILE_BUFFER)
       .foreach(
