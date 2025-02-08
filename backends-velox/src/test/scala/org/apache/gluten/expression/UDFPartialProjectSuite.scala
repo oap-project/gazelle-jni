@@ -166,7 +166,9 @@ abstract class UDFPartialProjectSuite extends WholeStageTransformerSuite {
   }
 
   test("udf with map") {
-    spark.udf.register("map_value_plus_one", udf((m: Map[String, Long]) => m.mapValues(_ + 1)))
+    spark.udf.register(
+      "map_value_plus_one",
+      udf((m: Map[String, Long]) => m.map { case (key, value) => key -> (value + 1) }))
     runQueryAndCompare("""
                          |SELECT
                          |  l_partkey,
