@@ -290,4 +290,6 @@ trait SparkShims {
 
   def isParquetFileEncrypted(fileStatus: LocatedFileStatus, conf: Configuration): Boolean
 
+  def isColumnarLimitExecSupported(): Boolean
+
 }

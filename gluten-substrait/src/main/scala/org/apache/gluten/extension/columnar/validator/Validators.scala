@@ -136,6 +136,7 @@ object Validators {
         fail(p)
       case p: CartesianProductExec if !settings.supportCartesianProductExec() => fail(p)
       case p: TakeOrderedAndProjectExec if !settings.supportColumnarShuffleExec() => fail(p)
+      case p: CollectLimitExec if !settings.supportCollectLimitExec() => fail(p)
       case p: RangeExec if !settings.supportRangeExec() => fail(p)
       case _ => pass()
     }
