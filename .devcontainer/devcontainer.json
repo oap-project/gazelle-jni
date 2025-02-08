@@ -1,0 +1,4 @@
+{
+    "name": "Gluten dev container",
+    "image": "apache/gluten:centos-8"
+}

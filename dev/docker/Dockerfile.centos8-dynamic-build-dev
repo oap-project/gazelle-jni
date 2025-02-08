@@ -1,0 +1,5 @@
+FROM apache/gluten:centos-8
+
+RUN git clone --depth=1 https://github.com/apache/incubator-gluten /opt/gluten
+
+RUN cd /opt/gluten && source /opt/rh/gcc-toolset-11/enable && ./dev/ci-velox-buildshared-centos-8.sh && rm -rf /opt/gluten
