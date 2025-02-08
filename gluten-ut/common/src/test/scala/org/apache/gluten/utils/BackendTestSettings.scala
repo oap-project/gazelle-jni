@@ -34,12 +34,12 @@ abstract class BackendTestSettings {
   }
 
   protected def enableSuite(suiteName: String): SuiteSettings = {
-    if (enabledSuites.containsKey(suiteName)) {
-      throw new IllegalArgumentException("Duplicated suite name: " + suiteName)
+    if (!enabledSuites.containsKey(suiteName)) {
+      val suiteSettings = new SuiteSettings
+      enabledSuites.put(suiteName, suiteSettings)
+      enabledSuites.get(suiteName)
     }
-    val suiteSettings = new SuiteSettings
-    enabledSuites.put(suiteName, suiteSettings)
-    suiteSettings
+    enabledSuites.get(suiteName)
   }
 
   private[utils] def shouldRun(suiteName: String, testName: String): Boolean = {
