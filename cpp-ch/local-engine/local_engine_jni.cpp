@@ -315,6 +315,7 @@ JNIEXPORT jstring Java_org_apache_gluten_vectorized_BatchIterator_nativeFetchMet
     const local_engine::LocalExecutor * executor = reinterpret_cast<local_engine::LocalExecutor *>(executor_address);
     const auto metric = executor->getMetric();
     const String metrics_json = metric ? local_engine::RelMetricSerializer::serializeRelMetric(metric) : "";
+    // std::cout << "metrics_json: " << metrics_json << std::endl;
 
     return local_engine::charTojstring(env, metrics_json.c_str());
     LOCAL_ENGINE_JNI_METHOD_END(env, nullptr)

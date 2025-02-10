@@ -704,4 +704,8 @@ trait SparkPlanExecApi {
       outputAttributes: Seq[Attribute],
       child: Seq[SparkPlan]): ColumnarRangeBaseExec
 
+  def genRangeExecTransformer(
+      range: org.apache.spark.sql.catalyst.plans.logical.Range): SparkPlan = {
+    throw new GlutenNotSupportException("RangeExec is not supported")
+  }
 }

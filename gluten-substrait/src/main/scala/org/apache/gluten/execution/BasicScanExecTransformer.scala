@@ -63,7 +63,7 @@ trait BasicScanExecTransformer extends LeafTransformSupport with BaseDataSource 
   def getProperties: Map[String, String] = Map.empty
 
   /** Returns the split infos that will be processed by the underlying native engine. */
-  def getSplitInfos(): Seq[SplitInfo] = {
+  override def getSplitInfos: Seq[SplitInfo] = {
     getSplitInfosFromPartitions(getPartitions)
   }
 
@@ -74,7 +74,7 @@ trait BasicScanExecTransformer extends LeafTransformSupport with BaseDataSource 
           _,
           getPartitionSchema,
           fileFormat,
-          getMetadataColumns.map(_.name),
+          getMetadataColumns().map(_.name),
           getProperties))
   }
 

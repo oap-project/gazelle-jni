@@ -36,7 +36,9 @@ case class GlutenPartition(
     index: Int,
     plan: Array[Byte],
     splitInfosByteArray: Array[Array[Byte]] = Array.empty[Array[Byte]],
-    locations: Array[String] = Array.empty[String]
+    locations: Array[String] = Array.empty[String],
+    files: Array[String] =
+      Array.empty[String] // touched files, for implementing UDF input_file_name
 ) extends BaseGlutenPartition {
 
   override def preferredLocations(): Array[String] = locations

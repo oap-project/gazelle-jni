@@ -38,9 +38,10 @@ public:
     // This is source node, there is no input
     std::optional<const substrait::Rel *> getSingleInput(const substrait::Rel & rel) override { return {}; }
 
-    static bool isReadFromDefault(const substrait::ReadRel & rel);
-    static bool isReadRelFromJava(const substrait::ReadRel & rel);
-    static bool isReadFromMergeTree(const substrait::ReadRel & rel);
+    static bool isReadRelFromLocalFile(const substrait::ReadRel & rel);
+    static bool isReadRelFromJavaIter(const substrait::ReadRel & rel);
+    static bool isReadRelFromMergeTree(const substrait::ReadRel & rel);
+    static bool isReadRelFromRange(const substrait::ReadRel & rel);
     static bool isReadFromStreamKafka(const substrait::ReadRel & rel);
 
     void setInputIter(jobject input_iter_, bool is_materialze)
@@ -52,10 +53,12 @@ public:
     void setSplitInfo(const String & split_info_) { split_info = split_info_; }
 
 private:
+    DB::QueryPlanStepPtr parseReadRelWithJavaIter(const substrait::ReadRel & rel);
+    DB::QueryPlanStepPtr parseReadRelWithLocalFile(const substrait::ReadRel & rel);
+    DB::QueryPlanStepPtr parseReadRelWithRange(const substrait::ReadRel & rel);
+
     jobject input_iter;
     bool is_input_iter_materialize;
     String split_info;
-    DB::QueryPlanStepPtr parseReadRelWithJavaIter(const substrait::ReadRel & rel);
-    DB::QueryPlanStepPtr parseReadRelWithLocalFile(const substrait::ReadRel & rel) const;
 };
 }
