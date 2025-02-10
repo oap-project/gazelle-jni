@@ -267,18 +267,17 @@ class ClickhouseOptimisticTransaction(
       // TODO: val checkInvariants = DeltaInvariantCheckerExec(empty2NullPlan, constraints)
       val checkInvariants = empty2NullPlan
 
-      // TODO: DeltaOptimizedWriterExec
       // No need to plan optimized write if the write command is OPTIMIZE, which aims to produce
       // evenly-balanced data files already.
       val physicalPlan =
-        if (
-          !isOptimize &&
+      if (
+        !isOptimize &&
           shouldOptimizeWrite(writeOptions, spark.sessionState.conf)
-        ) {
-          DeltaOptimizedWriterExec(checkInvariants, metadata.partitionColumns, deltaLog)
-        } else {
-          checkInvariants
-        }
+      ) {
+        DeltaOptimizedWriterExec(checkInvariants, metadata.partitionColumns, deltaLog)
+      } else {
+        checkInvariants
+      }
 
       val statsTrackers: ListBuffer[WriteJobStatsTracker] = ListBuffer()
 
@@ -340,14 +339,14 @@ class ClickhouseOptimisticTransaction(
 
     var resultFiles =
       (if (optionalStatsTracker.isDefined) {
-         committer.addedStatuses.map {
-           a =>
-             a.copy(stats =
-               optionalStatsTracker.map(_.recordedStats(a.toPath.getName)).getOrElse(a.stats))
-         }
-       } else {
-         committer.addedStatuses
-       })
+        committer.addedStatuses.map { a =>
+          a.copy(stats = optionalStatsTracker.map(
+            _.recordedStats(a.toPath.getName)).getOrElse(a.stats))
+        }
+      }
+      else {
+        committer.addedStatuses
+      })
         .filter {
           // In some cases, we can write out an empty `inputData`. Some examples of this (though, they
           // may be fixed in the future) are the MERGE command when you delete with empty source, or

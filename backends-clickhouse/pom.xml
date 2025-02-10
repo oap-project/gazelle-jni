@@ -497,6 +497,7 @@
               <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/stats/*.scala</exclude>
               <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/DeltaLog.scala</exclude>
               <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/Snapshot.scala</exclude>
+              <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/ClickhouseOptimisticTransaction.scala</exclude>
             </excludes>
           </scala>
         </configuration>
