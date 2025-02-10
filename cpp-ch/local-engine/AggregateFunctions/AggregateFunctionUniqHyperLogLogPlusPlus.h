@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <AggregateFunctions/IAggregateFunction.h>
 #include <AggregateFunctions/AggregateFunctionFactory.h>
 #include <Columns/ColumnVector.h>
@@ -26,7 +27,7 @@ struct HyperLogLogPlusPlusData
 {
     explicit HyperLogLogPlusPlusData(double relative_sd_ = 0.05)
         : relative_sd(relative_sd_)
-        , p(static_cast<UInt64>(std::ceil(2.0 + std::log(1.106 / relative_sd / std::log(2.0)))))
+        , p(static_cast<UInt64>(std::ceil(2.0 * std::log(1.106 / relative_sd) / std::log(2.0))))
         , idx_shift(64 - p)
         , w_padding(1ULL << (p - 1))
         , m(1ULL << p)

@@ -70,3 +70,21 @@ TEST(HyperLogLogPlusPlusDataTest, SerializeAndDeserialize) {
     EXPECT_EQ(hll2.query(), 806);
 }
 
+
+TEST(HyperLogLogPlusPlusDataTest, 1k)
+{
+    HyperLogLogPlusPlusData hll(0.001);
+
+    std::ifstream input_file("/data1/liyang/cppproject/spark/spark-3.3.2-bin-hadoop3/logs/input.txt");
+    std::vector<UInt64> numbers;
+    UInt64 number;
+    while (input_file >> number) {
+        numbers.push_back(number);
+    }
+
+    for (auto x : numbers) {
+        hll.add(x);
+    }
+
+    EXPECT_EQ(hll.query(), 1000);
+}
