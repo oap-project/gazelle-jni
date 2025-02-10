@@ -4,6 +4,10 @@
 #define PARQUET_DATA(file) "file://@PARQUET_DATA_DIR@"#file
 #define MERGETREE_DATA(file) "@MERGETREE_DATA_DIR@"#file
 
-#define GLUTEN_SOURCE_DIR_ "file://@GLUTEN_REAL_PATH@"
+#define GLUTEN_SOURCE_URI_ "file://@GLUTEN_REAL_PATH@"
+#define GLUTEN_SOURCE_URI(file) GLUTEN_SOURCE_URI_ file
+#define GLUTEN_SOURCE_TPCH_URI(file) GLUTEN_SOURCE_URI("/gluten-core/src/test/resources/tpch-data/" file)
+
+#define GLUTEN_SOURCE_DIR_ "@GLUTEN_REAL_PATH@"
 #define GLUTEN_SOURCE_DIR(file) GLUTEN_SOURCE_DIR_ file
 #define GLUTEN_SOURCE_TPCH_DIR(file) GLUTEN_SOURCE_DIR("/gluten-core/src/test/resources/tpch-data/" file)

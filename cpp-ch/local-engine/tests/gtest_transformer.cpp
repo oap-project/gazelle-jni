@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <Columns/IColumn.h>
 #include <Core/Field.h>
 #include <DataTypes/DataTypeFactory.h>
 #include <Operator/PartitionColumnFillingTransform.h>

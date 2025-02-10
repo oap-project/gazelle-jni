@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <Functions/FunctionHelpers.h>
-#include <Functions/FunctionFactory.h>
 #include <Columns/ColumnArray.h>
 #include <Columns/ColumnFunction.h>
 #include <Columns/ColumnNullable.h>
-#include <Common/Exception.h>
 #include <DataTypes/DataTypeArray.h>
 #include <DataTypes/DataTypeFunction.h>
 #include <DataTypes/DataTypeLowCardinality.h>
-#include <Poco/Logger.h>
-#include <Common/logger_useful.h>
+#include <DataTypes/DataTypeNullable.h>
+#include <Functions/FunctionFactory.h>
+#include <Functions/FunctionHelpers.h>
 #include <base/sort.h>
+#include <Common/Exception.h>
+#include <Common/logger_useful.h>
 
 namespace DB::ErrorCodes
 {

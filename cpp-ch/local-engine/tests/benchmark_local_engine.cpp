@@ -83,8 +83,7 @@ DB::ContextMutablePtr global_context;
     {
         substrait::ReadRel::LocalFiles files;
         substrait::ReadRel::LocalFiles::FileOrFiles * file = files.add_items();
-        std::string file_path = "file:///home/hongbin/code/gluten/jvm/src/test/resources/tpch-data/lineitem/"
-                                "part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet";
+        std::string file_path{GLUTEN_SOURCE_TPCH_URI("lineitem/part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet")};
         file->set_uri_file(file_path);
         substrait::ReadRel::LocalFiles::FileOrFiles::ParquetReadOptions parquet_format;
         file->mutable_parquet()->CopyFrom(parquet_format);
@@ -846,8 +845,8 @@ QueryPlanPtr joinPlan(QueryPlanPtr left, QueryPlanPtr right, String left_key, St
     }
     auto hash_join = std::make_shared<HashJoin>(join, right->getCurrentHeader());
 
-    QueryPlanStepPtr join_step
-        = std::make_unique<JoinStep>(left->getCurrentHeader(), right->getCurrentHeader(), hash_join, block_size, 8192, 1,  NameSet{}, false, false);
+    QueryPlanStepPtr join_step = std::make_unique<JoinStep>(
+        left->getCurrentHeader(), right->getCurrentHeader(), hash_join, block_size, 8192, 1, NameSet{}, false, false);
 
     std::vector<QueryPlanPtr> plans;
     plans.emplace_back(std::move(left));

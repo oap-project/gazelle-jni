@@ -18,7 +18,6 @@ package org.apache.gluten.execution
 
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.exception.GlutenException
-import org.apache.gluten.utils.UTSystemParameters
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -65,7 +64,6 @@ class GlutenClickHouseNativeLibSuite extends PlanTest {
         .builder()
         .master("local[1]")
         .config(baseSparkConf)
-        .config(GlutenConfig.GLUTEN_LIB_PATH.key, UTSystemParameters.clickHouseLibPath)
         .config(GlutenConfig.GLUTEN_EXECUTOR_LIB_PATH.key, "/path/not/exist/libch.so")
         .getOrCreate()
       spark.sql("select 1").show()

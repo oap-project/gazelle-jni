@@ -46,7 +46,8 @@ object ParquetMetadataUtils {
   def validateEncryption(
       format: ReadFileFormat,
       rootPaths: Seq[String],
-      serializableHadoopConf: Option[SerializableConfiguration]
+      serializableHadoopConf: Option[SerializableConfiguration],
+      fileLimit: Int
   ): ValidationResult = {
     if (format != ParquetReadFormat || rootPaths.isEmpty) {
       return ValidationResult.succeeded
@@ -59,7 +60,7 @@ object ParquetMetadataUtils {
         val fs = new Path(rootPath).getFileSystem(conf)
         try {
           val encryptionDetected =
-            checkForEncryptionWithLimit(fs, new Path(rootPath), conf, fileLimit = 10)
+            checkForEncryptionWithLimit(fs, new Path(rootPath), conf, fileLimit = fileLimit)
           if (encryptionDetected) {
             return ValidationResult.failed("Encrypted Parquet file detected.")
           }

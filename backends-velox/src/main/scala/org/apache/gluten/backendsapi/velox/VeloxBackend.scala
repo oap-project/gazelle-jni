@@ -200,8 +200,13 @@ object VeloxBackendSettings extends BackendSettingsApi {
         return None
       }
 
+      val fileLimit = GlutenConfig.get.parquetEncryptionValidationFileLimit
       val encryptionResult =
-        ParquetMetadataUtils.validateEncryption(format, rootPaths, serializableHadoopConf)
+        ParquetMetadataUtils.validateEncryption(
+          format,
+          rootPaths,
+          serializableHadoopConf,
+          fileLimit)
       if (encryptionResult.ok()) {
         None
       } else {
@@ -394,10 +399,6 @@ object VeloxBackendSettings extends BackendSettingsApi {
     }
     true
   }
-
-  override def supportNativeMetadataColumns(): Boolean = true
-
-  override def supportNativeRowIndexColumn(): Boolean = true
 
   override def supportExpandExec(): Boolean = true
 

@@ -19,7 +19,7 @@ RUN wget -nv https://archive.apache.org/dist/celeborn/celeborn-0.3.2-incubating/
 RUN wget -nv https://archive.apache.org/dist/celeborn/celeborn-0.4.3/apache-celeborn-0.4.3-bin.tgz -P /opt/
 RUN wget -nv https://archive.apache.org/dist/celeborn/celeborn-0.5.3/apache-celeborn-0.5.3-bin.tgz -P /opt/
 
-RUN wget -nv https://archive.apache.org/dist/incubator/uniffle/0.9.1/apache-uniffle-0.9.1-incubating-bin.tar.gz -P /opt/
+RUN wget -nv https://archive.apache.org/dist/incubator/uniffle/0.9.2/apache-uniffle-0.9.2-incubating-bin.tar.gz -P /opt/
 RUN wget -nv https://archive.apache.org/dist/hadoop/common/hadoop-2.8.5/hadoop-2.8.5.tar.gz -P /opt/
 
 RUN git clone --depth=1 https://github.com/apache/incubator-gluten /opt/gluten

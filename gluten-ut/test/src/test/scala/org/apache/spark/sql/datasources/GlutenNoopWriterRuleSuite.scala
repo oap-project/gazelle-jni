@@ -16,9 +16,6 @@
  */
 package org.apache.spark.sql.datasources
 
-import org.apache.gluten.config.GlutenConfig
-import org.apache.gluten.utils.{BackendTestUtils, SystemParameters}
-
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{GlutenQueryTest, SaveMode}
 import org.apache.spark.sql.execution.QueryExecution
@@ -29,17 +26,13 @@ import org.apache.spark.sql.util.QueryExecutionListener
 class GlutenNoopWriterRuleSuite extends GlutenQueryTest with SharedSparkSession {
 
   override def sparkConf: SparkConf = {
-    val conf = super.sparkConf
+    super.sparkConf
       .set("spark.plugins", "org.apache.gluten.GlutenPlugin")
       .set("spark.default.parallelism", "1")
       .set("spark.memory.offHeap.enabled", "true")
       .set("spark.memory.offHeap.size", "1024MB")
       .set("spark.ui.enabled", "false")
       .set("spark.gluten.ui.enabled", "false")
-    if (BackendTestUtils.isCHBackendLoaded()) {
-      conf.set(GlutenConfig.GLUTEN_LIB_PATH.key, SystemParameters.getClickHouseLibPath)
-    }
-    conf
   }
 
   class WriterColumnarListener extends QueryExecutionListener {

@@ -1713,6 +1713,10 @@ class ClickHouseTestSettings extends BackendTestSettings {
   enableSuite[GlutenSparkSessionExtensionSuite]
   enableSuite[GlutenHiveSQLQueryCHSuite]
   enableSuite[GlutenPercentileSuite]
+  enableSuite[GlutenParquetFileMetadataStructRowIndexSuite]
+  enableSuite[GlutenParquetRowIndexSuite]
+    .excludeByPrefix("row index generation")
+    .excludeByPrefix("invalid row index column type")
 
   override def getSQLQueryTestSettings: SQLQueryTestSettings = ClickHouseSQLQueryTestSettings
 }

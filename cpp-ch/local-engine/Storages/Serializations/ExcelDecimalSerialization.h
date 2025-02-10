@@ -19,6 +19,14 @@
 #include <DataTypes/Serializations/SerializationNumber.h>
 #include <Common/DateLUTImpl.h>
 
+namespace DB
+{
+namespace ErrorCodes
+{
+extern const int NOT_IMPLEMENTED;
+}
+}
+
 namespace local_engine
 {
 

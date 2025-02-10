@@ -16,16 +16,17 @@
  */
 #include "SparkFunctionCheckDecimalOverflow.h"
 
+#include <typeinfo>
 #include <Columns/ColumnDecimal.h>
 #include <Columns/ColumnNullable.h>
 #include <Columns/ColumnsNumber.h>
 #include <Core/DecimalFunctions.h>
+#include <Core/callOnTypeIndex.h>
 #include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypesDecimal.h>
 #include <Functions/FunctionFactory.h>
 #include <Functions/FunctionHelpers.h>
 #include <Functions/IFunction.h>
-#include <typeinfo>
 
 namespace DB
 {

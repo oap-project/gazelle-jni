@@ -16,8 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.gluten.config.GlutenConfig
-import org.apache.gluten.utils.{BackendTestUtils, SystemParameters}
+import org.apache.gluten.utils.BackendTestUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -86,7 +85,6 @@ object DummyFilterColmnarHelper {
         .config("spark.memory.offHeap.size", "1024MB")
         .config("spark.plugins", "org.apache.gluten.GlutenPlugin")
         .config("spark.shuffle.manager", "org.apache.spark.shuffle.sort.ColumnarShuffleManager")
-        .config(GlutenConfig.GLUTEN_LIB_PATH.key, SystemParameters.getClickHouseLibPath)
         .config("spark.io.compression.codec", "LZ4")
         .config("spark.gluten.sql.enable.native.validation", "false")
     } else {

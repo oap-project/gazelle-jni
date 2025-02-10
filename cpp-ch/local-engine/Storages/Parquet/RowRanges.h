@@ -189,8 +189,10 @@ public:
     }
 
     const std::vector<Range> & getRanges() const { return ranges; }
+    std::vector<Range> & getRanges() { return ranges; }
 
     const Range & getRange(size_t index) const { return ranges[index]; }
+    Range & getRange(size_t index) { return ranges[index]; }
 
     std::string toString() const
     {

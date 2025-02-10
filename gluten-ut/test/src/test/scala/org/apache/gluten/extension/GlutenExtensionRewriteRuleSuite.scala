@@ -16,9 +16,8 @@
  */
 package org.apache.gluten.extension
 
-import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.{ProjectExecTransformer, WholeStageTransformerSuite}
-import org.apache.gluten.utils.{BackendTestUtils, SystemParameters}
+import org.apache.gluten.utils.BackendTestUtils
 
 import org.apache.spark.SparkConf
 
@@ -33,7 +32,6 @@ class GlutenExtensionRewriteRuleSuite extends WholeStageTransformerSuite {
     if (BackendTestUtils.isCHBackendLoaded()) {
       conf
         .set("spark.gluten.sql.enable.native.validation", "false")
-        .set(GlutenConfig.GLUTEN_LIB_PATH.key, SystemParameters.getClickHouseLibPath)
     }
     conf
   }

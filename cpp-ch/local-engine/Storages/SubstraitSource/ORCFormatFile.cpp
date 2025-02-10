@@ -38,12 +38,11 @@ ORCFormatFile::ORCFormatFile(
 
 FormatFile::InputFormatPtr ORCFormatFile::createInputFormat(const DB::Block & header)
 {
-    auto file_format = std::make_shared<FormatFile::InputFormat>();
-    file_format->read_buffer = read_buffer_builder->build(file_info);
+    auto read_buffer = read_buffer_builder->build(file_info);
 
     std::vector<StripeInformation> stripes;
     [[maybe_unused]] UInt64 total_stripes = 0;
-    if (auto * seekable_in = dynamic_cast<DB::SeekableReadBuffer *>(file_format->read_buffer.get()))
+    if (auto * seekable_in = dynamic_cast<DB::SeekableReadBuffer *>(read_buffer.get()))
     {
         stripes = collectRequiredStripes(seekable_in, total_stripes);
         seekable_in->seek(0, SEEK_SET);
@@ -61,12 +60,7 @@ FormatFile::InputFormatPtr ORCFormatFile::createInputFormat(const DB::Block & he
         required_stripe_indices[i] = stripes[i].index;
 
     std::vector<int> skip_stripe_indices;
-    std::set_difference(
-        total_stripe_indices.begin(),
-        total_stripe_indices.end(),
-        required_stripe_indices.begin(),
-        required_stripe_indices.end(),
-        std::back_inserter(skip_stripe_indices));
+    std::ranges::set_difference(total_stripe_indices, required_stripe_indices, std::back_inserter(skip_stripe_indices));
 
     format_settings.orc.skip_stripes = std::unordered_set<int>(skip_stripe_indices.begin(), skip_stripe_indices.end());
     if (context->getConfigRef().has("timezone"))
@@ -75,9 +69,8 @@ FormatFile::InputFormatPtr ORCFormatFile::createInputFormat(const DB::Block & he
         const String mapped_timezone = DateTimeUtil::convertTimeZone(config_timezone);
         format_settings.orc.reader_time_zone_name = mapped_timezone;
     }
-    auto input_format = std::make_shared<DB::NativeORCBlockInputFormat>(*file_format->read_buffer, header, format_settings);
-    file_format->input = input_format;
-    return file_format;
+    auto input_format = std::make_shared<DB::NativeORCBlockInputFormat>(*read_buffer, header, format_settings);
+    return std::make_shared<InputFormat>(std::move(read_buffer), input_format);
 }
 
 std::optional<size_t> ORCFormatFile::getTotalRows()

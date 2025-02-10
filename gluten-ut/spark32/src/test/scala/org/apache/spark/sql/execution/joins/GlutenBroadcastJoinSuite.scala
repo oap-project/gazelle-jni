@@ -16,9 +16,8 @@
  */
 package org.apache.spark.sql.execution.joins
 
-import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.{BroadcastHashJoinExecTransformerBase, BroadcastNestedLoopJoinExecTransformer, ColumnarToRowExecBase, WholeStageTransformer}
-import org.apache.gluten.utils.{BackendTestUtils, SystemParameters}
+import org.apache.gluten.utils.BackendTestUtils
 
 import org.apache.spark.sql.{GlutenTestsCommonTrait, SparkSession}
 import org.apache.spark.sql.catalyst.optimizer._
@@ -89,7 +88,6 @@ class GlutenBroadcastJoinSuite extends BroadcastJoinSuite with GlutenTestsCommon
         .config("spark.gluten.sql.columnar.backend.ch.worker.id", "1")
         .config("spark.gluten.sql.enable.native.validation", "false")
         .config("spark.sql.files.openCostInBytes", "134217728")
-        .config(GlutenConfig.GLUTEN_LIB_PATH.key, SystemParameters.getClickHouseLibPath)
         .config("spark.unsafe.exceptionOnMemoryLeak", "true")
         .getOrCreate()
     } else {
