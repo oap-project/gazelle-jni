@@ -20,12 +20,12 @@ import org.apache.gluten.execution.ColumnarPartialProjectExec
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.execution.{ProjectExec, SparkPlan}
+import org.apache.spark.sql.execution.{FilterExec, ProjectExec, SparkPlan}
 
 case class PartialProjectRule(spark: SparkSession) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = {
     plan.transformUp {
-      case plan: ProjectExec =>
+      case plan @ (_: ProjectExec | _: FilterExec) =>
         val transformer = ColumnarPartialProjectExec.create(plan)
         if (
           transformer.doValidate().ok() &&
