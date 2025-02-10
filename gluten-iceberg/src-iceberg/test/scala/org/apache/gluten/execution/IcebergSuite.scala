@@ -16,9 +16,12 @@
  */
 package org.apache.gluten.execution
 
+import org.apache.commons.io.FileUtils
 import org.apache.gluten.config.GlutenConfig
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
+
+import java.io.File
 
 abstract class IcebergSuite extends WholeStageTransformerSuite {
   protected val rootPath: String = getClass.getResource("/").getPath
@@ -26,6 +29,12 @@ abstract class IcebergSuite extends WholeStageTransformerSuite {
   //  backend modules that rely on this suite.
   override protected val resourcePath: String = "/tpch-data-parquet"
   override protected val fileFormat: String = "parquet"
+
+  protected val resourcesBasePath: String =
+    getClass.getResource("/").getPath + "../../../src-iceberg/test/resources"
+
+  private val pathName = "junit6640909127060857423"
+  private val equalityDeleteMORTable: File = new File("/tmp", pathName)
 
   override protected def sparkConf: SparkConf = {
     super.sparkConf
@@ -41,6 +50,17 @@ abstract class IcebergSuite extends WholeStageTransformerSuite {
       .set("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")
       .set("spark.sql.catalog.spark_catalog.type", "hadoop")
       .set("spark.sql.catalog.spark_catalog.warehouse", s"file://$rootPath/tpch-data-iceberg-velox")
+  }
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val sourceDirFile = new File(resourcesBasePath, pathName)
+    FileUtils.copyDirectory(sourceDirFile, equalityDeleteMORTable)
+  }
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    FileUtils.deleteDirectory(equalityDeleteMORTable)
   }
 
   test("iceberg transformer exists") {
@@ -512,6 +532,18 @@ abstract class IcebergSuite extends WholeStageTransformerSuite {
 
       assert(result.length == 1)
       assert(result.head.getString(3) == "test_p2")
+    }
+  }
+
+  test("test equality delete MOR") {
+    withSQLConf("spark.sql.catalog.equality_delete_test" -> "org.apache.iceberg.spark.SparkCatalog",
+    "spark.sql.catalog.equality_delete_test.type" -> "hadoop",
+    "spark.sql.catalog.equality_delete_test.warehouse" -> s"/tmp/$pathName/default") {
+      runQueryAndCompare("""
+                           |select * from equality_delete_test.db.test_upsert_query;
+                           |""".stripMargin) {
+        checkGlutenOperatorMatch[IcebergScanTransformer]
+      }
     }
   }
 }

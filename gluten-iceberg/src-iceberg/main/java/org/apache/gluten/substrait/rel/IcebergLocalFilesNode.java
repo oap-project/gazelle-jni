@@ -117,6 +117,9 @@ public class IcebergLocalFilesNode extends LocalFilesNode {
           throw new UnsupportedOperationException(
               "Unsupported format " + delete.format().name() + " for delete file.");
       }
+      if (delete.equalityFieldIds() != null && !delete.equalityFieldIds().isEmpty()) {
+        deleteFileBuilder.addAllEqualityFieldIds(delete.equalityFieldIds());
+      }
       icebergBuilder.addDeleteFiles(deleteFileBuilder);
     }
     fileBuilder.setIceberg(icebergBuilder);
