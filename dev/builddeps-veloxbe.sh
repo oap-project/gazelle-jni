@@ -15,6 +15,8 @@ BUILD_BENCHMARKS=OFF
 ENABLE_JEMALLOC_STATS=OFF
 BUILD_VELOX_TESTS=OFF
 BUILD_VELOX_BENCHMARKS=OFF
+# Set to ON for machines have AVX-512 instruction.
+SIMDJSON_AVX512_ALLOWED=OFF
 ENABLE_QAT=OFF
 ENABLE_IAA=OFF
 ENABLE_HBM=OFF
@@ -124,6 +126,10 @@ do
         BUILD_VELOX_BENCHMARKS=("${arg#*=}")
         shift # Remove argument name from processing
         ;;
+        --simdjson_avx512_allowed=*)
+        SIMDJSON_AVX512_ALLOWED=("${arg#*=}")
+        shift # Remove argument name from processing
+        ;;
         --build_arrow=*)
         BUILD_ARROW=("${arg#*=}")
         shift # Remove argument name from processing
@@ -190,7 +196,7 @@ function build_velox {
   ./build_velox.sh --enable_s3=$ENABLE_S3 --enable_gcs=$ENABLE_GCS --build_type=$BUILD_TYPE --enable_hdfs=$ENABLE_HDFS \
                    --enable_abfs=$ENABLE_ABFS --build_test_utils=$BUILD_TESTS \
                    --build_tests=$BUILD_VELOX_TESTS --build_benchmarks=$BUILD_VELOX_BENCHMARKS --num_threads=$NUM_THREADS \
-                   --velox_home=$VELOX_HOME
+                   --velox_home=$VELOX_HOME --simdjson_avx512_allowed=$SIMDJSON_AVX512_ALLOWED
 }
 
 function build_gluten_cpp {
