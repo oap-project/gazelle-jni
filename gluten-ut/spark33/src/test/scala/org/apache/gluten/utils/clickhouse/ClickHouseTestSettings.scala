@@ -243,7 +243,6 @@ class ClickHouseTestSettings extends BackendTestSettings {
     .exclude("SPARK-28067: Aggregate sum should not return wrong results for decimal overflow")
     .exclude("SPARK-35955: Aggregate avg should not return wrong results for decimal overflow")
     .exclude("describe")
-    .exclude("SPARK-34165: Add count_distinct to summary")
     .exclude("getRows: array")
     .exclude("showString: array")
     .exclude("showString: array, vertical = true")
