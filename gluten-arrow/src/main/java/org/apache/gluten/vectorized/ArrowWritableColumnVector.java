@@ -46,13 +46,14 @@ import org.apache.arrow.vector.holders.NullableVarCharHolder;
 import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.spark.sql.catalyst.InternalRow;
+import org.apache.spark.sql.catalyst.expressions.SpecializedGetters;
+import org.apache.spark.sql.catalyst.util.ArrayData;
 import org.apache.spark.sql.catalyst.util.DateTimeUtils;
+import org.apache.spark.sql.catalyst.util.MapData;
 import org.apache.spark.sql.execution.vectorized.WritableColumnVector;
 import org.apache.spark.sql.execution.vectorized.WritableColumnVectorShim;
-import org.apache.spark.sql.types.ArrayType;
-import org.apache.spark.sql.types.DataType;
-import org.apache.spark.sql.types.Decimal;
-import org.apache.spark.sql.types.StructType;
+import org.apache.spark.sql.types.*;
 import org.apache.spark.sql.utils.SparkArrowUtil;
 import org.apache.spark.sql.utils.SparkSchemaUtil;
 import org.apache.spark.sql.vectorized.ColumnarArray;
@@ -307,6 +308,12 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
       return new DateWriter((DateDayVector) vector);
     } else if (vector instanceof TimeStampMicroVector || vector instanceof TimeStampMicroTZVector) {
       return new TimestampMicroWriter((TimeStampVector) vector);
+    } else if (vector instanceof MapVector) {
+      MapVector mapVector = (MapVector) vector;
+      StructVector entries = (StructVector) mapVector.getDataVector();
+      ArrowVectorWriter keyWriter = createVectorWriter(entries.getChild(MapVector.KEY_NAME));
+      ArrowVectorWriter valueWriter = createVectorWriter(entries.getChild(MapVector.VALUE_NAME));
+      return new MapWriter(mapVector, entries, keyWriter, valueWriter);
     } else if (vector instanceof ListVector) {
       ListVector listVector = (ListVector) vector;
       ArrowVectorWriter elementVector = createVectorWriter(listVector.getDataVector());
@@ -740,6 +747,14 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
       return null;
     }
     return accessor.getBinary(rowId);
+  }
+
+  public void write(SpecializedGetters input, int ordinal) {
+    writer.write(input, ordinal);
+  }
+
+  public void finishWrite() {
+    writer.finish();
   }
 
   private abstract static class ArrowVectorAccessor {
@@ -1394,6 +1409,28 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
     void setBytes(int rowId, BigDecimal value) {
       throw new UnsupportedOperationException();
     }
+
+    protected int count = 0;
+
+    abstract void setValueNullSafe(SpecializedGetters input, int ordinal);
+
+    void write(SpecializedGetters input, int ordinal) {
+      if (input.isNullAt(ordinal)) {
+        setNull(count);
+      } else {
+        setValueNullSafe(input, ordinal);
+      }
+      count = count + 1;
+    }
+
+    void finish() {
+      vector.setValueCount(count);
+    }
+
+    void reset() {
+      vector.reset();
+      count = 0;
+    }
   }
 
   private static class BooleanWriter extends ArrowVectorWriter {
@@ -1426,6 +1463,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
       for (int i = 0; i < count; i++) {
         writer.setSafe(rowId + i, value ? 1 : 0);
       }
+    }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      this.setBoolean(count, input.getBoolean(ordinal));
     }
   }
 
@@ -1466,6 +1508,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
       for (int i = 0; i < count; i++) {
         writer.setSafe(rowId + i, src[srcIndex + i]);
       }
+    }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      this.setByte(count, input.getByte(ordinal));
     }
   }
 
@@ -1513,6 +1560,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
       for (int i = 0; i < count; i++) {
         writer.setSafe(rowId + i, src[srcIndex + i]);
       }
+    }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      this.setShort(count, input.getShort(ordinal));
     }
   }
 
@@ -1574,6 +1626,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
         writer.setSafe(rowId + i, tmp);
       }
     }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      setInt(count, input.getInt(ordinal));
+    }
   }
 
   private static class LongWriter extends ArrowVectorWriter {
@@ -1630,6 +1687,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
     }
 
     @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      setLong(count, input.getLong(ordinal));
+    }
+
+    @Override
     void setLongsLittleEndian(int rowId, int count, byte[] src, int srcIndex) {
       int srcOffset = srcIndex + Platform.BYTE_ARRAY_OFFSET;
       for (int i = 0; i < count; i++, srcOffset += 8) {
@@ -1680,6 +1742,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
         writer.setSafe(rowId + i, src[srcIndex + i]);
       }
     }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      setFloat(count, input.getFloat(ordinal));
+    }
   }
 
   private static class DoubleWriter extends ArrowVectorWriter {
@@ -1720,14 +1787,26 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
         writer.setSafe(rowId + i, src[srcIndex + i]);
       }
     }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      setDouble(count, input.getDouble(ordinal));
+    }
   }
 
   private static class DecimalWriter extends ArrowVectorWriter {
     private final DecimalVector writer;
+    private final int precision;
+    private final int scale;
 
     DecimalWriter(DecimalVector vector) {
       super(vector);
       this.writer = vector;
+
+      DataType dataType = SparkArrowUtil.fromArrowField(vector.getField());
+      DecimalType decimalType = (DecimalType) dataType;
+      this.precision = decimalType.precision();
+      this.scale = decimalType.scale();
     }
 
     @Override
@@ -1756,6 +1835,16 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
         return;
       }
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      Decimal decimal = input.getDecimal(ordinal, precision, scale);
+      if (decimal.changePrecision(precision, scale)) {
+        setBytes(count, decimal.toJavaBigDecimal());
+      } else {
+        setNull(count);
+      }
     }
   }
 
@@ -1791,6 +1880,12 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
       writer.setSafe(rowId, value, offset, length);
       rowId++;
     }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      UTF8String value = input.getUTF8String(ordinal);
+      setBytes(count, value.numBytes(), value.getBytes(), 0);
+    }
   }
 
   private static class BinaryWriter extends ArrowVectorWriter {
@@ -1816,6 +1911,12 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
     @Override
     final void setBytes(int rowId, int count, byte[] src, int srcIndex) {
       writer.setSafe(rowId, src, srcIndex, count);
+    }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      byte[] value = input.getBinary(ordinal);
+      setBytes(count, value.length, value, 0);
     }
   }
 
@@ -1850,6 +1951,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
         writer.setNull(rowId + i);
       }
     }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      setInt(count, input.getInt(ordinal));
+    }
   }
 
   private static class TimestampMicroWriter extends ArrowVectorWriter {
@@ -1883,14 +1989,21 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
         writer.setNull(rowId + i);
       }
     }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      setLong(count, input.getLong(ordinal));
+    }
   }
 
   private static class ArrayWriter extends ArrowVectorWriter {
     private final ListVector writer;
+    private final ArrowVectorWriter elementWriter;
 
     ArrayWriter(ListVector vector, ArrowVectorWriter elementVector) {
       super(vector);
       this.writer = vector;
+      this.elementWriter = elementVector;
     }
 
     @Override
@@ -1905,24 +2018,123 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
     final void setNull(int rowId) {
       writer.setNull(rowId);
     }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      ArrayData arrayData = input.getArray(ordinal);
+      writer.startNewValue(count);
+      for (int i = 0; i < arrayData.numElements(); ++i) {
+        elementWriter.write(arrayData, i);
+      }
+      writer.endValue(count, arrayData.numElements());
+    }
+
+    @Override
+    void finish() {
+      super.finish();
+      elementWriter.finish();
+    }
+
+    @Override
+    void reset() {
+      super.reset();
+      elementWriter.reset();
+    }
   }
 
   private static class StructWriter extends ArrowVectorWriter {
     private final StructVector writer;
+    private final ArrowVectorWriter[] childrenWriter;
 
-    StructWriter(StructVector vector, ArrowVectorWriter[] children) {
+    StructWriter(StructVector vector, ArrowVectorWriter[] childrenWriter) {
       super(vector);
       this.writer = vector;
+      this.childrenWriter = childrenWriter;
     }
 
     @Override
     void setNull(int rowId) {
+      for (int i = 0; i < childrenWriter.length; ++i) {
+        childrenWriter[i].setNull(rowId);
+        childrenWriter[i].count += 1;
+      }
       writer.setNull(rowId);
     }
 
     @Override
     void setNotNull(int rowId) {
       writer.setIndexDefined(rowId);
+    }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      InternalRow struct = input.getStruct(ordinal, childrenWriter.length);
+      writer.setIndexDefined(count);
+      for (int i = 0; i < struct.numFields(); ++i) {
+        childrenWriter[i].write(struct, i);
+      }
+    }
+
+    @Override
+    void finish() {
+      super.finish();
+      Arrays.stream(childrenWriter).forEach(c -> c.finish());
+    }
+
+    @Override
+    void reset() {
+      super.reset();
+      Arrays.stream(childrenWriter).forEach(c -> c.reset());
+    }
+  }
+
+  private static class MapWriter extends ArrowVectorWriter {
+    private final MapVector writer;
+    private StructVector structVector;
+    private final ArrowVectorWriter keyWriter;
+    private final ArrowVectorWriter valueWriter;
+
+    MapWriter(
+        MapVector mapVector,
+        StructVector structVector,
+        ArrowVectorWriter mapWriter,
+        ArrowVectorWriter valueWriter) {
+      super(mapVector);
+      this.writer = mapVector;
+      this.structVector = structVector;
+      this.keyWriter = mapWriter;
+      this.valueWriter = valueWriter;
+    }
+
+    @Override
+    void setNull(int rowId) {}
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      MapData mapData = input.getMap(ordinal);
+      writer.startNewValue(count);
+      ArrayData keys = mapData.keyArray();
+      ArrayData values = mapData.valueArray();
+      for (int i = 0; i < mapData.numElements(); ++i) {
+        structVector.setIndexDefined(i);
+        keyWriter.write(keys, i);
+        valueWriter.write(values, i);
+      }
+      writer.endValue(count, mapData.numElements());
+    }
+
+    @Override
+    void finish() {
+      super.finish();
+      keyWriter.finish();
+      valueWriter.finish();
+    }
+
+    @Override
+    void reset() {
+      super.reset();
+      keyWriter.reset();
+      valueWriter.reset();
     }
   }
 
@@ -1937,6 +2149,11 @@ public final class ArrowWritableColumnVector extends WritableColumnVectorShim {
     @Override
     void setNull(int rowId) {
       writer.setValueCount(writer.getValueCount() + 1);
+    }
+
+    @Override
+    void setValueNullSafe(SpecializedGetters input, int ordinal) {
+      setNull(count);
     }
   }
 }

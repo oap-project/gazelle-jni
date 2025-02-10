@@ -19,12 +19,10 @@ package org.apache.gluten.expression
 import org.apache.gluten.vectorized.ArrowColumnarRow
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow}
 import org.apache.spark.sql.catalyst.expressions.BindReferences.bindReferences
 import org.apache.spark.sql.catalyst.expressions.aggregate.NoOp
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.types.{BinaryType, DataType, StringType}
-import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * A [[ArrowProjection]] that is calculated by calling `eval` on each of the specified expressions.
@@ -57,43 +55,29 @@ class InterpretedArrowProjection(expressions: Seq[Expression]) extends ArrowProj
     this
   }
 
-  private def getStringWriter(ordinal: Int, dt: DataType): (ArrowColumnarRow, Any) => Unit =
-    dt match {
-      case StringType => (input, v) => input.setUTF8String(ordinal, v.asInstanceOf[UTF8String])
-      case BinaryType => (input, v) => input.setBinary(ordinal, v.asInstanceOf[Array[Byte]])
-      case _ => (input, v) => input.update(ordinal, v)
-    }
+  /** Number of (top level) fields in the resulting row. */
+  private[this] val numFields = validExprs.length
 
-  private[this] val fieldWriters: Array[Any => Unit] = validExprs.map {
-    case (e, i) =>
-      val writer = if (e.dataType.isInstanceOf[StringType] || e.dataType.isInstanceOf[BinaryType]) {
-        getStringWriter(i, e.dataType)
-      } else InternalRow.getWriter(i, e.dataType)
-      if (!e.nullable) { (v: Any) => writer(mutableRow, v) }
-      else {
-        (v: Any) =>
-          {
-            if (v == null) {
-              mutableRow.setNullAt(i)
-            } else {
-              writer(mutableRow, v)
-            }
-          }
-      }
-  }.toArray
+  /** Array that expression results. */
+  private[this] val values = new Array[Any](numFields)
+
+  /** The row representing the expression results. */
+  private[this] val intermediate = new GenericInternalRow(values)
 
   override def apply(input: InternalRow): ArrowColumnarRow = {
     if (subExprEliminationEnabled) {
       runtime.setInput(input)
     }
 
+    // Put the expression results in the intermediate row.
     var i = 0
-    while (i < validExprs.length) {
+    while (i < numFields) {
       val (_, ordinal) = validExprs(i)
-      // Store the result into buffer first, to make the projection atomic (needed by aggregation)
-      fieldWriters(i)(exprs(ordinal).eval(input))
+      values(i) = exprs(ordinal).eval(input)
       i += 1
     }
+
+    mutableRow.writeRow(intermediate)
     mutableRow
   }
 }
