@@ -20,7 +20,6 @@ import org.apache.gluten.GlutenBuildInfo
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.events.GlutenPlanFallbackEvent
 import org.apache.gluten.execution.FileSourceScanExecTransformer
-import org.apache.gluten.utils.BackendTestUtils
 
 import org.apache.spark.SparkConf
 import org.apache.spark.scheduler.{SparkListener, SparkListenerEvent}
@@ -115,14 +114,7 @@ class GlutenFallbackSuite extends GlutenSQLTestsTrait with AdaptiveSparkPlanHelp
 
       val id = runExecution("SELECT * FROM t1 FULL OUTER JOIN t2")
       val execution = glutenStore.execution(id)
-      if (BackendTestUtils.isVeloxBackendLoaded()) {
-        assert(execution.get.numFallbackNodes == 1)
-        assert(
-          execution.get.fallbackNodeToReason.head._2
-            .contains("FullOuter join is not supported with BroadcastNestedLoopJoin"))
-      } else {
-        assert(execution.get.numFallbackNodes == 0)
-      }
+      assert(execution.get.numFallbackNodes == 0)
     }
 
     // [GLUTEN-4119] Skip add ReusedExchange to fallback node
