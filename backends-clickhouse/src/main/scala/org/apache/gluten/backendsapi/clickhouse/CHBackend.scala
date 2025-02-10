@@ -156,6 +156,9 @@ object CHBackendSettings extends BackendSettingsApi with Logging {
     CHConfig.prefixOf("convert.left.anti_semi.to.right")
   val GLUTEN_CLICKHOUSE_CONVERT_LEFT_ANTI_SEMI_TO_RIGHT_DEFAULT_VALUE: String = "false"
 
+  val GLUTEN_ENABLE_COALESCE_AGGREGATION_UNION: String =
+    CHConf.prefixOf("enable.coalesce.aggregation.union")
+
   def affinityMode: String = {
     SparkEnv.get.conf
       .get(
