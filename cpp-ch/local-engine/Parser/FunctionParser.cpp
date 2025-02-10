@@ -98,7 +98,6 @@ std::pair<DataTypePtr, Field> FunctionParser::parseLiteral(const substrait::Expr
 ActionsDAG::NodeRawConstPtrs
 FunctionParser::parseFunctionArguments(const substrait::Expression_ScalarFunction & substrait_func, ActionsDAG & actions_dag) const
 {
-    ActionsDAG::NodeRawConstPtrs parsed_args;
     return expression_parser->parseFunctionArguments(actions_dag, substrait_func);
 }
 
