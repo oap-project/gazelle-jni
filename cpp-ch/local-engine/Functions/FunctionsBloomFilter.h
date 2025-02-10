@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <AggregateFunctions/AggregateFunctionFactory.h>
 #include <AggregateFunctions/AggregateFunctionGroupBloomFilter.h>
@@ -118,7 +119,7 @@ private:
     mutable DB::AggregateFunctionPtr agg_func;
 
     template <typename T>
-    typename std::enable_if<std::is_same_v<T, Int64> || std::is_same_v<T, UInt64>, void>::type internalExecute(
+    std::enable_if_t<std::is_same_v<T, Int64> || std::is_same_v<T, UInt64>, void> internalExecute(
         const DB::ColumnsWithTypeAndName & arguments,
         size_t input_rows_count,
         typename DB::ColumnVector<UInt8>::Container & vec_to,
@@ -129,16 +130,21 @@ private:
         const auto * column_ptr = arguments[1].column.get();
         auto second_arg_const = isColumnConst(*column_ptr);
 
+        AggregateFunctionGroupBloomFilterData & bloom_filter_data_0
+                = *reinterpret_cast<AggregateFunctionGroupBloomFilterData *>(bloom_filter_state);
         if (second_arg_const)
-            container_of_int = &typeid_cast<const ColumnType &>(typeid_cast<const DB::ColumnConst &>(*column_ptr).getDataColumn()).getData();
-        else
-            container_of_int = &typeid_cast<const ColumnType &>(*column_ptr).getData();
+        {
+            vec_to[0] = bloom_filter_data_0.bloom_filter.find(typeid_cast<const DB::ColumnConst &>(*column_ptr).getDataAt(0).data, sizeof(T));
+            // copy to all rows, better use constant column
+            std::memcpy(&vec_to[1], &vec_to[0], (input_rows_count - 1) * sizeof(UInt8));
 
+            return;
+        }
+
+        container_of_int = &typeid_cast<const ColumnType &>(*column_ptr).getData();
         for (size_t i = 0; i < input_rows_count; ++i)
         {
-            const T v = second_arg_const ? (*container_of_int)[0] : (*container_of_int)[i];
-            AggregateFunctionGroupBloomFilterData & bloom_filter_data_0
-                = *reinterpret_cast<AggregateFunctionGroupBloomFilterData *>(bloom_filter_state);
+            const T v = (*container_of_int)[i];
             vec_to[i] = bloom_filter_data_0.bloom_filter.find(reinterpret_cast<const char *>(&v), sizeof(T));
         }
     }
@@ -194,7 +200,6 @@ private:
                 getName(),
                 arguments[0].type->getName());
         }
-
 
         const DB::IColumn * second_column_ptr = arguments[1].column.get();
         if (isColumnNullable(*second_column_ptr))
