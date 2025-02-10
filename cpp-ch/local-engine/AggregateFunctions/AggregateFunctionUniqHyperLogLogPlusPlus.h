@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <AggregateFunctions/IAggregateFunction.h>
 #include <AggregateFunctions/AggregateFunctionFactory.h>
 #include <Columns/ColumnVector.h>
