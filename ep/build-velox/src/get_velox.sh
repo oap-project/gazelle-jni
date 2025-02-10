@@ -150,18 +150,25 @@ TARGET_BUILD_COMMIT="$(git ls-remote $VELOX_REPO $VELOX_BRANCH | awk '{print $1;
 if [ -d $VELOX_SOURCE_DIR ]; then
   echo "Velox source folder $VELOX_SOURCE_DIR already exists..."
   cd $VELOX_SOURCE_DIR
-  git init .
-  EXISTS=$(git show-ref refs/tags/build_$TARGET_BUILD_COMMIT || true)
-  if [ -z "$EXISTS" ]; then
-    git fetch $VELOX_REPO $TARGET_BUILD_COMMIT:refs/tags/build_$TARGET_BUILD_COMMIT
+  # if velox_branch exists, check it out, 
+  # otherwise assume that user prepared velox source in velox_home, skip checkout
+  if [ -n "$TARGET_BUILD_COMMIT" ]; then
+    git init .
+    EXISTS=$(git show-ref refs/tags/build_$TARGET_BUILD_COMMIT || true)
+    if [ -z "$EXISTS" ]; then
+      git fetch $VELOX_REPO $TARGET_BUILD_COMMIT:refs/tags/build_$TARGET_BUILD_COMMIT
+    fi
+    git reset --hard HEAD
+    git checkout refs/tags/build_$TARGET_BUILD_COMMIT
+  else
+    echo $VELOX_BRANCH can't be found in $VELOX_REPO, skipping the download...
   fi
-  git reset --hard HEAD
-  git checkout refs/tags/build_$TARGET_BUILD_COMMIT
 else
   git clone $VELOX_REPO -b $VELOX_BRANCH $VELOX_SOURCE_DIR
   cd $VELOX_SOURCE_DIR
   git checkout $TARGET_BUILD_COMMIT
 fi
+
 #sync submodules
 git submodule sync --recursive
 git submodule update --init --recursive
