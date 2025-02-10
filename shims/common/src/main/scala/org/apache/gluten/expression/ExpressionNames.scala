@@ -47,6 +47,7 @@ object ExpressionNames {
   final val FIRST_IGNORE_NULL = "first_ignore_null"
   final val APPROX_DISTINCT = "approx_distinct"
   final val APPROX_PERCENTILE = "approx_percentile"
+  final val APPROX_COUNT_DISTINCT = "approx_count_distinct"
   final val PERCENTILE = "percentile"
   final val SKEWNESS = "skewness"
   final val KURTOSIS = "kurtosis"
