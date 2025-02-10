@@ -17,6 +17,7 @@
 package org.apache.spark.sql.delta
 
 import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.config.GlutenConfig
 
 import org.apache.spark.SparkException
 import org.apache.spark.sql.Dataset
@@ -26,6 +27,7 @@ import org.apache.spark.sql.delta.catalog.ClickHouseTableV2
 import org.apache.spark.sql.delta.constraints.{Constraint, Constraints}
 import org.apache.spark.sql.delta.files._
 import org.apache.spark.sql.delta.hooks.AutoCompact
+import org.apache.spark.sql.delta.perf.DeltaOptimizedWriterExec
 import org.apache.spark.sql.delta.schema.{InnerInvariantViolationException, InvariantViolationException}
 import org.apache.spark.sql.delta.sources.DeltaSQLConf
 import org.apache.spark.sql.execution.SQLExecution
@@ -37,9 +39,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.util.SerializableConfiguration
 
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.apache.gluten.config.GlutenConfig
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.delta.perf.DeltaOptimizedWriterExec
 
 import scala.collection.mutable.ListBuffer
 
@@ -267,18 +267,17 @@ class ClickhouseOptimisticTransaction(
       // TODO: val checkInvariants = DeltaInvariantCheckerExec(empty2NullPlan, constraints)
       val checkInvariants = empty2NullPlan
 
-      // TODO: DeltaOptimizedWriterExec
       // No need to plan optimized write if the write command is OPTIMIZE, which aims to produce
       // evenly-balanced data files already.
-       val physicalPlan =
-         if (
-           !isOptimize &&
-           shouldOptimizeWrite(writeOptions, spark.sessionState.conf)
-         ) {
-           DeltaOptimizedWriterExec(checkInvariants, metadata.partitionColumns, deltaLog)
-         } else {
-           checkInvariants
-         }
+      val physicalPlan =
+      if (
+        !isOptimize &&
+          shouldOptimizeWrite(writeOptions, spark.sessionState.conf)
+      ) {
+        DeltaOptimizedWriterExec(checkInvariants, metadata.partitionColumns, deltaLog)
+      } else {
+        checkInvariants
+      }
 
       val statsTrackers: ListBuffer[WriteJobStatsTracker] = ListBuffer()
 

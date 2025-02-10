@@ -92,6 +92,28 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>delta</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.gluten</groupId>
+          <artifactId>gluten-delta</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.gluten</groupId>
+          <artifactId>gluten-delta</artifactId>
+          <version>${project.version}</version>
+          <type>test-jar</type>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.delta</groupId>
+          <artifactId>${delta.package.name}_${scala.binary.version}</artifactId>
+          <scope>provided</scope>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 
   <dependencies>
@@ -464,15 +486,18 @@
             <includes>
               <include>src/main/scala/**/*.scala</include>
               <include>src/test/scala/**/*.scala</include>
-              <include>src-delta-${delta.binary.version}/main/delta/**/*.scala</include>
-              <include>src-delta-${delta.binary.version}/test/delta/**/*.scala</include>
+              <include>src-delta/main/scala/**/*.scala</include>
+              <include>src-delta/test/scala/**/*.scala</include>
+              <include>src-delta-${delta.binary.version}/main/scala/**/*.scala</include>
+              <include>src-delta-${delta.binary.version}/test/scala/**/*.scala</include>
             </includes>
             <excludes>
-              <exclude>src-delta-${delta.binary.version}/main/delta/org/apache/spark/sql/delta/commands/*.scala</exclude>
-              <exclude>src-delta-${delta.binary.version}/main/delta/org/apache/spark/sql/delta/commands/merge/*.scala</exclude>
-              <exclude>src-delta-${delta.binary.version}/main/delta/org/apache/spark/sql/delta/stats/*.scala</exclude>
-              <exclude>src-delta-${delta.binary.version}/main/delta/org/apache/spark/sql/delta/DeltaLog.scala</exclude>
-              <exclude>src-delta-${delta.binary.version}/main/delta/org/apache/spark/sql/delta/Snapshot.scala</exclude>
+              <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/commands/*.scala</exclude>
+              <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/commands/merge/*.scala</exclude>
+              <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/stats/*.scala</exclude>
+              <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/DeltaLog.scala</exclude>
+              <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/Snapshot.scala</exclude>
+              <exclude>src-delta-${delta.binary.version}/main/scala/org/apache/spark/sql/delta/ClickhouseOptimisticTransaction.scala</exclude>
             </excludes>
           </scala>
         </configuration>
