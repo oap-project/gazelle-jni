@@ -25,6 +25,7 @@ object VeloxSQLQueryTestSettings extends SQLQueryTestSettings {
 
   // Put relative path to "/path/to/spark/sql/core/src/test/resources/sql-tests/inputs" in this list
   val SUPPORTED_SQL_QUERY_LIST: Set[String] = Set(
+    "array.sql",
     "bitwise.sql",
     "cast.sql",
     "change-column.sql",
@@ -61,10 +62,12 @@ object VeloxSQLQueryTestSettings extends SQLQueryTestSettings {
     "except-all.sql",
     "except.sql",
     "extract.sql",
+    "group-analytics.sql",
     "group-by-filter.sql",
     "group-by-ordinal.sql",
     "grouping_set.sql",
     "having.sql",
+    "higher-order-functions.sql",
     "ignored.sql",
     "ilike-all.sql",
     "ilike-any.sql",

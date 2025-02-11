@@ -16,8 +16,9 @@
  */
 
 #include "AdvancedExpandStep.h"
+
+#include <Columns/ColumnAggregateFunction.h>
 #include <Columns/ColumnNullable.h>
-#include <Columns/ColumnsNumber.h>
 #include <Columns/IColumn.h>
 #include <Core/Settings.h>
 #include <DataTypes/DataTypeNullable.h>
@@ -27,14 +28,11 @@
 #include <Interpreters/castColumn.h>
 #include <Operator/StreamingAggregatingStep.h>
 #include <Processors/ResizeProcessor.h>
-#include <Processors/Transforms/ExpressionTransform.h>
 #include <QueryPipeline/Pipe.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
+#include <Poco/Logger.h>
 #include <Common/AggregateUtil.h>
 #include <Common/CHUtil.h>
-#include <Common/WeakHash.h>
-
-#include <Poco/Logger.h>
 #include <Common/logger_useful.h>
 
 namespace local_engine

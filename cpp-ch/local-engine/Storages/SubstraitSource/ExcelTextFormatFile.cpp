@@ -64,28 +64,24 @@ bool ExcelTextFormatFile::useThis(const DB::ContextPtr & context)
 
 FormatFile::InputFormatPtr ExcelTextFormatFile::createInputFormat(const DB::Block & header)
 {
-    auto res = std::make_shared<FormatFile::InputFormat>();
-    res->read_buffer = read_buffer_builder->build(file_info);
+    auto read_buffer = read_buffer_builder->build(file_info);
 
     DB::FormatSettings format_settings = createFormatSettings();
     size_t max_block_size = file_info.text().max_block_size();
     DB::RowInputFormatParams params = {.max_block_size = max_block_size};
 
-    std::shared_ptr<DB::PeekableReadBuffer> buffer = std::make_unique<DB::PeekableReadBuffer>(*(res->read_buffer));
+    std::shared_ptr<DB::PeekableReadBuffer> buffer = std::make_unique<DB::PeekableReadBuffer>(*read_buffer);
     DB::Names column_names;
     column_names.reserve(file_info.schema().names_size());
     for (const auto & item : file_info.schema().names())
-    {
         column_names.push_back(item);
-    }
 
-    std::shared_ptr<local_engine::ExcelRowInputFormat> txt_input_format = std::make_shared<local_engine::ExcelRowInputFormat>(
-        header, buffer, params, format_settings, column_names, file_info.text().escape());
-    res->input = txt_input_format;
-    return res;
+    auto txt_input_format
+        = std::make_shared<ExcelRowInputFormat>(header, buffer, params, format_settings, column_names, file_info.text().escape());
+    return std::make_shared<InputFormat>(std::move(read_buffer), txt_input_format);
 }
 
-DB::FormatSettings ExcelTextFormatFile::createFormatSettings()
+DB::FormatSettings ExcelTextFormatFile::createFormatSettings() const
 {
     DB::FormatSettings format_settings = DB::getFormatSettings(context);
     format_settings.csv.trim_whitespaces = true;

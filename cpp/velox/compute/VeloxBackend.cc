@@ -112,21 +112,21 @@ void VeloxBackend::init(const std::unordered_map<std::string, std::string>& conf
   google::InitGoogleLogging("gluten");
 
   // Allow growing buffer in another task through its memory pool.
-  config::globalConfig.memoryPoolCapacityTransferAcrossTasks = true;
+  config::globalConfig().memoryPoolCapacityTransferAcrossTasks = true;
 
   // Avoid creating too many shared leaf pools.
-  config::globalConfig.memoryNumSharedLeafPools = 0;
+  config::globalConfig().memoryNumSharedLeafPools = 0;
 
   // Set velox_exception_user_stacktrace_enabled.
-  config::globalConfig.exceptionUserStacktraceEnabled =
+  config::globalConfig().exceptionUserStacktraceEnabled =
       backendConf_->get<bool>(kEnableUserExceptionStacktrace, kEnableUserExceptionStacktraceDefault);
 
   // Set velox_exception_system_stacktrace_enabled.
-  config::globalConfig.exceptionSystemStacktraceEnabled =
+  config::globalConfig().exceptionSystemStacktraceEnabled =
       backendConf_->get<bool>(kEnableSystemExceptionStacktrace, kEnableSystemExceptionStacktraceDefault);
 
   // Set velox_memory_use_hugepages.
-  config::globalConfig.memoryUseHugepages = backendConf_->get<bool>(kMemoryUseHugePages, kMemoryUseHugePagesDefault);
+  config::globalConfig().memoryUseHugepages = backendConf_->get<bool>(kMemoryUseHugePages, kMemoryUseHugePagesDefault);
 
   // Async timeout.
   FLAGS_gluten_velox_aysnc_timeout_on_task_stopping =

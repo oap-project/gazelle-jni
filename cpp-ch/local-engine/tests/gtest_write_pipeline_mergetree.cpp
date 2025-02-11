@@ -219,7 +219,7 @@ TEST(MergeTree, SparkMergeTree)
 
     constexpr std::string_view split_template
         = R"({"items":[{"uriFile":"{replace_local_files}","length":"19230111","parquet":{},"schema":{},"metadataColumns":[{}],"properties":{"fileSize":"19230111","modificationTime":"1722330598029"}}]})";
-    constexpr std::string_view file{GLUTEN_SOURCE_TPCH_DIR("lineitem/part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet")};
+    constexpr std::string_view file{GLUTEN_SOURCE_TPCH_URI("lineitem/part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet")};
 
     SparkMergeTreeWritePartitionSettings gm_write_settings{
         .part_name_prefix{"this_is_prefix"},
@@ -293,8 +293,7 @@ TEST(MergeTree, Pipeline)
     writeMerge(
         EMBEDDED_PLAN(_3_mergetree_plan_),
         "tmp/lineitem_mergetree",
-        {{"min_insert_block_size_rows", 100000}
-         /*, {"optimize.minFileSize", 1024 * 1024 * 10}*/},
+        {{"min_insert_block_size_rows", 100000} /*, {"optimize.minFileSize", 1024 * 1024 * 10}*/},
         [&](const DB::Block & block)
         {
             EXPECT_EQ(1, block.rows());

@@ -503,6 +503,8 @@ class GlutenConfig(conf: SQLConf) extends Logging {
 
   def autoAdjustStageFallenNodeThreshold: Double =
     getConf(AUTO_ADJUST_STAGE_RESOURCES_FALLEN_NODE_RATIO_THRESHOLD)
+
+  def parquetEncryptionValidationFileLimit: Int = getConf(ENCRYPTED_PARQUET_FALLBACK_FILE_LIMIT)
 }
 
 object GlutenConfig {
@@ -2317,4 +2319,14 @@ object GlutenConfig {
         "count exceeds the total node count ratio.")
       .doubleConf
       .createWithDefault(0.5d)
+
+  val ENCRYPTED_PARQUET_FALLBACK_FILE_LIMIT =
+    buildConf("spark.gluten.sql.fallbackEncryptedParquet.limit")
+      .internal()
+      .doc("If supplied, `limit` number of files will be checked to determine encryption " +
+        "and falling back java scan")
+      .intConf
+      .checkValue(_ > 0, s"must be positive.")
+      .createWithDefault(10)
+
 }

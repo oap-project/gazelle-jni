@@ -224,7 +224,7 @@
               <arguments>
                 <argument>target/gluten-package-${project.version}.jar</argument>
                 <argument>
-                  target/${jar.assembly.name.prefix}-${backend_type}-bundle-spark${sparkbundle.version}_${scala.binary.version}-${os.detected.release}_${os.detected.release.version}_${os.detected.arch}-${project.version}.jar
+                  target/${jar.assembly.name.prefix}-${backend_type}-bundle-spark${sparkbundle.version}_${scala.binary.version}-${os.full.name}-${project.version}.jar
                 </argument>
               </arguments>
             </configuration>

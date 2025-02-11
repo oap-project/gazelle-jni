@@ -18,7 +18,6 @@
 
 #include <cstddef>
 #include <memory>
-#include <type_traits>
 #include <AggregateFunctions/AggregateFunctionFactory.h>
 #include <AggregateFunctions/AggregateFunctionGroupBloomFilter.h>
 #include <AggregateFunctions/IAggregateFunction_fwd.h>
@@ -31,6 +30,7 @@
 #include <Columns/IColumn.h>
 #include <Core/TypeId.h>
 #include <DataTypes/DataTypeAggregateFunction.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypesNumber.h>
 #include <DataTypes/IDataType.h>
 #include <Functions/FunctionHelpers.h>

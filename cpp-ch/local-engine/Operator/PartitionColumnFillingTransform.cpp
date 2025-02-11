@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 #include "PartitionColumnFillingTransform.h"
-#include <Columns/ColumnNullable.h>
+
 #include <Columns/ColumnsNumber.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypesNumber.h>
 #include <Functions/FunctionHelpers.h>
 #include <IO/ReadBufferFromString.h>

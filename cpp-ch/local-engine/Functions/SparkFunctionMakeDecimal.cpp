@@ -16,6 +16,8 @@
  */
 #include <Columns/ColumnNullable.h>
 #include <Core/DecimalFunctions.h>
+#include <Core/callOnTypeIndex.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypesDecimal.h>
 #include <Functions/FunctionFactory.h>
 #include <Functions/FunctionHelpers.h>

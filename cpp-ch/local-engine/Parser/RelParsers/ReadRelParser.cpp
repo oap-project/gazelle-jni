@@ -19,6 +19,7 @@
 #include <memory>
 #include <Core/Block.h>
 #include <Core/Settings.h>
+#include <IO/ReadBufferFromString.h>
 #include <Interpreters/Context.h>
 #include <Operator/BlocksBufferPoolTransform.h>
 #include <Parser/RelParsers/MergeTreeRelParser.h>
@@ -47,7 +48,8 @@ extern const int LOGICAL_ERROR;
 namespace local_engine
 {
 using namespace DB;
-DB::QueryPlanPtr ReadRelParser::parse(DB::QueryPlanPtr query_plan, const substrait::Rel & rel, std::list<const substrait::Rel *> & rel_stack)
+DB::QueryPlanPtr
+ReadRelParser::parse(DB::QueryPlanPtr query_plan, const substrait::Rel & rel, std::list<const substrait::Rel *> & rel_stack)
 {
     if (query_plan)
         throw DB::Exception(DB::ErrorCodes::LOGICAL_ERROR, "Source node's input plan should be null");
@@ -144,7 +146,7 @@ DB::QueryPlanStepPtr ReadRelParser::parseReadRelWithJavaIter(const substrait::Re
     return source_step;
 }
 
-QueryPlanStepPtr ReadRelParser::parseReadRelWithLocalFile(const substrait::ReadRel & rel)
+QueryPlanStepPtr ReadRelParser::parseReadRelWithLocalFile(const substrait::ReadRel & rel) const
 {
     auto header = TypeParser::buildBlockFromNamedStruct(rel.base_schema());
     substrait::ReadRel::LocalFiles local_files;

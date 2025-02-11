@@ -41,7 +41,9 @@ public:
 public:
     explicit ExcelTextFormatFile(
         DB::ContextPtr context_, const substrait::ReadRel::LocalFiles::FileOrFiles & file_info_, ReadBufferBuilderPtr read_buffer_builder_)
-        : FormatFile(context_, file_info_, read_buffer_builder_){}
+        : FormatFile(context_, file_info_, read_buffer_builder_)
+    {
+    }
 
     ~ExcelTextFormatFile() override = default;
 
@@ -51,7 +53,7 @@ public:
     String getFileFormat() const override { return "ExcelText"; }
 
 private:
-    DB::FormatSettings createFormatSettings();
+    DB::FormatSettings createFormatSettings() const;
 };
 
 
@@ -82,7 +84,12 @@ public:
     std::vector<String> readTypes() override;
     void skipFieldDelimiter() override;
     void skipRowEndDelimiter() override;
-    bool readField(DB::IColumn & column, const DB::DataTypePtr & type, const DB::SerializationPtr & serialization, bool is_last_file_column, const String & column_name) override;
+    bool readField(
+        DB::IColumn & column,
+        const DB::DataTypePtr & type,
+        const DB::SerializationPtr & serialization,
+        bool is_last_file_column,
+        const String & column_name) override;
     void skipField(size_t /*file_column*/) override { skipField(); }
     void skipField();
 

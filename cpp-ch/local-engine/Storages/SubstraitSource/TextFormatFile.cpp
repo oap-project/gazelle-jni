@@ -36,8 +36,7 @@ TextFormatFile::TextFormatFile(
 
 FormatFile::InputFormatPtr TextFormatFile::createInputFormat(const DB::Block & header)
 {
-    auto res = std::make_shared<FormatFile::InputFormat>();
-    res->read_buffer = read_buffer_builder->buildWithCompressionWrapper(file_info);
+    auto read_buffer = read_buffer_builder->buildWithCompressionWrapper(file_info);
 
     /// Initialize format params
     size_t max_block_size = file_info.text().max_block_size();
@@ -70,8 +69,8 @@ FormatFile::InputFormatPtr TextFormatFile::createInputFormat(const DB::Block & h
         format_settings.csv.allow_single_quotes = false;
         format_settings.csv.allow_double_quotes = false;
     }
-    res->input = std::make_shared<DB::HiveTextRowInputFormat>(header, *(res->read_buffer), params, format_settings);
-    return res;
+    auto input = std::make_shared<DB::HiveTextRowInputFormat>(header, *read_buffer, params, format_settings);
+    return std::make_shared<InputFormat>(std::move(read_buffer), input);
 }
 
 }

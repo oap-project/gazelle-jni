@@ -23,6 +23,7 @@
 #include <Common/QueryContext.h>
 #include <Common/Stopwatch.h>
 #include <Common/formatReadable.h>
+#include <Common/logger_useful.h>
 
 namespace DB
 {

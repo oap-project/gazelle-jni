@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include <Columns/ColumnConst.h>
+#include <Core/callOnTypeIndex.h>
 #include <DataTypes/DataTypesDecimal.h>
 #include <Functions/FunctionFactory.h>
 #include <Functions/FunctionHelpers.h>

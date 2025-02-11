@@ -23,6 +23,8 @@
 #include <Processors/Formats/Impl/ParquetBlockInputFormat.h>
 #include <QueryPipeline/QueryPipeline.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
+#include <Storages/Parquet/ParquetMeta.h>
+#include <Storages/Parquet/VectorizedParquetRecordReader.h>
 #include <Storages/SubstraitSource/SubstraitFileSource.h>
 #include <benchmark/benchmark.h>
 #include <parquet/arrow/reader.h>
@@ -39,15 +41,22 @@ void BM_ColumnIndexRead_NoFilter(benchmark::State & state)
 {
     using namespace DB;
 
-    std::string file = "/home/chang/test/tpch/parquet/s100/lineitem1/"
-                       "part-00000-9395e12a-3620-4085-9677-c63b920353f4-c000.snappy.parquet";
+    std::string file = local_engine::test::third_party_data(
+        "benchmark/column_index/lineitem/part-00000-9395e12a-3620-4085-9677-c63b920353f4-c000.snappy.parquet");
     Block header{toBlockRowType(local_engine::test::readParquetSchema(file))};
     FormatSettings format_settings;
     Block res;
     for (auto _ : state)
     {
-        auto in = std::make_unique<ReadBufferFromFile>(file);
-        auto format = std::make_shared<local_engine ::VectorizedParquetBlockInputFormat>(*in, header, format_settings);
+        local_engine::ParquetMetaBuilder metaBuilder{
+            .collectPageIndex = true,
+            .collectSkipRowGroup = false,
+            .case_insensitive = format_settings.parquet.case_insensitive_column_matching,
+            .allow_missing_columns = format_settings.parquet.allow_missing_columns};
+        ReadBufferFromFilePRead fileReader(file);
+        metaBuilder.build(&fileReader, &header, nullptr, [](UInt64 /*midpoint_offset*/) -> bool { return true; });
+        local_engine::ColumnIndexRowRangesProvider provider{metaBuilder};
+        auto format = std::make_shared<local_engine ::VectorizedParquetBlockInputFormat>(fileReader, header, provider, format_settings);
         auto pipeline = QueryPipeline(std::move(format));
         auto reader = std::make_unique<PullingPipelineExecutor>(pipeline);
         while (reader->pull(res))
@@ -61,15 +70,15 @@ void BM_ColumnIndexRead_Old(benchmark::State & state)
 {
     using namespace DB;
 
-    std::string file = "/home/chang/test/tpch/parquet/s100/lineitem1/"
-                       "part-00000-9395e12a-3620-4085-9677-c63b920353f4-c000.snappy.parquet";
+    std::string file = local_engine::test::third_party_data(
+        "benchmark/column_index/lineitem/part-00000-9395e12a-3620-4085-9677-c63b920353f4-c000.snappy.parquet");
     Block header{toBlockRowType(local_engine::test::readParquetSchema(file))};
     FormatSettings format_settings;
     Block res;
     for (auto _ : state)
     {
-        auto in = std::make_unique<ReadBufferFromFile>(file);
-        auto format = std::make_shared<ParquetBlockInputFormat>(*in, header, format_settings, 1, 1, 8192);
+        ReadBufferFromFilePRead fileReader(file);
+        auto format = std::make_shared<ParquetBlockInputFormat>(fileReader, header, format_settings, 1, 1, 8192);
         auto pipeline = QueryPipeline(std::move(format));
         auto reader = std::make_unique<PullingPipelineExecutor>(pipeline);
         while (reader->pull(res))
@@ -86,8 +95,7 @@ void BM_ParquetReadDate32(benchmark::State & state)
         ColumnWithTypeAndName(DataTypeDate32().createColumn(), std::make_shared<DataTypeDate32>(), "l_shipdate"),
         ColumnWithTypeAndName(DataTypeDate32().createColumn(), std::make_shared<DataTypeDate32>(), "l_commitdate"),
         ColumnWithTypeAndName(DataTypeDate32().createColumn(), std::make_shared<DataTypeDate32>(), "l_receiptdate")};
-    std::string file = "/data1/liyang/cppproject/gluten/jvm/src/test/resources/tpch-data/lineitem/"
-                       "part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet";
+    std::string file{GLUTEN_SOURCE_TPCH_DIR("lineitem/part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet")};
     FormatSettings format_settings;
     Block res;
     for (auto _ : state)
@@ -110,8 +118,7 @@ void BM_OptimizedParquetReadString(benchmark::State & state)
     Block header{
         ColumnWithTypeAndName(DataTypeString().createColumn(), std::make_shared<DataTypeString>(), "l_returnflag"),
         ColumnWithTypeAndName(DataTypeString().createColumn(), std::make_shared<DataTypeString>(), "l_linestatus")};
-    std::string file = "file:///data1/liyang/cppproject/gluten/jvm/src/test/resources/tpch-data/lineitem/"
-                       "part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet";
+    std::string file{GLUTEN_SOURCE_TPCH_URI("lineitem/part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet")};
     Block res;
 
     for (auto _ : state)
@@ -142,8 +149,7 @@ void BM_OptimizedParquetReadDate32(benchmark::State & state)
         ColumnWithTypeAndName(DataTypeDate32().createColumn(), std::make_shared<DataTypeDate32>(), "l_shipdate"),
         ColumnWithTypeAndName(DataTypeDate32().createColumn(), std::make_shared<DataTypeDate32>(), "l_commitdate"),
         ColumnWithTypeAndName(DataTypeDate32().createColumn(), std::make_shared<DataTypeDate32>(), "l_receiptdate")};
-    std::string file = "file:///data1/liyang/cppproject/gluten/jvm/src/test/resources/tpch-data/lineitem/"
-                       "part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet";
+    std::string file{GLUTEN_SOURCE_TPCH_URI("lineitem/part-00000-d08071cb-0dfa-42dc-9198-83cb334ccda3-c000.snappy.parquet")};
     Block res;
 
     for (auto _ : state)
@@ -209,7 +215,7 @@ void BM_ColumnIndexRead_Filter_ReturnAllResult(benchmark::State & state)
 {
     using namespace DB;
 
-    const std::string filename = local_engine::test::data_file(
+    const std::string filename = local_engine::test::third_party_data(
         "benchmark/column_index/lineitem/part-00000-9395e12a-3620-4085-9677-c63b920353f4-c000.snappy.parquet");
     const std::string filter1 = "l_shipdate is not null AND l_shipdate <= toDate32('1998-09-01')";
     const substrait::ReadRel::LocalFiles files = createLocalFiles(filename, true);
@@ -226,7 +232,7 @@ void BM_ColumnIndexRead_Filter_ReturnHalfResult(benchmark::State & state)
 {
     using namespace DB;
 
-    const std::string filename = local_engine::test::data_file(
+    const std::string filename = local_engine::test::third_party_data(
         "benchmark/column_index/lineitem/part-00000-9395e12a-3620-4085-9677-c63b920353f4-c000.snappy.parquet");
     const std::string filter1 = "l_orderkey is not null AND l_orderkey > 300977829";
     const substrait::ReadRel::LocalFiles files = createLocalFiles(filename, true);

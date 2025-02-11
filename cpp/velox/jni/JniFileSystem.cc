@@ -17,6 +17,7 @@
 
 #include "JniFileSystem.h"
 #include "jni/JniCommon.h"
+#include "velox/common/io/IoStatistics.h"
 
 namespace {
 constexpr std::string_view kJniFsScheme("jni:");
@@ -84,7 +85,11 @@ class JniReadFile : public facebook::velox::ReadFile {
     }
   }
 
-  std::string_view pread(uint64_t offset, uint64_t length, void* buf) const override {
+  std::string_view pread(
+      uint64_t offset,
+      uint64_t length,
+      void* buf,
+      facebook::velox::io::IoStatistics* stats = nullptr) const override {
     JNIEnv* env = nullptr;
     attachCurrentThreadAsDaemonOrThrow(vm, &env);
     env->CallVoidMethod(

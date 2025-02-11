@@ -66,7 +66,7 @@
     <delta.version>2.4.0</delta.version>
     <delta.binary.version>24</delta.binary.version>
     <celeborn.version>0.5.3</celeborn.version>
-    <uniffle.version>0.9.1</uniffle.version>
+    <uniffle.version>0.9.2</uniffle.version>
     <arrow.version>15.0.0</arrow.version>
     <arrow-gluten.version>15.0.0-gluten</arrow-gluten.version>
     <arrow-memory.artifact>arrow-memory-unsafe</arrow-memory.artifact>
@@ -79,11 +79,14 @@
     <project.prefix>spark-sql-columnar</project.prefix>
     <jar.assembly.name.prefix>gluten</jar.assembly.name.prefix>
     <os-maven-plugin.version>1.5.0.Final</os-maven-plugin.version>
+    <!--
+    Will be overwritten by the profile on different platforms.
+    Otherwise, it is built from an unsupported platform.
+    -->
+    <os.full.name>unknown</os.full.name>
     <!-- To build built-in backend c++ codes -->
     <scala.recompile.mode>all</scala.recompile.mode>
     <!-- For unit tests -->
-    <clickhouse.lib.path>/usr/local/clickhouse/lib/libch.so</clickhouse.lib.path>
-    <tpcds.data.path>/data/tpcds-data-sf1</tpcds.data.path>
     <fasterxml.version>2.13.5</fasterxml.version>
     <junit.version>4.13.1</junit.version>
 
@@ -954,6 +957,7 @@
       <properties>
         <platform>darwin</platform>
         <arch>x86_64</arch>
+        <os.full.name>${platform}_${arch}</os.full.name>
       </properties>
     </profile>
     <profile>
@@ -967,6 +971,7 @@
       <properties>
         <platform>darwin</platform>
         <arch>aarch64</arch>
+        <os.full.name>${platform}_${arch}</os.full.name>
       </properties>
     </profile>
     <profile>
@@ -980,6 +985,7 @@
       <properties>
         <platform>linux</platform>
         <arch>amd64</arch>
+        <os.full.name>${platform}_${arch}</os.full.name>
       </properties>
     </profile>
     <profile>
@@ -993,6 +999,7 @@
       <properties>
         <platform>linux</platform>
         <arch>aarch64</arch>
+        <os.full.name>${platform}_${arch}</os.full.name>
       </properties>
     </profile>
   </profiles>

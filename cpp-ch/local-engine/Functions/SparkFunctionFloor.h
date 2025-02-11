@@ -18,6 +18,7 @@
 
 #include <Columns/ColumnNullable.h>
 #include <Columns/ColumnVector.h>
+#include <DataTypes/DataTypeNullable.h>
 #include <DataTypes/DataTypesNumber.h>
 #include <DataTypes/IDataType.h>
 #include <Functions/FunctionFactory.h>

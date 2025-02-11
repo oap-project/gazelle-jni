@@ -40,9 +40,6 @@ using BlockFieldType = DB::ColumnWithTypeAndName;
 using AnotherRowType = DB::NamesAndTypesList;
 using AnotherFieldType = DB::NameAndTypePair;
 
-
-#define GLUTEN_DATA_DIR(file) "file://" SOURCE_DIR file
-
 namespace parquet
 {
 class ColumnDescriptor;
@@ -61,8 +58,10 @@ class RandomAccessFile;
 
 namespace local_engine::test
 {
-const char * get_data_dir();
-std::string data_file(const char * file);
+
+std::string third_party_data(const char * file);
+std::string gtest_data(const char * file);
+std::string gtest_uri(const char * file);
 
 std::shared_ptr<arrow::io::RandomAccessFile> asArrowFileForParquet(DB::ReadBuffer & in, const DB::FormatSettings & settings);
 
@@ -94,7 +93,7 @@ inline std::string replaceLocalFilesWildcards(const std::string_view haystack, c
 inline std::string replaceLocalFilesWithTPCH(const std::string_view haystack)
 {
     static constexpr auto wildcard = "{replace_GLUTEN_SOURCE_TPCH_DIR}";
-    constexpr std::string_view replaced = GLUTEN_SOURCE_TPCH_DIR("");
+    constexpr std::string_view replaced = GLUTEN_SOURCE_TPCH_URI("");
     return boost::replace_all_copy(std::string{haystack}, wildcard, replaced);
 }
 

@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 #include "FormatFile.h"
-#include <memory>
 #include <Core/Settings.h>
 #include <IO/ReadBufferFromFile.h>
+#include <IO/ReadBufferFromString.h>
 #include <Storages/SubstraitSource/JSONFormatFile.h>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <Common/GlutenConfig.h>
@@ -47,11 +47,65 @@ extern const int NOT_IMPLEMENTED;
 }
 namespace local_engine
 {
-FormatFile::FormatFile(
-    DB::ContextPtr context_,
-    const substrait::ReadRel::LocalFiles::FileOrFiles & file_info_,
-    const ReadBufferBuilderPtr & read_buffer_builder_)
-    : context(context_), file_info(file_info_), read_buffer_builder(read_buffer_builder_)
+using namespace DB;
+// Initialize the static variable outside the class definition
+std::map<std::string, std::function<Field(const std::string &)>> FileMetaColumns::BASE_METADATA_EXTRACTORS
+    = {{FILE_PATH, [](const std::string & metadata) { return metadata; }},
+       {FILE_NAME, [](const std::string & metadata) { return metadata; }},
+       {FILE_SIZE, [](const std::string & value) { return std::strtoll(value.c_str(), nullptr, 10); }},
+       {FILE_BLOCK_START, [](const std::string & value) { return std::strtoll(value.c_str(), nullptr, 10); }},
+       {FILE_BLOCK_LENGTH, [](const std::string & value) { return std::strtoll(value.c_str(), nullptr, 10); }},
+       {FILE_MODIFICATION_TIME,
+        [](const std::string & metadata)
+        {
+            DB::ReadBufferFromString in(metadata);
+            DateTime64 time = 0;
+            readDateTime64Text(time, 6, in, DateLUT::instance("UTC"));
+            return DecimalField(time, 6);
+        }}};
+
+// Initialize the static variable outside the class definition
+std::map<std::string, std::function<DB::Field(const substraitInputFile &)>> FileMetaColumns::INPUT_FUNCTION_EXTRACTORS
+    = {{INPUT_FILE_NAME, [](const substraitInputFile & file) { return file.uri_file(); }},
+       {INPUT_FILE_BLOCK_START, [](const substraitInputFile & file) { return file.start(); }},
+       {INPUT_FILE_BLOCK_LENGTH, [](const substraitInputFile & file) { return file.length(); }}};
+
+FileMetaColumns::FileMetaColumns(const substraitInputFile & file)
+{
+    for (const auto & column : file.metadata_columns())
+    {
+        if (!BASE_METADATA_EXTRACTORS.contains(column.key()))
+            continue;
+
+        assert(BASE_METADATA_EXTRACTORS.contains(column.key()));
+        metadata_columns_map[column.key()] = BASE_METADATA_EXTRACTORS[column.key()](column.value());
+    }
+
+    for (const auto & inputExtractor : INPUT_FUNCTION_EXTRACTORS)
+    {
+        assert(!metadata_columns_map.contains(inputExtractor.first));
+        metadata_columns_map[inputExtractor.first] = inputExtractor.second(file);
+    }
+}
+
+DB::ColumnPtr FileMetaColumns::createMetaColumn(const String & columnName, const DB::DataTypePtr & type, size_t rows) const
+{
+    assert(metadata_columns_map.contains(columnName));
+    const auto field = metadata_columns_map.at(columnName);
+
+    if (INPUT_FILE_COLUMNS_SET.contains(columnName))
+    {
+        /// copied from InputFileNameParser::addInputFileColumnsToChunk()
+        /// TODO: check whether using const column is correct or not.
+        return type->createColumnConst(rows, field);
+    }
+    auto mutable_column = type->createColumn();
+    mutable_column->insertMany(field, rows);
+    return mutable_column;
+}
+
+FormatFile::FormatFile(DB::ContextPtr context_, const substraitInputFile & file_info_, const ReadBufferBuilderPtr & read_buffer_builder_)
+    : context(context_), file_info(file_info_), read_buffer_builder(read_buffer_builder_), meta_columns(file_info_)
 {
     if (file_info.partition_columns_size())
     {
@@ -64,7 +118,6 @@ FormatFile::FormatFile(
             Poco::URI::decode(partition_column.key(), unescaped_key);
             Poco::URI::decode(partition_column.value(), unescaped_value);
 
-            partition_keys.push_back(unescaped_key);
             partition_values[unescaped_key] = unescaped_value;
 
             std::string normalized_key = unescaped_key;
@@ -80,7 +133,7 @@ FormatFile::FormatFile(
         file_info.file_format_case(),
         std::to_string(file_info.start()) + "-" + std::to_string(file_info.start() + file_info.length()),
         file_info.partition_index(),
-        GlutenStringUtils::dumpPartitionValues(partition_values));
+        GlutenStringUtils::mkString(partition_values));
 }
 
 FormatFilePtr FormatFileUtil::createFile(

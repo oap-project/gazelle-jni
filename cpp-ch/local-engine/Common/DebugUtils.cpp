@@ -22,6 +22,7 @@
 #include <DataTypes/DataTypeDateTime64.h>
 #include <Functions/FunctionHelpers.h>
 #include <IO/WriteBufferFromString.h>
+#include <Interpreters/ActionsDAG.h>
 #include <Processors/QueryPlan/QueryPlan.h>
 #include <google/protobuf/json/json.h>
 #include <google/protobuf/util/json_util.h>
@@ -32,8 +33,10 @@
 #include <Common/QueryContext.h>
 #include <Common/formatReadable.h>
 #include <Common/logger_useful.h>
-#include "Functions/IFunction.h"
-#include <Interpreters/ActionsDAG.h>
+#include <AggregateFunctions/IAggregateFunction.h>
+#include <Columns/ColumnAggregateFunction.h>
+#include <Functions/IFunction.h>
+#include <AggregateFunctions/AggregateFunctionCount.h>
 
 namespace pb_util = google::protobuf::util;
 
@@ -119,6 +122,24 @@ static std::string truncate(const std::string & str, size_t width)
 using NameAndColumn = std::pair<std::string, DB::ColumnPtr>;
 using NameAndColumns = std::vector<NameAndColumn>;
 
+template<typename T>
+const T& toAggType(DB::ConstAggregateDataPtr data)
+{
+    return *reinterpret_cast<const T*>(data);
+}
+
+std::string get(const DB::ColumnAggregateFunction & agg, size_t row)
+{
+    auto funcName = agg.getAggregateFunction()->getName();
+
+    if (funcName == "count")
+    {
+        DB::ConstAggregateDataPtr data = agg.getData()[row];
+        return std::to_string(toAggType<DB::AggregateFunctionCountData>(data).count);
+    }
+    return "Nan";
+}
+
 /**
  * Get rows represented in Sequence by specific truncate and vertical requirement.
  *
@@ -158,7 +179,7 @@ static std::vector<std::vector<std::string>> getRows(const NameAndColumns & bloc
             const auto * const col = column.second.get();
             DB::WhichDataType which(getDataType(col));
             if (which.isAggregateFunction())
-                currentRow.emplace_back("Nan");
+                currentRow.emplace_back(get(static_cast<const DB::ColumnAggregateFunction &>(*col), row));
             else
             {
                 if (col->isNullAt(row))

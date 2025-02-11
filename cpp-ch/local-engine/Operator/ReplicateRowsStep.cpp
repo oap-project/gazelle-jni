@@ -16,8 +16,7 @@
  */
 #include "ReplicateRowsStep.h"
 
-#include <iostream>
-
+#include <Columns/IColumn.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
 
 namespace DB

@@ -16,10 +16,11 @@
  */
 #pragma once
 #include <Processors/QueryPlan/ExpressionStep.h>
+#include <Storages/SubstraitSource/FormatFile.h>
 
 namespace DB
 {
-    class Chunk;
+class Chunk;
 }
 
 namespace local_engine
@@ -27,11 +28,6 @@ namespace local_engine
 class InputFileNameParser
 {
 public:
-    static inline const String & INPUT_FILE_NAME = "input_file_name";
-    static inline const String & INPUT_FILE_BLOCK_START = "input_file_block_start";
-    static inline const String & INPUT_FILE_BLOCK_LENGTH = "input_file_block_length";
-    static inline std::unordered_set INPUT_FILE_COLUMNS_SET = {INPUT_FILE_NAME, INPUT_FILE_BLOCK_START, INPUT_FILE_BLOCK_LENGTH};
-
     static bool hasInputFileNameColumn(const DB::Block & block);
     static bool hasInputFileBlockStartColumn(const DB::Block & block);
     static bool hasInputFileBlockLengthColumn(const DB::Block & block);
@@ -46,13 +42,10 @@ public:
 
 
     void setFileName(const String & file_name) { this->file_name = file_name; }
-
     void setBlockStart(const Int64 block_start) { this->block_start = block_start; }
-
     void setBlockLength(const Int64 block_length) { this->block_length = block_length; }
 
     [[nodiscard]] std::optional<DB::IQueryPlanStep *> addInputFileProjectStep(DB::QueryPlan & plan);
-    void addInputFileColumnsToChunk(const DB::Block & header, DB::Chunk & chunk) const;
 
 private:
     std::optional<String> file_name;

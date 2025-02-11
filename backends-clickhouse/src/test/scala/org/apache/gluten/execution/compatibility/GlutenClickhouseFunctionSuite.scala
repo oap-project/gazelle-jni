@@ -18,7 +18,6 @@ package org.apache.gluten.execution.compatibility
 
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.{GlutenClickHouseTPCHAbstractSuite, ProjectExecTransformer}
-import org.apache.gluten.utils.UTSystemParameters
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.execution.datasources.v2.clickhouse.ClickHouseConfig
@@ -51,7 +50,6 @@ class GlutenClickhouseFunctionSuite extends GlutenClickHouseTPCHAbstractSuite {
       .set("spark.databricks.delta.properties.defaults.checkpointInterval", "5")
       .set("spark.databricks.delta.stalenessLimit", "3600000")
       .set(ClickHouseConfig.CLICKHOUSE_WORKER_ID, "1")
-      .set(GlutenConfig.GLUTEN_LIB_PATH.key, UTSystemParameters.clickHouseLibPath)
       .set("spark.gluten.sql.columnar.iterator", "true")
       .set("spark.gluten.sql.columnar.hashagg.enablefinal", "true")
       .set("spark.gluten.sql.enable.native.validation", "false")
@@ -234,7 +232,7 @@ class GlutenClickhouseFunctionSuite extends GlutenClickHouseTPCHAbstractSuite {
   test("function_input_file_expr") {
     withTable("test_table") {
       sql("create table test_table(a int) using parquet")
-      sql("insert into test_table values(1)")
+      sql("insert into test_table values (1), (2)")
       compareResultsAgainstVanillaSpark(
         """
           |select a,input_file_name(), input_file_block_start(),

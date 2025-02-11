@@ -16,6 +16,8 @@
  */
 #include "ChunkBuffer.h"
 
+#include <Columns/IColumn.h>
+
 namespace local_engine
 {
 void ChunkBuffer::add(DB::Chunk & columns, int start, int end)

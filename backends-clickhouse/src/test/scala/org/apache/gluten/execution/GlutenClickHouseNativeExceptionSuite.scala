@@ -16,17 +16,9 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.config.GlutenConfig
-import org.apache.gluten.utils.{TestExceptionUtils, UTSystemParameters}
-
-import org.apache.spark.SparkConf
+import org.apache.gluten.utils.TestExceptionUtils
 
 class GlutenClickHouseNativeExceptionSuite extends GlutenClickHouseWholeStageTransformerSuite {
-
-  override protected def sparkConf: SparkConf = {
-    super.sparkConf
-      .set(GlutenConfig.GLUTEN_LIB_PATH.key, UTSystemParameters.clickHouseLibPath)
-  }
 
   test("native exception caught by jvm") {
     try {
