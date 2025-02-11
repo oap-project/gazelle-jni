@@ -16,14 +16,13 @@
  */
 package org.apache.spark.sql.hive.execution
 
-import org.apache.gluten.execution.TransformSupport
-
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.config
 import org.apache.spark.internal.config.UI.UI_ENABLED
 import org.apache.spark.sql.{DataFrame, GlutenSQLTestsTrait, SparkSession}
 import org.apache.spark.sql.catalyst.expressions.CodegenObjectFactoryMode
 import org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.hive.HiveUtils
 import org.apache.spark.sql.internal.SQLConf
 
@@ -90,7 +89,7 @@ abstract class GlutenHiveSQLQuerySuiteBase extends GlutenSQLTestsTrait {
     conf.set("javax.jdo.option.ConnectionURL", s"jdbc:derby:;databaseName=$metastore;create=true")
   }
 
-  def checkOperatorMatch[T <: TransformSupport](df: DataFrame)(implicit tag: ClassTag[T]): Unit = {
+  def checkOperatorMatch[T <: SparkPlan](df: DataFrame)(implicit tag: ClassTag[T]): Unit = {
     val executedPlan = getExecutedPlan(df)
     assert(executedPlan.exists(plan => plan.getClass == tag.runtimeClass))
   }
