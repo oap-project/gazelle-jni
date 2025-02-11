@@ -68,6 +68,12 @@ public:
     DataTypePtr getReturnTypeImpl(const ColumnsWithTypeAndName & arguments) const override
     {
         const size_t number_of_arguments = arguments.size();
+        if (number_of_arguments < 2)
+            throw Exception(
+                ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH,
+                "Number of arguments for function {} doesn't match: passed {}, at least 2",
+                getName(),
+                number_of_arguments);
         std::vector<bool> arrays_is_nullable;
         DataTypePtr input_type = arguments[0].type;
         while (const DataTypeArray * array = checkAndGetDataType<DataTypeArray>(removeNullable(input_type).get()))
