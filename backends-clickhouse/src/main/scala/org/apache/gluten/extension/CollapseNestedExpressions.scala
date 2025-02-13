@@ -76,7 +76,6 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
   private def getExpressionName(expr: Expression): Option[String] = expr match {
     case _: And => ExpressionMappings.expressionsMap.get(classOf[And])
     case _: Or => ExpressionMappings.expressionsMap.get(classOf[Or])
-    case _: GetJsonObject => ExpressionMappings.expressionsMap.get(classOf[GetJsonObject])
     case _ => Option.empty[String]
   }
 
@@ -133,20 +132,6 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
               nestedFunctions += 1
             case _ =>
               children +:= optimize(o)
-          }
-        case g: GetJsonObject if canBeOptimized(g) =>
-          parent match {
-            case Some(_: GetJsonObject) | None =>
-              g.path match {
-                case l: Literal =>
-                  children +:= l
-                  f(g.json, parent = Option.apply(g))
-                  nestedFunctions += 1
-                case _ =>
-              }
-            case _ =>
-              val newG = optimize(g)
-              children +:= newG
           }
         case _ =>
           if (parent.nonEmpty) {

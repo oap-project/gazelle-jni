@@ -85,24 +85,6 @@ private:
             }
         }
     }
-    String getJsonPathOfGetJSONObject(const substrait::Expression_ScalarFunction & func)
-    {
-        String json_path = "";
-        for (size_t i = 1; i < func.arguments().size(); ++i)
-        {
-            auto json_path_pb = func.arguments(i).value();
-            if (!json_path_pb.has_literal() || !json_path_pb.literal().has_string())
-            {
-                break;
-            }
-            json_path += json_path_pb.literal().string();
-            if (i != func.arguments().size() - 1)
-            {
-                json_path += "#" ;
-            }
-        }
-        return json_path;
-    }
     void prepareOnExpression(const substrait::Expression & expr)
     {
         switch (expr.rex_type_case())
@@ -147,7 +129,12 @@ private:
                         json_required_fields[json_key] = std::set<String>();
                     }
                     auto & required_fields = json_required_fields.at(json_key);
-                    required_fields.emplace(getJsonPathOfGetJSONObject(scalar_function_pb));
+                    auto json_path_pb = scalar_function_pb.arguments(1).value();
+                    if (!json_path_pb.has_literal() || !json_path_pb.literal().has_string())
+                    {
+                        break;
+                    }
+                    required_fields.emplace(json_path_pb.literal().string());
                 }
                 break;
             }
@@ -238,12 +225,6 @@ private:
                     substrait::Expression new_get_json_object_arg0;
                     new_get_json_object_arg0.mutable_scalar_function()->CopyFrom(decoded_json_function);
                     *scalar_function_pb.mutable_arguments()->Mutable(0)->mutable_value() = new_get_json_object_arg0;
-                    if (scalar_function_pb.arguments().size() > 2)
-                    {
-                        substrait::Expression new_get_json_object_arg1;
-                        new_get_json_object_arg1.mutable_literal()->set_string(getJsonPathOfGetJSONObject(scalar_function_pb));
-                        *scalar_function_pb.mutable_arguments()->Mutable(1)->mutable_value() = new_get_json_object_arg1;
-                    }
                 }
                 break;
             }
