@@ -59,9 +59,9 @@ protected:
         DB::ActionsDAG & actions_dag) const override
     {
         const auto & args = substrait_func.arguments();
-        if (args.size() < 2)
+        if (args.size() != 2)
         {
-            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Function {} requires at least 2 arguments", getCHFunctionName(substrait_func));
+            throw DB::Exception(DB::ErrorCodes::BAD_ARGUMENTS, "Function {} requires 2 arguments", getCHFunctionName(substrait_func));
         }
         if (args[0].value().has_scalar_function()
             && args[0].value().scalar_function().function_reference() == SelfDefinedFunctionReference::GET_JSON_OBJECT)
@@ -79,16 +79,16 @@ protected:
             return {flatten_json_column_node, parseExpression(actions_dag, args[1].value())};
         }
         else
+        {
             return {parseExpression(actions_dag, args[0].value()), parseExpression(actions_dag, args[1].value())};
+        }
     }
 
 private:
-    
     static String getFlatterJsonColumnName(const substrait::Expression & arg)
     {
         return arg.ShortDebugString();
     }
-
 };
 
 static FunctionParserRegister<GetJSONObjectParser> register_get_json_object_parser;

@@ -267,7 +267,7 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     }
   }
 
-  test("GLUTEN-8304: Optimize nested functions") {
+  test("GLUTEN-8304: Optimize nested get_json_object") {
     def checkExpression(expr: Expression, path: String): Boolean = {
       expr match {
         case g: GetJsonObject
@@ -294,94 +294,55 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
           plan.children.exists(c => checkPlan(c, path))
         }
     }
-    def checkGetJsonObjectPath(
-        df: DataFrame,
-        path: String,
-        collapsedGetJsonObjectEnabled: Boolean): Boolean = {
-      if (collapsedGetJsonObjectEnabled) {
-        checkPlan(df.queryExecution.analyzed, path)
-      } else {
-        true
-      }
+    def checkGetJsonObjectPath(df: DataFrame, path: String): Boolean = {
+      checkPlan(df.queryExecution.analyzed, path)
     }
-
-    def runCheck(collapseGetJsonObjectEnabled: Boolean): Unit = {
+    withSQLConf(("spark.gluten.sql.collapseGetJsonObject.enabled", "true")) {
       runQueryAndCompare(
         "select get_json_object(get_json_object(string_field1, '$.a'), '$.y') " +
           " from json_test where int_field1 = 6") {
-        x => assert(checkGetJsonObjectPath(x, "$.a.y", collapseGetJsonObjectEnabled))
+        x => assert(checkGetJsonObjectPath(x, "$.a.y"))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(string_field1, '$[a]'), '$[y]') " +
           " from json_test where int_field1 = 6") {
-        x => assert(checkGetJsonObjectPath(x, "$[a][y]", collapseGetJsonObjectEnabled))
+        x => assert(checkGetJsonObjectPath(x, "$[a][y]"))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, " +
           "'$.a'), '$.y'), '$.z') from json_test where int_field1 = 6") {
-        x => assert(checkGetJsonObjectPath(x, "$.a.y.z", collapseGetJsonObjectEnabled))
+        x => assert(checkGetJsonObjectPath(x, "$.a.y.z"))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, '$.a')," +
           " string_field1), '$.z') from json_test where int_field1 = 6",
         noFallBack = false
-      )(
-        x =>
-          assert(
-            checkGetJsonObjectPath(
-              x,
-              "$.a",
-              collapseGetJsonObjectEnabled) && checkGetJsonObjectPath(
-              x,
-              "$.z",
-              collapseGetJsonObjectEnabled)))
+      )(x => assert(checkGetJsonObjectPath(x, "$.a") && checkGetJsonObjectPath(x, "$.z")))
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, " +
           " string_field1), '$.a'), '$.z') from json_test where int_field1 = 6",
         noFallBack = false
-      )(x => assert(checkGetJsonObjectPath(x, "$.a.z", collapseGetJsonObjectEnabled)))
+      )(x => assert(checkGetJsonObjectPath(x, "$.a.z")))
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(" +
           " substring(string_field1, 10), '$.a'), '$.z'), string_field1) " +
           " from json_test where int_field1 = 6",
         noFallBack = false
-      )(x => assert(checkGetJsonObjectPath(x, "$.a.z", collapseGetJsonObjectEnabled)))
+      )(x => assert(checkGetJsonObjectPath(x, "$.a.z")))
       runQueryAndCompare(
         "select get_json_object(get_json_object(string_field1, '$.a[0]'), '$.y') " +
           " from json_test where int_field1 = 7") {
-        x => assert(checkGetJsonObjectPath(x, "$.a[0].y", collapseGetJsonObjectEnabled))
+        x => assert(checkGetJsonObjectPath(x, "$.a[0].y"))
       }
       runQueryAndCompare(
         "select get_json_object(get_json_object(get_json_object(string_field1, " +
           " '$.a[1]'), '$.z[1]'), '$.n') from json_test where int_field1 = 7") {
-        x => assert(checkGetJsonObjectPath(x, "$.a[1].z[1].n", collapseGetJsonObjectEnabled))
+        x => assert(checkGetJsonObjectPath(x, "$.a[1].z[1].n"))
       }
       runQueryAndCompare(
         "select * from json_test where " +
           " get_json_object(get_json_object(get_json_object(string_field1, '$.a'), " +
-          "'$.y'), '$.z') != null")(
-        x => assert(checkGetJsonObjectPath(x, "$.a.y.z", collapseGetJsonObjectEnabled)))
-      runQueryAndCompare(
-        "select get_json_object(get_json_object(get_json_object(string_field1, " +
-          " '$.a[1]'), '$.z[1]'), '$.n') from json_test where int_field1 = 7 or int_field1 = 5") {
-        _ =>
-      }
-
-      runQueryAndCompare(
-        "select get_json_object(get_json_object(get_json_object(string_field1, " +
-          " '$.a[1]'), '$.z[1]'), '$.n') from json_test where int_field1 > 3 and int_field1 != 5 " +
-          " or int_field1 < 2") { _ => }
-    }
-    withSQLConf(
-      ("spark.gluten.sql.collapseGetJsonObject.enabled", "true"),
-      ("spark.gluten.sql.supported.collapseNestedFunctions", "")) {
-      runCheck(true)
-    }
-    withSQLConf(
-      (
-        "spark.gluten.sql.supported.collapseNestedFunctions",
-        "get_json_object,get_struct_field,and,or")) {
-      runCheck(false)
+          "'$.y'), '$.z') != null")(x => assert(checkGetJsonObjectPath(x, "$.a.y.z")))
     }
   }
 
@@ -403,17 +364,6 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     runQueryAndCompare(
       "SELECT string_field1 from json_test where" +
         " get_json_object(string_field1, '$.a') is not null") { _ => }
-  }
-
-  test("Test get_json_object 12") {
-    runQueryAndCompare(
-      "SELECT get_json_object(string_field1, '$.a[*].y') from json_test where int_field1 = 7") {
-      _ =>
-    }
-    runQueryAndCompare(
-      "select get_json_object(string_field1, '$.a[*].z.n.p') from json_test where int_field1 = 7") {
-      _ =>
-    }
   }
 
   test("Test covar_samp") {
@@ -1029,26 +979,5 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
       assert(projects.size >= 1)
     }
     compareResultsAgainstVanillaSpark(sql, true, checkProjects, false)
-  }
-
-  test("GLUTEN-8406 replace from_json with get_json_object") {
-    withTable("test_8406") {
-      spark.sql("create table test_8406(x string) using parquet")
-      val insert_sql =
-        """
-          |insert into test_8406 values
-          |('{"a":1}'),
-          |('{"a":2'),
-          |('{"b":3}'),
-          |('{"a":"5"}'),
-          |('{"a":{"x":1}}')
-          |""".stripMargin
-      spark.sql(insert_sql)
-      val sql =
-        """
-          |select from_json(x, 'Map<String, String>')['a'] from test_8406
-          |""".stripMargin
-      compareResultsAgainstVanillaSpark(sql, true, { _ => })
-    }
   }
 }
