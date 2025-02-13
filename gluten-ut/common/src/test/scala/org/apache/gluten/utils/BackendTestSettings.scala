@@ -98,6 +98,13 @@ abstract class BackendTestSettings {
       exclusion.add(Exclude(testNames: _*))
       this
     }
+    def includeCH(testNames: String*): SuiteSettings = {
+      this
+    }
+    def excludeCH(testNames: String*): SuiteSettings = {
+      exclude(testNames: _*)
+      this
+    }
     def includeByPrefix(prefixes: String*): SuiteSettings = {
       inclusion.add(IncludeByPrefix(prefixes: _*))
       this

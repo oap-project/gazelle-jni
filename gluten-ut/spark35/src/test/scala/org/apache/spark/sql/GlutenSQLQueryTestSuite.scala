@@ -227,7 +227,8 @@ class GlutenSQLQueryTestSuite
     // Disable for Spark 3.
     "group-by.sql",
     "udf/udf-group-by.sql - Scala UDF"
-  ) ++ otherIgnoreList ++ udafIgnoreList
+  ) ++ otherIgnoreList ++ udafIgnoreList ++
+    BackendTestSettings.instance.getSQLQueryTestSettings.getIgnoredSQLQueryTests
 
   // List of supported cases to run with a certain backend, in lower case.
   private val supportedList: Set[String] =

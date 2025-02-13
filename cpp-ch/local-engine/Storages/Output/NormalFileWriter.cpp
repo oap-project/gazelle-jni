@@ -20,6 +20,7 @@
 #include <Columns/ColumnConst.h>
 #include <Columns/ColumnMap.h>
 #include <Columns/ColumnTuple.h>
+#include <Columns/ColumnsCommon.h>
 #include <Interpreters/castColumn.h>
 #include <QueryPipeline/QueryPipeline.h>
 #include <Poco/URI.h>

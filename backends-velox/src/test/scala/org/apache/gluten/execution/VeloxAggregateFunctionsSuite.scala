@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.config.GlutenConfig
+import org.apache.gluten.config.VeloxConfig
 import org.apache.gluten.extension.columnar.validator.FallbackInjects
 
 import org.apache.spark.SparkConf
@@ -1178,7 +1178,7 @@ class VeloxAggregateFunctionsDefaultSuite extends VeloxAggregateFunctionsSuite {
   override protected def sparkConf: SparkConf = {
     super.sparkConf
       // Disable flush. This may cause spilling to happen on partial aggregations.
-      .set(GlutenConfig.VELOX_FLUSHABLE_PARTIAL_AGGREGATION_ENABLED.key, "false")
+      .set(VeloxConfig.VELOX_FLUSHABLE_PARTIAL_AGGREGATION_ENABLED.key, "false")
   }
 
   test("flushable aggregate rule") {
@@ -1199,9 +1199,9 @@ class VeloxAggregateFunctionsFlushSuite extends VeloxAggregateFunctionsSuite {
   override protected def sparkConf: SparkConf = {
     super.sparkConf
       // To test flush behaviors, set low flush threshold to ensure flush happens.
-      .set(GlutenConfig.VELOX_FLUSHABLE_PARTIAL_AGGREGATION_ENABLED.key, "true")
-      .set(GlutenConfig.ABANDON_PARTIAL_AGGREGATION_MIN_PCT.key, "1")
-      .set(GlutenConfig.ABANDON_PARTIAL_AGGREGATION_MIN_ROWS.key, "10")
+      .set(VeloxConfig.VELOX_FLUSHABLE_PARTIAL_AGGREGATION_ENABLED.key, "true")
+      .set(VeloxConfig.ABANDON_PARTIAL_AGGREGATION_MIN_PCT.key, "1")
+      .set(VeloxConfig.ABANDON_PARTIAL_AGGREGATION_MIN_ROWS.key, "10")
   }
 
   test("flushable aggregate rule") {

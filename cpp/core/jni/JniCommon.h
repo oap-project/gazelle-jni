@@ -498,6 +498,10 @@ class JavaRssClient : public RssClient {
       env->ReleaseByteArrayElements(array_, byteArray, JNI_ABORT);
       env->DeleteGlobalRef(array_);
       array_ = env->NewByteArray(size);
+      if (array_ == nullptr) {
+        LOG(WARNING) << "Failed to allocate new byte array size: " << size;
+        throw gluten::GlutenException("Failed to allocate new byte array");
+      }
       array_ = static_cast<jbyteArray>(env->NewGlobalRef(array_));
     }
     env->SetByteArrayRegion(array_, 0, size, (jbyte*)bytes);

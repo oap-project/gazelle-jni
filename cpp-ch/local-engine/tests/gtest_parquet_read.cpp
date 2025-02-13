@@ -21,6 +21,7 @@
 
 #include <ranges>
 #include <incbin.h>
+#include <Columns/ColumnNullable.h>
 #include <Core/Range.h>
 #include <DataTypes/DataTypeArray.h>
 #include <DataTypes/DataTypeDateTime.h>
@@ -30,7 +31,6 @@
 #include <IO/ReadBufferFromFile.h>
 #include <Interpreters/ActionsDAG.h>
 #include <Interpreters/ActionsVisitor.h>
-#include <Interpreters/ExpressionActions.h>
 #include <Parser/LocalExecutor.h>
 #include <Processors/Executors/PullingPipelineExecutor.h>
 #include <Processors/Formats/Impl/ArrowColumnToCHColumn.h>

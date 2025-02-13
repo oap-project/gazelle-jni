@@ -17,8 +17,7 @@
 package org.apache.gluten.backendsapi.velox
 
 import org.apache.gluten.backendsapi.SparkPlanExecApi
-import org.apache.gluten.config.GlutenConfig
-import org.apache.gluten.config.ReservedKeys
+import org.apache.gluten.config.{GlutenConfig, ReservedKeys, VeloxConfig}
 import org.apache.gluten.exception.GlutenNotSupportException
 import org.apache.gluten.execution._
 import org.apache.gluten.expression._
@@ -348,8 +347,8 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
       plan match {
         case shuffle: ColumnarShuffleExchangeExec
             if !shuffle.useSortBasedShuffle &&
-              GlutenConfig.get.veloxResizeBatchesShuffleInput =>
-          val range = GlutenConfig.get.veloxResizeBatchesShuffleInputRange
+              VeloxConfig.get.veloxResizeBatchesShuffleInput =>
+          val range = VeloxConfig.get.veloxResizeBatchesShuffleInputRange
           val appendBatches =
             VeloxResizeBatchesExec(shuffle.child, range.min, range.max)
           shuffle.withNewChildren(Seq(appendBatches))
@@ -625,7 +624,7 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
       numOutputRows: SQLMetric,
       dataSize: SQLMetric): BuildSideRelation = {
     val useOffheapBroadcastBuildRelation =
-      GlutenConfig.get.enableBroadcastBuildRelationInOffheap
+      VeloxConfig.get.enableBroadcastBuildRelationInOffheap
     val serialized: Array[ColumnarBatchSerializeResult] = child
       .executeColumnar()
       .mapPartitions(itr => Iterator(BroadcastUtils.serializeStream(itr)))
@@ -739,7 +738,7 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
     // ISOControl characters, refer java.lang.Character.isISOControl(int)
     val isoControlStr = (('\u0000' to '\u001F') ++ ('\u007F' to '\u009F')).toList.mkString
     // scalastyle:on nonascii
-    if (GlutenConfig.get.castFromVarcharAddTrimNode && c.child.dataType == StringType) {
+    if (VeloxConfig.get.castFromVarcharAddTrimNode && c.child.dataType == StringType) {
       val trimStr = c.dataType match {
         case BinaryType | _: ArrayType | _: MapType | _: StructType | _: UserDefinedType[_] =>
           None
@@ -781,7 +780,7 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
   }
 
   override def rewriteSpillPath(path: String): String = {
-    val fs = GlutenConfig.get.veloxSpillFileSystem
+    val fs = VeloxConfig.get.veloxSpillFileSystem
     fs match {
       case "local" =>
         path

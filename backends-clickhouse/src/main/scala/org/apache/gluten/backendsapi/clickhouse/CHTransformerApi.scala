@@ -94,32 +94,32 @@ class CHTransformerApi extends TransformerApi with Logging {
       nativeConfMap: util.Map[String, String],
       backendPrefix: String): Unit = {
 
-    require(backendPrefix == CHConf.CONF_PREFIX)
+    require(backendPrefix == CHConfig.CONF_PREFIX)
     if (nativeConfMap.getOrDefault("spark.memory.offHeap.enabled", "false").toBoolean) {
       val offHeapSize =
         nativeConfMap.getOrDefault("spark.gluten.memory.offHeap.size.in.bytes", "0").toLong
       if (offHeapSize > 0) {
 
         // Only set default max_bytes_before_external_group_by for CH when it is not set explicitly.
-        val groupBySpillKey = CHConf.runtimeSettings("max_bytes_before_external_group_by")
+        val groupBySpillKey = CHConfig.runtimeSettings("max_bytes_before_external_group_by")
         if (!nativeConfMap.containsKey(groupBySpillKey)) {
           val groupBySpillValue = offHeapSize * 0.5
           nativeConfMap.put(groupBySpillKey, groupBySpillValue.toLong.toString)
         }
 
-        val maxMemoryUsageKey = CHConf.runtimeSettings("max_memory_usage")
+        val maxMemoryUsageKey = CHConfig.runtimeSettings("max_memory_usage")
         if (!nativeConfMap.containsKey(maxMemoryUsageKey)) {
           val maxMemoryUsageValue = offHeapSize
           nativeConfMap.put(maxMemoryUsageKey, maxMemoryUsageValue.toString)
         }
 
         // Only set default max_bytes_before_external_join for CH when join_algorithm is grace_hash
-        val joinAlgorithmKey = CHConf.runtimeSettings("join_algorithm")
+        val joinAlgorithmKey = CHConfig.runtimeSettings("join_algorithm")
         if (
           nativeConfMap.containsKey(joinAlgorithmKey) &&
           nativeConfMap.get(joinAlgorithmKey) == "grace_hash"
         ) {
-          val joinSpillKey = CHConf.runtimeSettings("max_bytes_in_join")
+          val joinSpillKey = CHConfig.runtimeSettings("max_bytes_in_join")
           if (!nativeConfMap.containsKey(joinSpillKey)) {
             val joinSpillValue = offHeapSize * 0.7
             nativeConfMap.put(joinSpillKey, joinSpillValue.toLong.toString)
@@ -134,7 +134,7 @@ class CHTransformerApi extends TransformerApi with Logging {
       }
     }
 
-    val hdfsConfigPrefix = CHConf.runtimeConfig("hdfs")
+    val hdfsConfigPrefix = CHConfig.runtimeConfig("hdfs")
     injectConfig("spark.hadoop.input.connect.timeout", s"$hdfsConfigPrefix.input_connect_timeout")
     injectConfig("spark.hadoop.input.read.timeout", s"$hdfsConfigPrefix.input_read_timeout")
     injectConfig("spark.hadoop.input.write.timeout", s"$hdfsConfigPrefix.input_write_timeout")
@@ -144,7 +144,7 @@ class CHTransformerApi extends TransformerApi with Logging {
 
     // Respect spark config spark.sql.orc.compression.codec for CH backend
     // TODO: consider compression or orc.compression in table options.
-    val orcCompressionKey = CHConf.runtimeSettings("output_format_orc_compression_method")
+    val orcCompressionKey = CHConfig.runtimeSettings("output_format_orc_compression_method")
     if (!nativeConfMap.containsKey(orcCompressionKey)) {
       if (nativeConfMap.containsKey("spark.sql.orc.compression.codec")) {
         val compression = nativeConfMap.get("spark.sql.orc.compression.codec").toLowerCase()

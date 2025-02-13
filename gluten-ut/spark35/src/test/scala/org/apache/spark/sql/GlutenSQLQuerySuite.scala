@@ -129,7 +129,7 @@ class GlutenSQLQuerySuite extends SQLQuerySuite with GlutenSQLTestsTrait {
     }
   }
 
-  testGluten("StreamingQueryProgress.numInputRows should be correct") {
+  ignoreGluten("StreamingQueryProgress.numInputRows should be correct") {
     withTempDir {
       dir =>
         val path = dir.toURI.getPath

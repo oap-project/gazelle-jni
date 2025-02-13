@@ -40,7 +40,7 @@ class GlutenClickHouseHiveTableSuite
   with AdaptiveSparkPlanHelper {
 
   override protected def sparkConf: SparkConf = {
-    import org.apache.gluten.backendsapi.clickhouse.CHConf._
+    import org.apache.gluten.backendsapi.clickhouse.CHConfig._
 
     new SparkConf()
       .set("spark.plugins", "org.apache.gluten.GlutenPlugin")

@@ -957,6 +957,17 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     compareResultsAgainstVanillaSpark(sql, true, { _ => })
   }
 
+  test("GLUTEN-8598 Fix diff for cast string to long") {
+    withSQLConf(
+      SQLConf.OPTIMIZER_EXCLUDED_RULES.key ->
+        (ConstantFolding.ruleName + "," + NullPropagation.ruleName)) {
+      runQueryAndCompare(
+        "select cast(' \t2570852431\n' as long), cast('25708\t52431\n' as long)",
+        noFallBack = false
+      )(checkGlutenOperatorMatch[ProjectExecTransformer])
+    }
+  }
+
   test("Test transform_keys/transform_values") {
     val sql = """
                 |select id, sort_array(map_entries(m1)), sort_array(map_entries(m2)) from(

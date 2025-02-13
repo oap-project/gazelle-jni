@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 
 import org.apache.spark.SparkConf
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
@@ -31,7 +31,7 @@ class GlutenClickHouseJoinSuite extends GlutenClickHouseWholeStageTransformerSui
     rootPath + "../../../../tools/gluten-it/common/src/main/resources/tpch-queries"
   protected val queriesResults: String = rootPath + "queries-output"
 
-  private val joinAlgorithm = CHConf.runtimeSettings("join_algorithm")
+  private val joinAlgorithm = CHConfig.runtimeSettings("join_algorithm")
 
   override protected def sparkConf: SparkConf = {
     super.sparkConf

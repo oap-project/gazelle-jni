@@ -29,12 +29,14 @@ import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, PartitionDi
 import org.apache.spark.sql.execution.datasources.clickhouse.utils.MergeTreePartsPartitionsUtil
 import org.apache.spark.sql.execution.datasources.mergetree.StorageMeta
 import org.apache.spark.sql.execution.datasources.v2.clickhouse.source.DeltaMergeTreeFileFormat
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.util.collection.BitSet
+
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.types.StructType
 
 import java.{util => ju}
+
 import scala.collection.JavaConverters._
 
 @SuppressWarnings(Array("io.github.zhztheplayer.scalawarts.InheritFromCaseClass"))

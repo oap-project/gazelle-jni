@@ -16,7 +16,7 @@
  */
 package org.apache.spark.shuffle
 
-import org.apache.gluten.backendsapi.clickhouse.CHBackendSettings
+import org.apache.gluten.backendsapi.clickhouse.{CHBackendSettings, CHConfig}
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.ColumnarNativeIterator
 import org.apache.gluten.memory.CHThreadGroup
@@ -59,9 +59,9 @@ class CHColumnarShuffleWriter[K, V](
       conf,
       compressionCodec,
       GlutenConfig.get.columnarShuffleCodecBackend.orNull)
-  private val maxSortBufferSize = GlutenConfig.get.chColumnarMaxSortBufferSize
-  private val forceMemorySortShuffle = GlutenConfig.get.chColumnarForceMemorySortShuffle
-  private val spillThreshold = GlutenConfig.get.chColumnarShuffleSpillThreshold
+  private val maxSortBufferSize = CHConfig.get.chColumnarMaxSortBufferSize
+  private val forceMemorySortShuffle = CHConfig.get.chColumnarForceMemorySortShuffle
+  private val spillThreshold = CHConfig.get.chColumnarShuffleSpillThreshold
   private val jniWrapper = new CHShuffleSplitterJniWrapper
   // Are we in the process of stopping? Because map tasks can call stop() with success = true
   // and then call stop() with success = false if they get an exception, we want to make sure

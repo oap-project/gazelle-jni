@@ -33,11 +33,13 @@ import org.apache.spark.sql.execution.datasources.clickhouse.utils.MergeTreePart
 import org.apache.spark.sql.execution.datasources.mergetree.StorageMeta
 import org.apache.spark.sql.execution.datasources.v2.clickhouse.source.DeltaMergeTreeFileFormat
 import org.apache.spark.sql.execution.datasources.v2.clickhouse.utils.CHDataSourceUtils
-import org.apache.spark.util.collection.BitSet
-import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.util.collection.BitSet
+
+import org.apache.hadoop.fs.Path
 
 import java.{util => ju}
+
 import scala.collection.JavaConverters._
 
 @SuppressWarnings(Array("io.github.zhztheplayer.scalawarts.InheritFromCaseClass"))

@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution.tpch
 
-import org.apache.gluten.backendsapi.clickhouse.{CHConf, RuntimeSettings}
+import org.apache.gluten.backendsapi.clickhouse.{CHConfig, RuntimeSettings}
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution._
 import org.apache.gluten.execution.GlutenPlan
@@ -2621,7 +2621,7 @@ class GlutenClickHouseTPCHSaltNullParquetSuite extends GlutenClickHouseTPCHAbstr
 
   test("GLUTEN-4521: Invalid result from grace mergeing aggregation with spill") {
     withSQLConf(
-      (CHConf.runtimeConfig("max_allowed_memory_usage_ratio_for_aggregate_merging"), "0.0001")) {
+      (CHConfig.runtimeConfig("max_allowed_memory_usage_ratio_for_aggregate_merging"), "0.0001")) {
       val sql =
         """
           |select count(l_orderkey, l_partkey) from (

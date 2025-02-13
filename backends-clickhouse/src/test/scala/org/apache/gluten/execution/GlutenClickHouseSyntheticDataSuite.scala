@@ -16,8 +16,6 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.config.GlutenConfig
-
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.Row
@@ -68,8 +66,6 @@ class GlutenClickHouseSyntheticDataSuite
   override protected def afterAll(): Unit = {
     DeltaLog.clearCache()
     super.afterAll()
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 
   test("test all data types all agg") {

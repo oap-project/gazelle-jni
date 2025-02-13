@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.datasources.v2.clickhouse
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 
 import org.apache.spark.sql.catalyst.catalog.BucketSpec
 import org.apache.spark.sql.execution.datasources.mergetree.StorageMeta
@@ -35,7 +35,7 @@ object ClickHouseConfig {
   private val DEFAULT_ENGINE = "mergetree"
   private val OPT_NAME_PREFIX = "clickhouse."
 
-  val CLICKHOUSE_WORKER_ID: String = CHConf.prefixOf("worker.id")
+  val CLICKHOUSE_WORKER_ID: String = CHConfig.prefixOf("worker.id")
 
   /** Create a mergetree configurations and returns the normalized key -> value map. */
   def createMergeTreeConfigurations(

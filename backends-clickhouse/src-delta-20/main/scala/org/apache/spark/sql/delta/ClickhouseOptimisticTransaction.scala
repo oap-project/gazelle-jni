@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.delta
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 
 import org.apache.spark.SparkException
 import org.apache.spark.sql.Dataset
@@ -110,7 +110,7 @@ class ClickhouseOptimisticTransaction(
         spark.conf.getAll.foreach(
           entry => {
             if (
-              CHConf.startWithSettingsPrefix(entry._1)
+              CHConfig.startWithSettingsPrefix(entry._1)
               || entry._1.equalsIgnoreCase(DeltaSQLConf.DELTA_OPTIMIZE_MIN_FILE_SIZE.key)
             ) {
               options += (entry._1 -> entry._2)

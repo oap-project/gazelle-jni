@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+
+#if defined(__x86_64__)
+
 #include <immintrin.h>
 #include <Columns/IColumn.h>
 #include <DataTypes/IDataType.h>
@@ -46,7 +49,6 @@ struct MyAdd<Decimal<DecimalNativeType>>
 };
 
 // _Pragma("clang attribute push(__attribute__((target(\"sse,sse2,sse3,ssse3,sse4,popcnt,avx,avx2,bmi2\"))),apply_to=function)")
-
 template <typename T>
 struct MySumData
 {
@@ -729,3 +731,5 @@ BM_Subtraction<OldUInt256>          5.41 ns         5.41 ns    133516077
 BM_Multiplication<OldUInt256>       2.47 ns         2.47 ns    286377591
 BM_Division<OldUInt256>             21.8 ns         21.8 ns     25876643
 */
+
+#endif

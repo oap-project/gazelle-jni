@@ -16,6 +16,7 @@
  */
 #pragma once
 #include <Columns/ColumnDecimal.h>
+#include <Columns/ColumnString.h>
 #include <Core/Field.h>
 #include <base/Decimal_fwd.h>
 #include <parquet/schema.h>

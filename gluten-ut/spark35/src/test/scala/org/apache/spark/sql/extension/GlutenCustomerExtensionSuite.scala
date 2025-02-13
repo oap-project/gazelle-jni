@@ -44,8 +44,8 @@ class GlutenCustomerExtensionSuite extends GlutenSQLTestsTrait {
       val testFileSourceScanExecTransformer = df.queryExecution.executedPlan.collect {
         case f: TestFileSourceScanExecTransformer => f
       }
-      assert(!testFileSourceScanExecTransformer.isEmpty)
-      assert(testFileSourceScanExecTransformer(0).nodeNamePrefix.equals("TestFile"))
+      assert(testFileSourceScanExecTransformer.nonEmpty)
+      assert(testFileSourceScanExecTransformer.head.nodeNamePrefix.equals("TestFile"))
     }
   }
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.config.GlutenConfig
+import org.apache.gluten.config.VeloxConfig
 import org.apache.gluten.sql.shims.SparkShimLoader
 
 import org.apache.spark.SparkConf
@@ -118,7 +118,7 @@ class VeloxHashJoinSuite extends VeloxWholeStageTransformerSuite {
     Seq("true", "false").foreach(
       enabledOffheapBroadcast =>
         withSQLConf(
-          GlutenConfig.VELOX_BROADCAST_BUILD_RELATION_USE_OFFHEAP.key -> enabledOffheapBroadcast) {
+          VeloxConfig.VELOX_BROADCAST_BUILD_RELATION_USE_OFFHEAP.key -> enabledOffheapBroadcast) {
           withTable("t1", "t2") {
             spark.sql("""
                         |CREATE TABLE t1 USING PARQUET
@@ -158,7 +158,7 @@ class VeloxHashJoinSuite extends VeloxWholeStageTransformerSuite {
     Seq("true", "false").foreach(
       enabledOffheapBroadcast =>
         withSQLConf(
-          GlutenConfig.VELOX_BROADCAST_BUILD_RELATION_USE_OFFHEAP.key -> enabledOffheapBroadcast) {
+          VeloxConfig.VELOX_BROADCAST_BUILD_RELATION_USE_OFFHEAP.key -> enabledOffheapBroadcast) {
           withTable("t1", "t2") {
             val df1 =
               (0 until 50)

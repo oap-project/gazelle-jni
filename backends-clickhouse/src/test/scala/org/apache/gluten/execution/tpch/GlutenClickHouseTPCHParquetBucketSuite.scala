@@ -46,7 +46,7 @@ class GlutenClickHouseTPCHParquetBucketSuite
   protected val bucketTableDataPath: String = basePath + "/tpch-parquet-bucket"
 
   override protected def sparkConf: SparkConf = {
-    import org.apache.gluten.backendsapi.clickhouse.CHConf._
+    import org.apache.gluten.backendsapi.clickhouse.CHConfig._
     super.sparkConf
       .set("spark.shuffle.manager", "org.apache.spark.shuffle.sort.ColumnarShuffleManager")
       .set("spark.io.compression.codec", "LZ4")

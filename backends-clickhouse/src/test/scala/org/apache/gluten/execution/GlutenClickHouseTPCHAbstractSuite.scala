@@ -16,8 +16,6 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.config.GlutenConfig
-
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.DataFrame
@@ -589,8 +587,6 @@ abstract class GlutenClickHouseTPCHAbstractSuite
     ClickhouseSnapshot.clearAllFileStatusCache()
     DeltaLog.clearCache()
     super.afterAll()
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 
   override protected def runTPCHQuery(

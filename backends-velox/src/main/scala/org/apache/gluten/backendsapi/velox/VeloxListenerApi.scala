@@ -20,6 +20,7 @@ import org.apache.gluten.backendsapi.ListenerApi
 import org.apache.gluten.columnarbatch.ArrowBatches.{ArrowJavaBatch, ArrowNativeBatch}
 import org.apache.gluten.columnarbatch.VeloxBatch
 import org.apache.gluten.config.GlutenConfig
+import org.apache.gluten.config.VeloxConfig._
 import org.apache.gluten.execution.datasource.GlutenFormatFactory
 import org.apache.gluten.expression.UDFMappings
 import org.apache.gluten.extension.columnar.transition.Convention
@@ -50,6 +51,27 @@ class VeloxListenerApi extends ListenerApi with Logging {
 
   override def onDriverStart(sc: SparkContext, pc: PluginContext): Unit = {
     val conf = pc.conf()
+
+    // When the Velox cache is enabled, the Velox file handle cache should also be enabled.
+    // Otherwise, a 'reference id not found' error may occur.
+    if (
+      conf.getBoolean(COLUMNAR_VELOX_CACHE_ENABLED.key, false) &&
+      !conf.getBoolean(COLUMNAR_VELOX_FILE_HANDLE_CACHE_ENABLED.key, false)
+    ) {
+      throw new IllegalArgumentException(
+        s"${COLUMNAR_VELOX_CACHE_ENABLED.key} and " +
+          s"${COLUMNAR_VELOX_FILE_HANDLE_CACHE_ENABLED.key} should be enabled together.")
+    }
+
+    if (
+      conf.getBoolean(COLUMNAR_VELOX_CACHE_ENABLED.key, false) &&
+      conf.getSizeAsBytes(LOAD_QUANTUM.key, LOAD_QUANTUM.defaultValueString) > 8 * 1024 * 1024
+    ) {
+      throw new IllegalArgumentException(
+        s"Velox currently only support up to 8MB load quantum size " +
+          s"on SSD cache enabled by ${COLUMNAR_VELOX_CACHE_ENABLED.key}, " +
+          s"User can set ${LOAD_QUANTUM.key} <= 8MB skip this error.")
+    }
 
     // Generate HDFS client configurations.
     HdfsConfGenerator.addHdfsClientToSparkWorkDirectory(sc)
@@ -180,7 +202,7 @@ class VeloxListenerApi extends ListenerApi with Logging {
 
     // Workaround for https://github.com/apache/incubator-gluten/issues/7837
     if (isDriver && !inLocalMode(conf)) {
-      parsed += (GlutenConfig.COLUMNAR_VELOX_CACHE_ENABLED.key -> "false")
+      parsed += (COLUMNAR_VELOX_CACHE_ENABLED.key -> "false")
     }
     NativeBackendInitializer.forBackend(VeloxBackend.BACKEND_NAME).initialize(parsed)
 
