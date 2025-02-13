@@ -1042,7 +1042,7 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
       val sql =
         """
           |select cast('nan' as float) =
-          |(select c2 from test where c1=5)
+          |(select c2 from test_8715 where c1=5)
           |""".stripMargin
       compareResultsAgainstVanillaSpark(sql, true, { _ => })
       val sql1 =
