@@ -23,7 +23,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.types.{DataType, DataTypes}
+import org.apache.spark.sql.types.DataType
 
 case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan] {
 
@@ -74,7 +74,6 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
   }
 
   private def getExpressionName(expr: Expression): Option[String] = expr match {
-    case _: GetStructField => ExpressionMappings.expressionsMap.get(classOf[GetStructField])
     case _: And => ExpressionMappings.expressionsMap.get(classOf[And])
     case _: Or => ExpressionMappings.expressionsMap.get(classOf[Or])
     case _: GetJsonObject => ExpressionMappings.expressionsMap.get(classOf[GetJsonObject])
@@ -117,14 +116,6 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
         case _ =>
       }
       e match {
-        case g: GetStructField if canBeOptimized(g) =>
-          parent match {
-            case Some(_: GetStructField) | None =>
-              children +:= Literal.apply(g.ordinal, DataTypes.IntegerType)
-              f(g.child, parent = Option.apply(g))
-              nestedFunctions += 1
-            case _ =>
-          }
         case a: And if canBeOptimized(a) =>
           parent match {
             case Some(_: And) | None =>
