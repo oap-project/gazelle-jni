@@ -31,7 +31,6 @@ object UDFMappings extends Logging {
   val hiveUDFMap: Map[String, String] = Map()
   val pythonUDFMap: Map[String, String] = Map()
   val scalaUDFMap: Map[String, String] = Map()
-  val collapsedFunctionsMap: Map[String, String] = Map()
 
   private def appendKVToMap(key: String, value: String, res: Map[String, String]): Unit = {
     if (key.isEmpty || value.isEmpty()) {
@@ -75,14 +74,6 @@ object UDFMappings extends Logging {
     if (!StringUtils.isBlank(strScalaUDFs)) {
       parseStringToMap(strScalaUDFs, scalaUDFMap)
       logDebug(s"loaded scala udf mappings:${scalaUDFMap.toString}")
-    }
-
-    val strCollapsedFunctions = conf.get(
-      GlutenConfig.GLUTEN_SUPPORTED_COLLAPSED_FUNCTIONS.key,
-      GlutenConfig.GLUTEN_SUPPORTED_COLLAPSED_FUNCTIONS.defaultValue.getOrElse(""))
-    if (!StringUtils.isBlank(strCollapsedFunctions)) {
-      parseStringToMap(strCollapsedFunctions, collapsedFunctionsMap)
-      logDebug(s"loaded collapsed function mappings: ${collapsedFunctionsMap.toString}")
     }
   }
 }

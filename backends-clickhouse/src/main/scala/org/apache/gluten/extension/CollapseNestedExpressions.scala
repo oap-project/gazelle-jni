@@ -17,7 +17,7 @@
 package org.apache.gluten.extension
 
 import org.apache.gluten.execution.{FilterExecTransformer, ProjectExecTransformer}
-import org.apache.gluten.expression.{ExpressionMappings, UDFMappings}
+import org.apache.gluten.expression.{CollapsedExpressionMappings, ExpressionMappings}
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions._
@@ -61,15 +61,15 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
       case a: Alias => exprCall = a.child
       case _ =>
     }
-    val functionName = getExpressionName(exprCall)
-    functionName match {
+    val exprName = getExpressionName(exprCall)
+    exprName match {
       case None =>
         exprCall match {
           case _: LeafExpression => false
           case _ => exprCall.children.exists(c => canBeOptimized(c))
         }
       case Some(f) =>
-        UDFMappings.collapsedFunctionsMap.contains(f)
+        CollapsedExpressionMappings.supported(f)
     }
   }
 
@@ -145,7 +145,7 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
       }
     }
     f(expr)
-    if ((nestedFunctions > 1 && name.isDefined) || scalaUDFExists(children)) {
+    if ((nestedFunctions > 1 && name.isDefined) || collapsedExpressionExists(children)) {
       val func: Null = null
       ScalaUDF(func, dataType, children, udfName = name, nullable = expr.nullable)
     } else {
@@ -153,11 +153,11 @@ case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan
     }
   }
 
-  private def scalaUDFExists(children: Seq[Expression]): Boolean = {
+  private def collapsedExpressionExists(children: Seq[Expression]): Boolean = {
     var res = false
     children.foreach {
       case _: ScalaUDF if !res => res = true
-      case c if !res => res = scalaUDFExists(c.children)
+      case c if !res => res = collapsedExpressionExists(c.children)
       case _ =>
     }
     res

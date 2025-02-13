@@ -97,12 +97,27 @@ object ExpressionConverter extends SQLConfHelper with Logging {
     if (udf.udfName.isEmpty) {
       throw new GlutenNotSupportException("UDF name is not found!")
     }
-    var substraitExprName = UDFMappings.scalaUDFMap.get(udf.udfName.get)
-    if (substraitExprName.isEmpty) {
-      substraitExprName = UDFMappings.collapsedFunctionsMap.get(udf.udfName.get)
-    }
+    val substraitExprName = UDFMappings.scalaUDFMap.get(udf.udfName.get)
     substraitExprName match {
       case Some(name) =>
+        GenericExpressionTransformer(
+          name,
+          udf.children.map(replaceWithExpressionTransformer0(_, attributeSeq, expressionsMap)),
+          udf)
+      case _ =>
+        throw new GlutenNotSupportException(s"Not supported scala udf: $udf.")
+    }
+  }
+
+  private def replaceCollapsedExpressionWithExpressionTransformer(
+      udf: ScalaUDF,
+      attributeSeq: Seq[Attribute],
+      expressionsMap: Map[Class[_], String]): ExpressionTransformer = {
+    if (udf.udfName.isEmpty) {
+      throw new GlutenNotSupportException("UDF name is not found!")
+    }
+    udf.udfName match {
+      case Some(name) if CollapsedExpressionMappings.supported(name) =>
         GenericExpressionTransformer(
           name,
           udf.children.map(replaceWithExpressionTransformer0(_, attributeSeq, expressionsMap)),
@@ -145,6 +160,8 @@ object ExpressionConverter extends SQLConfHelper with Logging {
     expr match {
       case p: PythonUDF =>
         return replacePythonUDFWithExpressionTransformer(p, attributeSeq, expressionsMap)
+      case s: ScalaUDF if CollapsedExpressionMappings.supported(s.udfName.getOrElse("")) =>
+        return replaceCollapsedExpressionWithExpressionTransformer(s, attributeSeq, expressionsMap)
       case s: ScalaUDF =>
         return replaceScalaUDFWithExpressionTransformer(s, attributeSeq, expressionsMap)
       case _ if HiveUDFTransformer.isHiveUDF(expr) =>

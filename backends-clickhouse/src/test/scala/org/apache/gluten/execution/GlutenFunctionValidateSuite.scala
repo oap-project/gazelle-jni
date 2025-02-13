@@ -18,9 +18,10 @@ package org.apache.gluten.execution
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{DataFrame, Row, TestUtils}
-import org.apache.spark.sql.catalyst.expressions.{Expression, GetJsonObject, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Expression, GetJsonObject, Literal, ScalaUDF}
 import org.apache.spark.sql.catalyst.optimizer.{ConstantFolding, NullPropagation}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Project}
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.v2.clickhouse.ClickHouseConfig
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
@@ -374,6 +375,34 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     runQueryAndCompare(
       "select get_json_object(string_field1, '$.a[*].z.n.p') from json_test where int_field1 = 7") {
       _ =>
+    }
+  }
+
+  test("GLUTEN-8557: Optimize nested and/or") {
+    def checkCollapsedFunctions(plan: SparkPlan, functionName: String, argNum: Int): Boolean = {
+
+      def checkExpression(expr: Expression, functionName: String, argNum: Int): Boolean =
+        expr match {
+          case s: ScalaUDF
+              if s.udfName.getOrElse("").equals(functionName) && s.children.size == argNum =>
+            true
+          case _ => expr.children.exists(c => checkExpression(c, functionName, argNum))
+        }
+      plan match {
+        case f: FilterExecTransformer => checkExpression(f.condition, functionName, argNum)
+        case _ => plan.children.exists(c => checkCollapsedFunctions(c, functionName, argNum))
+      }
+      false
+    }
+    withSQLConf(("spark.gluten.sql.supported.collapseNestedFunctions", "and,or")) {
+      runQueryAndCompare(
+        "SELECT count(1) from json_test where int_field1 = 5 and double_field1 > 1.0 and string_field1 is not null") {
+        x => assert(checkCollapsedFunctions(x.queryExecution.executedPlan, "and", 3))
+      }
+      runQueryAndCompare(
+        "SELECT count(1) from json_test where int_field1 = 5 or double_field1 > 1.0 or string_field1 is not null") {
+        x => assert(checkCollapsedFunctions(x.queryExecution.executedPlan, "or", 3))
+      }
     }
   }
 
