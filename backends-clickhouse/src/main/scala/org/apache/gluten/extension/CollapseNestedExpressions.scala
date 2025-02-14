@@ -25,6 +25,10 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.DataType
 
+/**
+ * Collapse nested expressions for optimization, to reduce expression calls. Now support `and`,
+ * `or`. e.g. select ... and(and(a=1, b=2), c=3) => select ... and(a=1, b=2, c=3).
+ */
 case class CollapseNestedExpressions(spark: SparkSession) extends Rule[SparkPlan] {
 
   override def apply(plan: SparkPlan): SparkPlan = {
