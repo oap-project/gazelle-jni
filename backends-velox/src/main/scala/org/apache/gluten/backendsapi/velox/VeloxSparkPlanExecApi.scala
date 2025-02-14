@@ -272,6 +272,14 @@ class VeloxSparkPlanExecApi extends SparkPlanExecApi {
     GenericExpressionTransformer(substraitExprName, Seq(endDate, startDate), original)
   }
 
+  /** Transform map_from_entries to Substrait. */
+  override def genMapFromEntriesTransformer(
+      substraitExprName: String,
+      child: ExpressionTransformer,
+      expr: Expression): ExpressionTransformer = {
+    GenericExpressionTransformer(substraitExprName, Seq(child), expr)
+  }
+
   override def genPreciseTimestampConversionTransformer(
       substraitExprName: String,
       children: Seq[ExpressionTransformer],
