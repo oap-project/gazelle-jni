@@ -18,10 +18,11 @@
 #include "ORCOutputFormatFile.h"
 
 #if USE_ORC
-#    include <Formats/FormatFactory.h>
-#    include <Processors/Formats/Impl/ORCBlockOutputFormat.h>
-#    include <Poco/Util/AbstractConfiguration.h>
-#    include <Common/CHUtil.h>
+#include <Formats/FormatFactory.h>
+#include <Processors/Formats/Impl/ORCBlockOutputFormat.h>
+#include <Processors/Port.h>
+#include <Poco/Util/AbstractConfiguration.h>
+#include <Common/CHUtil.h>
 
 namespace local_engine
 {

@@ -20,6 +20,7 @@
 #include <Core/AccurateComparison.h>
 #include <Core/ColumnWithTypeAndName.h>
 #include <Core/Field.h>
+#include <DataTypes/IDataType.h>
 
 
 namespace DB

@@ -17,6 +17,9 @@
 
 #include <gluten_test_util.h>
 #include <incbin.h>
+
+#include "Interpreters/ExpressionActions.h"
+
 #include <testConfig.h>
 #include <Core/Settings.h>
 #include <Disks/ObjectStorages/HDFS/HDFSObjectStorage.h>

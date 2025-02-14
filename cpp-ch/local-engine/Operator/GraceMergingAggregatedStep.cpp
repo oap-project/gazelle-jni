@@ -16,10 +16,10 @@
  */
 #include "GraceMergingAggregatedStep.h"
 #include <Operator/GraceAggregatingTransform.h>
+#include <Processors/Port.h>
 #include <Processors/Transforms/AggregatingTransform.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
 #include <Common/CHUtil.h>
-#include <Common/QueryContext.h>
 
 namespace DB
 {

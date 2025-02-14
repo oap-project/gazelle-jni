@@ -17,6 +17,7 @@
 #include "SparkMergeTreeWriter.h"
 
 #include <Interpreters/ActionsDAG.h>
+#include <Interpreters/ExpressionActions.h>
 #include <QueryPipeline/Chain.h>
 #include <Storages/MergeTree/DataPartStorageOnDiskFull.h>
 #include <Storages/MergeTree/MetaDataHelper.h>

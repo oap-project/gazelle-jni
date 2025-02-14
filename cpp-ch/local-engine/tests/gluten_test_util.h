@@ -49,6 +49,7 @@ namespace DB
 {
 struct FormatSettings;
 class ReadBuffer;
+class Field;
 }
 
 namespace arrow::io

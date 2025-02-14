@@ -17,6 +17,7 @@
 #include "EmptyProjectStep.h"
 #include <Processors/Chunk.h>
 #include <Processors/IProcessor.h>
+#include <Processors/Port.h>
 #include <QueryPipeline/Pipe.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
 #include <Common/CHUtil.h>

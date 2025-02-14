@@ -17,6 +17,7 @@
 #include <Columns/IColumn.h>
 #include <Core/Field.h>
 #include <DataTypes/DataTypeFactory.h>
+#include <DataTypes/IDataType.h>
 #include <Operator/PartitionColumnFillingTransform.h>
 #include <gtest/gtest.h>
 

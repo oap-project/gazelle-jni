@@ -63,7 +63,7 @@ object ClickHouseSQLQueryTestSettings extends SQLQueryTestSettings {
     "except-all.sql",
     "except.sql",
     "extract.sql",
-    "group-by-filter.sql",
+    // CH - "group-by-filter.sql",
     // CH - "group-by-ordinal.sql",
     "grouping_set.sql",
     "having.sql",

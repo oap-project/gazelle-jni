@@ -272,6 +272,9 @@ void VeloxBackend::initConnector() {
   connectorConfMap[velox::connector::hive::HiveConfig::kFilePreloadThreshold] =
       backendConf_->get<std::string>(kFilePreloadThreshold, "1048576"); // 1M
 
+  // read as UTC
+  connectorConfMap[velox::connector::hive::HiveConfig::kReadTimestampPartitionValueAsLocalTime] = "false";
+
   // set cache_prefetch_min_pct default as 0 to force all loads are prefetched in DirectBufferInput.
   FLAGS_cache_prefetch_min_pct = backendConf_->get<int>(kCachePrefetchMinPct, 0);
 

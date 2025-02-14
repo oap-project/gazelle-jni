@@ -19,9 +19,11 @@
 #include <jni.h>
 #include <Core/Block.h>
 #include <Core/Field.h>
+#include <DataTypes/IDataType.h>
 #include <Common/Allocator.h>
 #include <Common/Arena.h>
 
+struct StringRef;
 
 namespace local_engine
 {

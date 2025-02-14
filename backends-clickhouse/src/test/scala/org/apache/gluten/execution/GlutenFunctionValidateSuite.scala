@@ -1075,4 +1075,10 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     }
   }
 
+  test("Test approx_count_distinct") {
+    val sql = "select approx_count_distinct(id, 0.001), approx_count_distinct(id, 0.01), " +
+      "approx_count_distinct(id, 0.1) from range(1000)"
+    compareResultsAgainstVanillaSpark(sql, true, { _ => })
+  }
+
 }

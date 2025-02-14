@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <memory>
-#include <Poco/Logger.h>
+#include "ExpandTransform.h"
 
-#include <Columns/ColumnNullable.h>
+#include <memory>
 #include <Columns/ColumnsNumber.h>
 #include <Columns/IColumn.h>
 #include <DataTypes/DataTypeNullable.h>
@@ -26,8 +25,6 @@
 #include <Processors/IProcessor.h>
 #include <Common/Exception.h>
 #include <Common/logger_useful.h>
-
-#include "ExpandTransform.h"
 
 namespace DB
 {

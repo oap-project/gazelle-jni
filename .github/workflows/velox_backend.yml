@@ -525,11 +525,15 @@ jobs:
           path: /root/.m2/repository/org/apache/arrow/
       - name: Install Uniffle ${{ matrix.uniffle }}
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk && \
+          export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+          if [ ! -e "/opt/apache-uniffle-${{ matrix.uniffle }}-incubating-bin.tar.gz" ]; then
+            ${WGET_CMD} https://archive.apache.org/dist/incubator/uniffle/${{ matrix.uniffle }}/apache-uniffle-${{ matrix.uniffle }}-incubating-bin.tar.gz -P /opt
+          fi
+          if [ ! -e "/opt/hadoop-${{ matrix.hadoop }}.tar.gz" ]; then
+            ${WGET_CMD} https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop }}/hadoop-${{ matrix.hadoop }}.tar.gz -P /opt
+          fi
           cd /opt && \
-          ${WGET_CMD} https://archive.apache.org/dist/incubator/uniffle/${{ matrix.uniffle }}/apache-uniffle-${{ matrix.uniffle }}-incubating-bin.tar.gz && \
           mkdir /opt/uniffle && tar xzf apache-uniffle-${{ matrix.uniffle }}-incubating-bin.tar.gz -C /opt/uniffle --strip-components=1 && \
-          ${WGET_CMD} https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop }}/hadoop-${{ matrix.hadoop }}.tar.gz && \
           tar xzf hadoop-${{ matrix.hadoop }}.tar.gz -C /opt/ && \
           cd /opt/uniffle && mkdir shuffle_data && \
           bash -c "echo -e 'XMX_SIZE=16g\nHADOOP_HOME=/opt/hadoop-${{ matrix.hadoop }}' > ./bin/rss-env.sh" && \

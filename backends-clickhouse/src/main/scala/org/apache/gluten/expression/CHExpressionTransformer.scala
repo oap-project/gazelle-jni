@@ -260,6 +260,7 @@ case class GetArrayItemTransformer(
       ConverterUtils.getTypeNode(getArrayItem.dataType, getArrayItem.nullable))
   }
 }
+
 case class CHStringSplitTransformer(
     substraitExprName: String,
     children: Seq[ExpressionTransformer],

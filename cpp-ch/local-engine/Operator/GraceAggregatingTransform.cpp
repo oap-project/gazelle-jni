@@ -16,6 +16,7 @@
  */
 
 #include "GraceAggregatingTransform.h"
+#include <Processors/Port.h>
 #include <Common/BitHelpers.h>
 #include <Common/CHUtil.h>
 #include <Common/CurrentThread.h>
