@@ -1041,14 +1041,14 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
       spark.sql(insert_sql)
       val sql =
         """
-          |select cast('nan' as float) =
-          |(select c2 from test_8715 where c1=5)
+          |select c2 = cast('nan' as double) from test_8715 where c1=5
+          |order by c2 asc
           |""".stripMargin
       compareResultsAgainstVanillaSpark(sql, true, { _ => })
       val sql1 =
         """
           |select sum(c1) from test_8715
-          |group by c2
+          |group by c2 order by c2 asc
           |""".stripMargin
       compareResultsAgainstVanillaSpark(sql1, true, { _ => })
       val sql2 =
@@ -1069,7 +1069,7 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
           |b.c1 as b_c1, b.c2 as b_c2
           |from test_8715 a
           |join test_8715 b on a.c2 = b.c2
-          |order by a.c2 desc
+          |order by a.c1, b.c1 desc
           |""".stripMargin
       compareResultsAgainstVanillaSpark(sql4, true, { _ => })
     }
