@@ -23,6 +23,7 @@ import org.apache.spark.{SparkConf, SparkException, SparkThrowable}
 import org.apache.spark.ErrorMessageFormat.MINIMAL
 import org.apache.spark.SparkThrowableHelper.getMessage
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
+import org.apache.spark.sql.catalyst.optimizer.{ConstantFolding, ConvertToLocalRelation, NullPropagation}
 import org.apache.spark.sql.catalyst.plans.SQLHelper
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.catalyst.util.{fileToString, stringToFile}
@@ -199,7 +200,13 @@ class GlutenSQLQueryTestSuite
         .set("spark.sql.files.openCostInBytes", "134217728")
         .set("spark.unsafe.exceptionOnMemoryLeak", "true")
     } else {
-      conf.set("spark.unsafe.exceptionOnMemoryLeak", "true")
+      conf
+        .set("spark.unsafe.exceptionOnMemoryLeak", "true")
+        // Avoid static evaluation for literal input by spark catalyst.
+        .set(
+          SQLConf.OPTIMIZER_EXCLUDED_RULES.key,
+          ConvertToLocalRelation.ruleName +
+            "," + ConstantFolding.ruleName + "," + NullPropagation.ruleName)
     }
     conf
   }
@@ -315,9 +322,8 @@ class GlutenSQLQueryTestSuite
     // If a test case is not in the test list, or it is in the ignore list, ignore this test case.
     if (
       !supportedList.exists(
-        t => testCase.name.toLowerCase(Locale.ROOT).contains(t.toLowerCase(Locale.ROOT))) ||
-      ignoreList.exists(
-        t => testCase.name.toLowerCase(Locale.ROOT).contains(t.toLowerCase(Locale.ROOT)))
+        t => testCase.name.toLowerCase(Locale.ROOT) == t.toLowerCase(Locale.ROOT)) ||
+      ignoreList.exists(t => testCase.name.toLowerCase(Locale.ROOT) == t.toLowerCase(Locale.ROOT))
     ) {
       // Create a test case to ignore this case.
       ignore(testCase.name) { /* Do nothing */ }
