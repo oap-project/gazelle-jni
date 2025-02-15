@@ -170,8 +170,8 @@ abstract class BroadcastNestedLoopJoinExecTransformer(
 
   def validateJoinTypeAndBuildSide(): ValidationResult = {
     val result = joinType match {
-      case _: InnerLike | LeftOuter | RightOuter => ValidationResult.succeeded
-      case ExistenceJoin(_) => ValidationResult.succeeded
+      case _: InnerLike | LeftOuter | RightOuter =>
+        backendSpecificJoinValidation().getOrElse(ValidationResult.succeeded)
       case _ =>
         ValidationResult.failed(s"$joinType join is not supported with BroadcastNestedLoopJoin")
     }
@@ -181,11 +181,13 @@ abstract class BroadcastNestedLoopJoinExecTransformer(
     }
 
     (joinType, buildSide) match {
-      case (LeftOuter, BuildLeft) | (RightOuter, BuildRight) =>
+      case (LeftOuter, BuildLeft) | (RightOuter, BuildRight) | (ExistenceJoin(_), BuildLeft) =>
         ValidationResult.failed(s"$joinType join is not supported with $buildSide")
       case _ => ValidationResult.succeeded // continue
     }
   }
+
+  protected def backendSpecificJoinValidation(): Option[ValidationResult] = None
 
   override protected def doValidateInternal(): ValidationResult = {
     if (!GlutenConfig.get.broadcastNestedLoopJoinTransformerTransformerEnabled) {

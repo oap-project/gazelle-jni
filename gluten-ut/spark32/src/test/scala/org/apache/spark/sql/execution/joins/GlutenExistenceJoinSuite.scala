@@ -20,7 +20,7 @@ import org.apache.spark.sql.GlutenSQLTestsBaseTrait
 
 class GlutenExistenceJoinSuite extends ExistenceJoinSuite with GlutenSQLTestsBaseTrait {
 
-  test("force existence join with BNJ using Catalyst APIs") {
+  test("test existence join with broadcast nested loop join") {
     import org.apache.spark.sql.catalyst.expressions._
     import org.apache.spark.sql.catalyst.plans.logical.{JoinHint, _}
     import org.apache.spark.sql.catalyst.plans.ExistenceJoin

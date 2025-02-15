@@ -17,6 +17,7 @@
 package org.apache.gluten.execution
 
 import org.apache.gluten.backendsapi.BackendsApiManager
+import org.apache.gluten.extension.ValidationResult
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.Expression
@@ -68,4 +69,10 @@ case class VeloxBroadcastNestedLoopJoinExecTransformer(
     BackendsApiManager.getTransformerApiInstance.packPBMessage(message)
   }
 
+  override def backendSpecificJoinValidation(): Option[ValidationResult] = {
+    joinType match {
+      case ExistenceJoin(_) => Some(ValidationResult.succeeded)
+      case _ => None
+    }
+  }
 }
