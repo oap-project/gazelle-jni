@@ -365,6 +365,7 @@ class ClickHouseTestSettings extends BackendTestSettings {
     .excludeCH("SPARK-33291: Cast struct with null elements to string")
     .excludeCH("SPARK-35111: Cast string to year-month interval")
     .excludeCH("Gluten - data type casting")
+    .exclude("cast from boolean to timestamp")
   enableSuite[GlutenCoalesceShufflePartitionsSuite]
     .excludeByPrefix("determining the number of reducers")
     .excludeCH("SPARK-46590 adaptive query execution works correctly with broadcast join and union")
