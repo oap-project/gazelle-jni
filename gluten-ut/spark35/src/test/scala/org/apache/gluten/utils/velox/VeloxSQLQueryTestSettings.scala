@@ -29,6 +29,7 @@ object VeloxSQLQueryTestSettings extends SQLQueryTestSettings {
   val SUPPORTED_SQL_QUERY_LIST: Set[String] = Set(
     "cast.sql",
     "change-column.sql",
+    "ceil-floor-with-scale-param.sql",
     "columnresolution-negative.sql",
     "columnresolution-views.sql",
     "columnresolution.sql",
@@ -77,6 +78,7 @@ object VeloxSQLQueryTestSettings extends SQLQueryTestSettings {
     "natural-join.sql",
     "null-handling.sql",
     "null-propagation.sql",
+    "operators.sql",
     "order-by-nulls-ordering.sql",
     "order-by-ordinal.sql",
     "outer-join.sql",
@@ -97,6 +99,7 @@ object VeloxSQLQueryTestSettings extends SQLQueryTestSettings {
     "table-aliases.sql",
     "table-valued-functions.sql",
     "tablesample-negative.sql",
+    "try-string-functions.sql",
     "subquery/exists-subquery/exists-aggregate.sql",
     "subquery/exists-subquery/exists-basic.sql",
     "subquery/exists-subquery/exists-cte.sql",
@@ -248,8 +251,6 @@ object VeloxSQLQueryTestSettings extends SQLQueryTestSettings {
     "interval.sql",
     // Enable ConstantFolding rule for "typeof(...)".
     "misc-functions.sql",
-    // Precision difference in cot(1) and cot(-1).
-    "operators.sql",
     // Removed some result mismatch cases.
     "regexp-functions.sql",
     // Removed some result mismatch cases.
