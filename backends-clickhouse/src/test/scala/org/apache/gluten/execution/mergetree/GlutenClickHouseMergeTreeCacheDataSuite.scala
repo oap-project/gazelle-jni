@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution.mergetree
 
-import org.apache.gluten.backendsapi.clickhouse.{CHConf, RuntimeConfig}
+import org.apache.gluten.backendsapi.clickhouse.{CHConfig, RuntimeConfig}
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.{FileSourceScanExecTransformer, GlutenClickHouseTPCHAbstractSuite}
 
@@ -48,7 +48,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
   }
 
   override protected def sparkConf: SparkConf = {
-    import org.apache.gluten.backendsapi.clickhouse.CHConf._
+    import org.apache.gluten.backendsapi.clickhouse.CHConfig._
 
     super.sparkConf
       .set("spark.shuffle.manager", "org.apache.spark.shuffle.sort.ColumnarShuffleManager")
@@ -59,7 +59,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
       .set(RuntimeConfig.LOGGER_LEVEL.key, "error")
       .set("spark.gluten.soft-affinity.enabled", "true")
       .set(GlutenConfig.NATIVE_WRITER_ENABLED.key, "true")
-      .set(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
+      .set(CHConfig.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
       .setCHSettings("mergetree.merge_after_insert", false)
   }
 
@@ -595,7 +595,7 @@ class GlutenClickHouseMergeTreeCacheDataSuite
   }
 
   test("test disable cache files return") {
-    withSQLConf(CHConf.runtimeConfig("gluten_cache.local.enabled") -> "false") {
+    withSQLConf(CHConfig.runtimeConfig("gluten_cache.local.enabled") -> "false") {
       runSql(
         s"CACHE FILES select * from '$HDFS_URL_ENDPOINT/tpch-data/lineitem'",
         noFallBack = false) {

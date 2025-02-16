@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.columnarbatch.ColumnarBatches
-import org.apache.gluten.config.GlutenConfig
+import org.apache.gluten.config.VeloxConfig
 import org.apache.gluten.runtime.Runtimes
 import org.apache.gluten.sql.shims.SparkShimLoader
 import org.apache.gluten.vectorized.{ColumnarBatchSerializeResult, ColumnarBatchSerializerJniWrapper}
@@ -93,7 +93,7 @@ object BroadcastUtils {
       schema: StructType,
       from: Broadcast[F],
       fn: Iterator[InternalRow] => Iterator[ColumnarBatch]): Broadcast[T] = {
-    val useOffheapBuildRelation = GlutenConfig.get.enableBroadcastBuildRelationInOffheap
+    val useOffheapBuildRelation = VeloxConfig.get.enableBroadcastBuildRelationInOffheap
     mode match {
       case HashedRelationBroadcastMode(_, _) =>
         // HashedRelation to ColumnarBuildSideRelation.

@@ -20,7 +20,6 @@
 #include <ranges>
 #include <string>
 #include <Columns/ColumnString.h>
-#include <DataTypes/DataTypeString.h>
 #include <IO/ReadBufferFromFile.h>
 #include <Interpreters/ActionsVisitor.h>
 #include <Interpreters/Context.h>
@@ -31,6 +30,7 @@
 #include <Storages/Parquet/ParquetConverter.h>
 #include <Storages/Parquet/RowRanges.h>
 #include <Storages/Parquet/VectorizedParquetRecordReader.h>
+#include <Storages/Parquet/VirtualColumnRowIndexReader.h>
 #include <boost/iterator/counting_iterator.hpp>
 #include <gtest/gtest.h>
 #include <parquet/page_index.h>
@@ -199,14 +199,14 @@ public:
 
 class OIBuilder
 {
-    size_t previouse_count_ = 0;
+    size_t previous_count_ = 0;
     std::vector<size_t> row_index_;
 
 public:
     OIBuilder & addPage(size_t row_count)
     {
-        row_index_.push_back(previouse_count_);
-        previouse_count_ += row_count;
+        row_index_.push_back(previous_count_);
+        previous_count_ += row_count;
         return *this;
     }
 
@@ -220,7 +220,7 @@ public:
     parquet::OffsetIndexPtr build() const
     {
         parquet::OffsetIndexBuilderPtr builder = parquet::OffsetIndexBuilder::Make();
-        // we don't care about the offset and comprewssed_page_size.
+        // we don't care about the offset and compressed_page_size.
         std::ranges::for_each(row_index_, [&](const auto & row_index) { builder->AddPage(1, 1, row_index); });
         constexpr int64_t final_position = 4096;
         builder->Finish(final_position);
@@ -367,21 +367,21 @@ local_engine::RowRanges buildTestRowRanges(const std::vector<Int32> & rowIndexes
     local_engine::RowRanges result;
     const parquet::OffsetIndexBuilderPtr builder = parquet::OffsetIndexBuilder::Make();
 
-    local_engine::PageIndexs pageIndexs;
+    local_engine::PageIndexs pageIndexes;
     for (Int32 i = 0, n = rowIndexes.size(); i < n; i += 2)
     {
         const int64_t from = rowIndexes[i];
         const int64_t to = rowIndexes[i + 1];
         builder->AddPage(0, 0, from);
         builder->AddPage(0, 0, to + 1);
-        pageIndexs.push_back(i);
+        pageIndexes.push_back(i);
     }
     constexpr int64_t final_position = 4096;
     builder->Finish(final_position);
     const auto offset_index = builder->Build();
 
     const Int32 rgCount = rowIndexes.back() - 1;
-    return local_engine::RowRangesBuilder(rgCount, offset_index->page_locations()).toRowRanges(pageIndexs);
+    return local_engine::RowRangesBuilder(rgCount, offset_index->page_locations()).toRowRanges(pageIndexes);
 }
 
 void assertRows(const local_engine::RowRanges & ranges, const std::vector<size_t> & expectedRows)
@@ -393,13 +393,18 @@ void assertRows(const local_engine::RowRanges & ranges, const std::vector<size_t
     ASSERT_EQ(actualRows, expectedRows);
 }
 
-void testCondition(const std::string & exp, const std::vector<size_t> & expectedRows)
+local_engine::RowRanges calculateRowRangesForTest(const std::string & exp)
 {
     static const AnotherRowType name_and_types = buildTestRowType();
     static const local_engine::ColumnIndexStore column_index_store = buildTestColumnIndexStore();
     const local_engine::ColumnIndexFilter filter(
         local_engine::test::parseFilter(exp, name_and_types).value(), local_engine::QueryContext::globalContext());
-    assertRows(filter.calculateRowRanges(column_index_store, TOTALSIZE), expectedRows);
+    return filter.calculateRowRanges(column_index_store, TOTALSIZE);
+}
+
+void testCondition(const std::string & exp, const std::vector<size_t> & expectedRows)
+{
+    assertRows(calculateRowRangesForTest(exp), expectedRows);
 }
 
 void testCondition(const std::string & exp, size_t rowCount)
@@ -433,6 +438,7 @@ TEST(RowRanges, Create)
     ASSERT_EQ(0, empty.rowCount());
     ASSERT_FALSE(empty.isOverlapping(0, std::numeric_limits<size_t>::max()));
 }
+
 TEST(RowRanges, Union)
 {
     using local_engine::RowRanges;
@@ -499,6 +505,28 @@ TEST(ColumnIndex, Filtering)
     testCondition("column1 >= 7 and column1 < 11 and column2 > 'Romeo' and column2 <= 'Tango'", {7, 11, 12, 13});
 }
 
+
+TEST(RowIndex, VirtualColumnRowIndexReader)
+{
+    local_engine::RowGroupInformation rg_info{
+        .index = 0,
+        .num_rows = 30,
+        .rowStartIndexOffset = 0,
+        .columnIndexStore = nullptr,
+        .rowRanges{calculateRowRangesForTest("column1 in (7)")}};
+    std::vector<local_engine::RowGroupInformation> rowGroups;
+    rowGroups.push_back(std::move(rg_info));
+
+    local_engine::ColumnIndexRowRangesProvider provider({std::move(rowGroups)});
+    local_engine::VirtualColumnRowIndexReader reader(provider, local_engine::BIGINT());
+
+    DB::ColumnPtr col = reader.readBatch(TOTALSIZE);
+    const auto & col_str = typeid_cast<const ColumnInt64 &>(*col);
+    std::vector<size_t> result;
+    std::ranges::for_each(col_str.getData(), [&](const auto & val) { result.push_back(val); });
+    ASSERT_EQ(result, std::vector<size_t>({7, 8, 9, 10, 11, 12, 13}));
+}
+
 TEST(ColumnIndex, FilteringWithAllNullPages)
 {
     using namespace test_utils;
@@ -549,7 +577,7 @@ using ParquetValue = std::variant<
     parquet::ByteArrayType::c_type>;
 
 template <typename PhysicalType>
-void doComapre(
+void doCompare(
     const parquet::ColumnDescriptor & descriptor, const DB::Field & value, const std::function<void(const ParquetValue &)> & compare)
 {
     local_engine::ToParquet<PhysicalType> to_parquet;
@@ -562,7 +590,7 @@ void with_actual(const DB::Field & value, const parquet::ColumnDescriptor & desc
     switch (desc.physical_type())
     {
         case parquet::Type::BOOLEAN:
-            doComapre<parquet::BooleanType>(desc, value, compare);
+            doCompare<parquet::BooleanType>(desc, value, compare);
             return;
         case parquet::Type::INT32: {
             switch (desc.converted_type())
@@ -574,7 +602,7 @@ void with_actual(const DB::Field & value, const parquet::ColumnDescriptor & desc
                 case parquet::ConvertedType::INT_16:
                 case parquet::ConvertedType::INT_32:
                 case parquet::ConvertedType::NONE:
-                    doComapre<parquet::Int32Type>(desc, value, compare);
+                    doCompare<parquet::Int32Type>(desc, value, compare);
                     return;
                 default:
                     break;
@@ -587,33 +615,33 @@ void with_actual(const DB::Field & value, const parquet::ColumnDescriptor & desc
                 case parquet::ConvertedType::INT_64:
                 case parquet::ConvertedType::UINT_64:
                 case parquet::ConvertedType::NONE:
-                    doComapre<parquet::Int64Type>(desc, value, compare);
+                    doCompare<parquet::Int64Type>(desc, value, compare);
                     return;
                 default:
                     break;
             }
             break;
         case parquet::Type::INT96:
-            // doComapre<parquet::Int96Type>(desc, value, compare);
+            // doCompare<parquet::Int96Type>(desc, value, compare);
             break;
         case parquet::Type::FLOAT:
-            doComapre<parquet::FloatType>(desc, value, compare);
+            doCompare<parquet::FloatType>(desc, value, compare);
             return;
         case parquet::Type::DOUBLE:
-            doComapre<parquet::DoubleType>(desc, value, compare);
+            doCompare<parquet::DoubleType>(desc, value, compare);
             return;
         case parquet::Type::BYTE_ARRAY:
             switch (desc.converted_type())
             {
                 case parquet::ConvertedType::UTF8:
-                    doComapre<parquet::ByteArrayType>(desc, value, compare);
+                    doCompare<parquet::ByteArrayType>(desc, value, compare);
                     return;
                 default:
                     break;
             }
             break;
         case parquet::Type::FIXED_LEN_BYTE_ARRAY:
-            // doComapre<parquet::FLBAType>(desc, value, compare);
+            // doCompare<parquet::FLBAType>(desc, value, compare);
             break;
         case parquet::Type::UNDEFINED:
             break;
@@ -705,17 +733,17 @@ TEST(ColumnIndex, Field)
         });
 
     const std::vector<std::pair<String, Field>> primitive_fields{
-        {"f_bool", UInt8(1)},
-        {"f_byte", Int8(1)},
-        {"f_short", Int16(2)},
-        {"f_int", Int32(3)},
-        {"f_long", Int64(4)},
-        {"f_float", Float32(5.5)},
+        {"f_bool", static_cast<UInt8>(1)},
+        {"f_byte", static_cast<Int8>(1)},
+        {"f_short", static_cast<Int16>(2)},
+        {"f_int", static_cast<Int32>(3)},
+        {"f_long", static_cast<Int64>(4)},
+        {"f_float", static_cast<Float32>(5.5)},
         {"f_double", Float64{6.6}},
         {"f_string", "hello world"},
         {"f_binary", "hello world"},
         {"f_decimal", DecimalField<Decimal64>(777, 2)},
-        {"f_date", Int32(18262)},
+        {"f_date", static_cast<Int32>(18262)},
         {"f_timestamp", DecimalField<DateTime64>(1666162060000000L, 6)}}; // 2022-09-01 12:34:20.000000
 
     std::ranges::for_each(
@@ -733,7 +761,7 @@ struct ReadStatesParam
     ReadStatesParam() = default;
 
     ReadStatesParam(local_engine::RowRanges ranges, std::shared_ptr<local_engine::ColumnReadState> states)
-        : row_ranges(std::move(ranges)), read_states(std::move(states)) {};
+        : row_ranges(std::move(ranges)), read_states(std::move(states)) { };
 
     local_engine::RowRanges row_ranges;
     std::shared_ptr<local_engine::ColumnReadState> read_states;
@@ -1088,22 +1116,30 @@ TEST_P(TestBuildPageReadStates, BuildPageReadStates)
 TEST(ColumnIndex, VectorizedParquetRecordReader)
 {
     using namespace local_engine;
+
     //TODO: move test parquet to s3 and download to CI machine.
     const std::string filename
         = "/home/chang/test/tpch/parquet/Index/60001/part-00000-76ef9b89-f292-495f-9d0d-98325f3d8956-c000.snappy.parquet";
-    ReadBufferFromFilePRead in(filename);
+
     const FormatSettings format_settings{};
-    auto arrow_file = local_engine::test::asArrowFileForParquet(in, format_settings);
+
 
     static const AnotherRowType name_and_types{{"11", BIGINT()}};
-    const auto filterAction = local_engine::test::parseFilter("`11` = 10 or `11` = 50", name_and_types);
-    auto column_index_filter
-        = std::make_shared<local_engine::ColumnIndexFilter>(filterAction.value(), local_engine::QueryContext::globalContext());
+    const auto filterAction = test::parseFilter("`11` = 10 or `11` = 50", name_and_types);
+    auto column_index_filter = std::make_shared<ColumnIndexFilter>(filterAction.value(), local_engine::QueryContext::globalContext());
 
     Block blockHeader({{BIGINT(), "11"}, {STRING(), "18"}});
 
-    local_engine::VectorizedParquetRecordReader recordReader(blockHeader, format_settings);
-    recordReader.initialize(blockHeader, arrow_file, column_index_filter);
+    ReadBufferFromFilePRead in(filename);
+
+    ParquetMetaBuilder metaBuilder{.collectPageIndex = true};
+    metaBuilder.build(&in, &blockHeader, column_index_filter.get(), [](UInt64 /*midpoint_offset*/) -> bool { return true; });
+    ColumnIndexRowRangesProvider provider{metaBuilder};
+
+    VectorizedParquetRecordReader recordReader(blockHeader, format_settings);
+    auto arrow_file = test::asArrowFileForParquet(in, format_settings);
+    recordReader.initialize(arrow_file, provider);
+
     auto chunk{recordReader.nextBatch()};
     ASSERT_EQ(chunk.getNumColumns(), 2);
     ASSERT_EQ(chunk.getNumRows(), format_settings.parquet.max_block_size);

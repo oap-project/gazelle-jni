@@ -18,6 +18,7 @@
 
 #include <Disks/ObjectStorages/CompactObjectStorageDiskTransaction.h>
 #include <Disks/SingleDiskVolume.h>
+#include <Interpreters/ExpressionActions.h>
 #include <Interpreters/MergeTreeTransaction.h>
 #include <Storages/MergeTree/DataPartStorageOnDiskFull.h>
 #include <Storages/MergeTree/MergeTreeSettings.h>

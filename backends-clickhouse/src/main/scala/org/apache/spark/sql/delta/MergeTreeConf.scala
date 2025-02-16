@@ -16,16 +16,16 @@
  */
 package org.apache.spark.sql.delta
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 
 import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.sql.internal.SQLConf
 
-/** [[CHConf]] entries for MergeTree features. */
+/** [[CHConfig]] entries for MergeTree features. */
 trait MergeTreeConfBase {
 
-  private val CH_PREFIX: String = CHConf.runtimeSettings("merge_tree")
-  private val GLUTEN_PREFIX: String = CHConf.runtimeSettings("mergetree")
+  private val CH_PREFIX: String = CHConfig.runtimeSettings("merge_tree")
+  private val GLUTEN_PREFIX: String = CHConfig.runtimeSettings("mergetree")
 
   private def buildCHConf(key: String): ConfigBuilder = SQLConf.buildConf(s"$CH_PREFIX.$key")
   private def buildGLUTENConf(key: String): ConfigBuilder =

@@ -19,6 +19,7 @@
 
 #include <Core/Block.h>
 #include <DataTypes/DataTypeDate32.h>
+#include <DataTypes/DataTypeDateTime64.h>
 #include <DataTypes/DataTypeString.h>
 #include <DataTypes/DataTypesNumber.h>
 #include <substrait/type.pb.h>
@@ -71,6 +72,11 @@ inline DB::DataTypePtr STRING()
 inline DB::DataTypePtr DATE()
 {
     return std::make_shared<DB::DataTypeDate32>();
+}
+
+inline DB::DataTypePtr TIMESTAMP()
+{
+    return std::make_shared<DB::DataTypeDateTime64>(6);
 }
 
 inline DB::Block makeBlockHeader(const DB::ColumnsWithTypeAndName & data)

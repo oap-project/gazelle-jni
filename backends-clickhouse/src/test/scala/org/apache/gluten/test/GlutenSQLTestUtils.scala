@@ -16,8 +16,6 @@
  */
 package org.apache.gluten.test
 
-import org.apache.gluten.config.GlutenConfig
-
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.delta.DeltaLog
 import org.apache.spark.sql.test.SharedSparkSession
@@ -26,7 +24,5 @@ trait GlutenSQLTestUtils extends SparkFunSuite with SharedSparkSession {
   override protected def afterAll(): Unit = {
     DeltaLog.clearCache()
     super.afterAll()
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 }

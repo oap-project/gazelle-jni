@@ -75,7 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Get Ccache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: '${{ env.CCACHE_DIR }}'
           key: ccache-centos7-release-default-${{github.sha}}
@@ -96,16 +96,16 @@ jobs:
           "
 
       - name: "Save ccache"
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         id: ccache
         with:
           path: '${{ env.CCACHE_DIR }}'
           key: ccache-centos7-release-default-${{github.sha}}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: .m2/repository/org/apache/arrow/
@@ -141,12 +141,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -212,12 +212,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -284,12 +284,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: .m2/repository/org/apache/arrow/
@@ -356,12 +356,12 @@ jobs:
           df -h
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /home/runner/.m2/repository/org/apache/arrow/
@@ -471,12 +471,12 @@ jobs:
           df -h
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /home/runner/.m2/repository/org/apache/arrow/
@@ -507,25 +507,31 @@ jobs:
       fail-fast: false
       matrix:
         spark: [ "spark-3.2" ]
-        uniffle: [ "0.9.1" ]
+        uniffle: [ "0.9.2" ]
         hadoop: [ "2.8.5" ]
     runs-on: ubuntu-20.04
     container: apache/gluten:centos-8
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
       - name: Install Uniffle ${{ matrix.uniffle }}
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk && \
+          export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+          if [ ! -e "/opt/apache-uniffle-${{ matrix.uniffle }}-incubating-bin.tar.gz" ]; then
+            ${WGET_CMD} https://archive.apache.org/dist/incubator/uniffle/${{ matrix.uniffle }}/apache-uniffle-${{ matrix.uniffle }}-incubating-bin.tar.gz -P /opt
+          fi
+          if [ ! -e "/opt/hadoop-${{ matrix.hadoop }}.tar.gz" ]; then
+            ${WGET_CMD} https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop }}/hadoop-${{ matrix.hadoop }}.tar.gz -P /opt
+          fi
           cd /opt && \
           mkdir /opt/uniffle && tar xzf apache-uniffle-${{ matrix.uniffle }}-incubating-bin.tar.gz -C /opt/uniffle --strip-components=1 && \
           tar xzf hadoop-${{ matrix.hadoop }}.tar.gz -C /opt/ && \
@@ -558,12 +564,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Native Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases/
       - name: Download All Arrow Jar Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -602,11 +608,11 @@ jobs:
     container: apache/gluten:centos-8
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -644,12 +650,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -672,12 +678,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -716,12 +722,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -746,19 +752,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
       - name: Prepare spark.test.home for Spark 3.4.4 (other tests)
         run: |
-          rm -rf /opt/shims/spark34
-          bash .github/workflows/util/install_spark_resources.sh 3.4
           dnf module -y install python39 && \
           alternatives --set python3 /usr/bin/python3.9 && \
           pip3 install setuptools && \
@@ -778,7 +782,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report-spark34
+          name: test-report-spark34-jdk17
           path: '**/surefire-reports/TEST-*.xml'
       - name: Upload golden files
         if: failure()
@@ -787,6 +791,51 @@ jobs:
           name: golden-files-spark34
           path: /tmp/tpch-approved-plan/**
 
+  run-spark-test-spark34-jdk8:
+    needs: build-native-lib-centos-7
+    runs-on: ubuntu-20.04
+    container: apache/gluten:centos-8
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: velox-native-lib-centos-7-${{github.sha}}
+          path: ./cpp/build/releases
+      - name: Download Arrow Jars
+        uses: actions/download-artifact@v4
+        with:
+          name: arrow-jars-centos-7-${{github.sha}}
+          path: /root/.m2/repository/org/apache/arrow/
+      - name: Prepare spark.test.home for Spark 3.4.4 (other tests)
+        run: |
+          dnf module -y install python39 && \
+          alternatives --set python3 /usr/bin/python3.9 && \
+          pip3 install setuptools && \
+          pip3 install pyspark==3.4.4 cython && \
+          pip3 install pandas pyarrow
+      - name: Build and Run unit test for Spark 3.4.4 (other tests)
+        run: |
+          cd $GITHUB_WORKSPACE/
+          export SPARK_SCALA_VERSION=2.12
+          export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+          export SPARK_HOME=/opt/shims/spark34/spark_home/
+          ls -l /opt/shims/spark34/spark_home/
+          $MVN_CMD clean test -Pspark-3.4 -Pjava-8 -Pbackends-velox -Pceleborn -Pdelta -Phudi -Pspark-ut \
+          -DtagsToExclude=org.apache.spark.tags.ExtendedSQLTest,org.apache.gluten.tags.UDFTest,org.apache.gluten.tags.SkipTestTags \
+          -DargLine="-Dspark.test.home=/opt/shims/spark34/spark_home/" 
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-spark34
+          path: '**/surefire-reports/TEST-*.xml'
+      - name: Upload golden files
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-files-spark34-jdk8
+          path: /tmp/tpch-approved-plan/**
 
   run-spark-test-spark34-slow:
     needs: build-native-lib-centos-7
@@ -795,23 +844,18 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
-      - name: Prepare
-        run: |
-          rm -rf /opt/shims/spark34
-          bash .github/workflows/util/install_spark_resources.sh 3.4
       - name: Build and Run unit test for Spark 3.4.4 (slow tests)
         run: |
           cd $GITHUB_WORKSPACE/
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
           export SPARK_HOME=/opt/shims/spark34/spark_home/
           ls -l /opt/shims/spark34/spark_home/
           $MVN_CMD clean test -Pspark-3.4 -Pjava-17 -Pbackends-velox -Pceleborn -Piceberg -Pdelta -Pspark-ut -Phudi \
@@ -821,7 +865,39 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report-spark34-slow
+          name: test-report-spark34-slow-jdk17
+          path: '**/surefire-reports/TEST-*.xml'
+
+  run-spark-test-spark34-slow-jdk8:
+    needs: build-native-lib-centos-7
+    runs-on: ubuntu-20.04
+    container: apache/gluten:centos-8
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: velox-native-lib-centos-7-${{github.sha}}
+          path: ./cpp/build/releases
+      - name: Download Arrow Jars
+        uses: actions/download-artifact@v4
+        with:
+          name: arrow-jars-centos-7-${{github.sha}}
+          path: /root/.m2/repository/org/apache/arrow/
+      - name: Build and Run unit test for Spark 3.4.4 (slow tests)
+        run: |
+          cd $GITHUB_WORKSPACE/
+          export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+          export SPARK_HOME=/opt/shims/spark34/spark_home/
+          ls -l /opt/shims/spark34/spark_home/
+          $MVN_CMD clean test -Pspark-3.4 -Pjava-8 -Pbackends-velox -Pceleborn -Pdelta -Pspark-ut -Phudi \
+          -DtagsToInclude=org.apache.spark.tags.ExtendedSQLTest \
+          -DargLine="-Dspark.test.home=/opt/shims/spark34/spark_home/" 
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-spark34-slow-jdk8
           path: '**/surefire-reports/TEST-*.xml'
 
   run-spark-test-spark35:
@@ -831,12 +907,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -867,6 +943,50 @@ jobs:
           name: golden-files-spark35
           path: /tmp/tpch-approved-plan/**
 
+  run-spark-test-spark35-jdk17:
+    needs: build-native-lib-centos-7
+    runs-on: ubuntu-20.04
+    container: apache/gluten:centos-8-jdk17
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: velox-native-lib-centos-7-${{github.sha}}
+          path: ./cpp/build/releases
+      - name: Download Arrow Jars
+        uses: actions/download-artifact@v4
+        with:
+          name: arrow-jars-centos-7-${{github.sha}}
+          path: /root/.m2/repository/org/apache/arrow/
+      - name: Prepare
+        run: |
+          dnf module -y install python39 && \
+          alternatives --set python3 /usr/bin/python3.9 && \
+          pip3 install setuptools && \
+          pip3 install pyspark==3.5.2 cython && \
+          pip3 install pandas pyarrow
+      - name: Build and Run unit test for Spark 3.5.2 (other tests)
+        run: |
+          cd $GITHUB_WORKSPACE/
+          export SPARK_SCALA_VERSION=2.12
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+          $MVN_CMD clean test -Pspark-3.5 -Pjava-17 -Pbackends-velox -Pceleborn -Piceberg -Pdelta -Phudi -Pspark-ut \
+          -DargLine="-Dspark.test.home=/opt/shims/spark35/spark_home/  ${EXTRA_FLAGS}" \
+          -DtagsToExclude=org.apache.spark.tags.ExtendedSQLTest,org.apache.gluten.tags.UDFTest,org.apache.gluten.tags.SkipTestTags
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-spark35-jdk17
+          path: '**/surefire-reports/TEST-*.xml'
+      - name: Upload golden files
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-files-spark35
+          path: /tmp/tpch-approved-plan/**
+
   run-spark-test-spark35-scala213:
     needs: build-native-lib-centos-7
     runs-on: ubuntu-20.04
@@ -874,12 +994,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -911,12 +1031,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -940,12 +1060,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -976,12 +1096,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -1004,12 +1124,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -1040,12 +1160,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download All Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: velox-native-lib-centos-7-${{github.sha}}
           path: ./cpp/build/releases
       - name: Download Arrow Jars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: arrow-jars-centos-7-${{github.sha}}
           path: /root/.m2/repository/org/apache/arrow/
@@ -1067,7 +1187,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get Ccache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: '${{ env.CCACHE_DIR }}'
           key: ccache-centos8-release-default-${{github.sha}}
@@ -1079,7 +1199,7 @@ jobs:
           bash dev/ci-velox-buildshared-centos-8.sh
           ccache -s
       # - name: "Save ccache"
-      #   uses: actions/cache/save@v3
+      #   uses: actions/cache/save@v4
       #   id: ccache
       #   with:
       #     path: '${{ env.CCACHE_DIR }}'

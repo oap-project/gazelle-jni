@@ -22,6 +22,7 @@
 #include <Processors/Executors/PipelineExecutor.h>
 #include <QueryPipeline/printPipeline.h>
 #include <Common/QueryContext.h>
+#include <Common/logger_useful.h>
 
 namespace DB::Setting
 {

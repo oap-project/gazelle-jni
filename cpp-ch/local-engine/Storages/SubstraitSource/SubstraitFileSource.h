@@ -20,21 +20,22 @@
 #include <Core/Block.h>
 #include <Core/Field.h>
 #include <Processors/Chunk.h>
-#include <Storages/Parquet/ColumnIndexFilter.h>
-#include <Storages/Parquet/VectorizedParquetRecordReader.h>
 #include <Storages/SubstraitSource/FormatFile.h>
-#include <Storages/SubstraitSource/ReadBufferBuilder.h>
 #include <base/types.h>
-#include <Parser/InputFileNameParser.h>
 
 namespace local_engine
 {
-class FileReaderWrapper
+class ColumnIndexFilter;
+using ColumnIndexFilterPtr = std::shared_ptr<ColumnIndexFilter>;
+
+class BaseReader
 {
 public:
-    explicit FileReaderWrapper(const FormatFilePtr & file_) : file(file_) { }
-    virtual ~FileReaderWrapper() = default;
-    virtual bool pull(DB::Chunk & chunk) = 0;
+    explicit BaseReader(const FormatFilePtr & file_, const DB::Block & to_read_header_, const DB::Block & header_)
+        : file(file_), readHeader(to_read_header_), outputHeader(header_)
+    {
+    }
+    virtual ~BaseReader() = default;
 
     void cancel()
     {
@@ -43,79 +44,60 @@ public:
             onCancel();
     }
 
+    virtual bool pull(DB::Chunk & chunk) = 0;
     bool isCancelled() const { return is_cancelled.load(std::memory_order_acquire); }
 
-    /// Apply key condition to the reader, if use_local_format is true, column_index_filter will be used
-    /// otherwise it will be ignored
-    virtual void applyKeyCondition(
-        const std::shared_ptr<const DB::KeyCondition> & /*key_condition*/, const ColumnIndexFilterPtr & /*column_index_filter*/)
-    {
-    }
-
 protected:
-    virtual void onCancel() {};
+    virtual void onCancel() { };
+
+    DB::Columns addVirtualColumn(DB::Chunk dataChunk, size_t rowNum = 0) const;
 
     FormatFilePtr file;
+    DB::Block readHeader;
+    DB::Block outputHeader;
+
     std::atomic<bool> is_cancelled{false};
 
 
     static DB::ColumnPtr createConstColumn(DB::DataTypePtr type, const DB::Field & field, size_t rows);
-    static DB::ColumnPtr createColumn(const String & value, DB::DataTypePtr type, size_t rows);
+    static DB::ColumnPtr createPartitionColumn(const String & value, const DB::DataTypePtr & type, size_t rows);
     static DB::Field buildFieldFromString(const String & value, DB::DataTypePtr type);
 };
 
-class NormalFileReader : public FileReaderWrapper
+class NormalFileReader : public BaseReader
 {
 public:
+    static std::unique_ptr<NormalFileReader> create(
+        const FormatFilePtr & file,
+        const DB::Block & to_read_header_,
+        const DB::Block & output_header_,
+        const std::shared_ptr<const DB::KeyCondition> & key_condition = nullptr,
+        const ColumnIndexFilterPtr & column_index_filter = nullptr);
     NormalFileReader(
-        const FormatFilePtr & file_, const DB::ContextPtr & context_, const DB::Block & to_read_header_, const DB::Block & output_header_);
+        const FormatFilePtr & file_,
+        const DB::Block & to_read_header_,
+        const DB::Block & output_header_,
+        const FormatFile::InputFormatPtr & input_format_);
     ~NormalFileReader() override = default;
 
     bool pull(DB::Chunk & chunk) override;
 
-    void applyKeyCondition(
-        const std::shared_ptr<const DB::KeyCondition> & key_condition, const ColumnIndexFilterPtr & column_index_filter) override
-    {
-        if (auto * const vectorized = dynamic_cast<VectorizedParquetBlockInputFormat *>(input_format->input.get()))
-            vectorized->setColumnIndexFilter(column_index_filter);
-        else
-            input_format->input->setKeyCondition(key_condition);
-    }
-
 private:
-    void onCancel() override
-    {
-        input_format->input->cancel();
-    }
-
-    DB::ContextPtr context;
-    DB::Block to_read_header;
-    DB::Block output_header;
+    void onCancel() override { input_format->cancel(); }
     FormatFile::InputFormatPtr input_format;
 };
 
-class EmptyFileReader : public FileReaderWrapper
+class ConstColumnsFileReader : public BaseReader
 {
 public:
-    explicit EmptyFileReader(FormatFilePtr file_) : FileReaderWrapper(file_) { }
-    ~EmptyFileReader() override = default;
-    bool pull(DB::Chunk &) override { return false; }
-};
-
-class ConstColumnsFileReader : public FileReaderWrapper
-{
-public:
-    ConstColumnsFileReader(
-        FormatFilePtr file_, DB::ContextPtr context_, const DB::Block & header_, size_t block_size_ = DB::DEFAULT_BLOCK_SIZE);
+    ConstColumnsFileReader(const FormatFilePtr & file_, const DB::Block & header_, size_t blockSize = DB::DEFAULT_BLOCK_SIZE);
     ~ConstColumnsFileReader() override = default;
 
     bool pull(DB::Chunk & chunk) override;
 
 private:
-    DB::ContextPtr context;
-    DB::Block header;
     size_t remained_rows;
-    size_t block_size;
+    const size_t block_size;
 };
 
 class SubstraitFileSource : public DB::SourceWithKeyCondition
@@ -134,17 +116,14 @@ protected:
 private:
     bool tryPrepareReader();
     void onCancel() noexcept override;
-
-    DB::ContextPtr context;
-    DB::Block output_header; /// Sample header may contains partitions keys
-    DB::Block to_read_header; // Sample header not include partition keys
     FormatFiles files;
-    bool input_file_name = false;
-    InputFileNameParser input_file_name_parser;
+
+    DB::Block outputHeader; /// Sample header may contain partitions columns and file meta-columns
+    DB::Block readHeader; /// Sample header doesn't include partition columns and file meta-columns
 
     UInt32 current_file_index = 0;
-    std::unique_ptr<FileReaderWrapper> file_reader;
-    ReadBufferBuilderPtr read_buffer_builder;
+
+    std::unique_ptr<BaseReader> file_reader;
     ColumnIndexFilterPtr column_index_filter;
 };
 }

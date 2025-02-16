@@ -204,6 +204,7 @@ object CHExpressionUtil {
     FROM_UTC_TIMESTAMP -> UtcTimestampValidator(),
     STACK -> DefaultValidator(),
     RAISE_ERROR -> DefaultValidator(),
-    WIDTH_BUCKET -> DefaultValidator()
+    WIDTH_BUCKET -> DefaultValidator(),
+    MAKE_DATE -> DefaultValidator()
   )
 }

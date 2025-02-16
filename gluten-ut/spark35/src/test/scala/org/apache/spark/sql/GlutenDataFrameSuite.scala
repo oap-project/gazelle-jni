@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.{ProjectExecTransformer, WholeStageTransformer}
 
 import org.apache.spark.SparkException
@@ -325,7 +324,7 @@ class GlutenDataFrameSuite extends DataFrameSuite with GlutenSQLTestsTrait {
   }
 
   testGluten("Allow leading/trailing whitespace in string before casting") {
-    withSQLConf(GlutenConfig.CAST_FROM_VARCHAR_ADD_TRIM_NODE.key -> "true") {
+    withSQLConf("spark.gluten.velox.castFromVarcharAddTrimNode" -> "true") {
       def checkResult(df: DataFrame, expectedResult: Seq[Row]): Unit = {
         checkAnswer(df, expectedResult)
         assert(
@@ -392,7 +391,7 @@ class GlutenDataFrameSuite extends DataFrameSuite with GlutenSQLTestsTrait {
                                |+- 'UnresolvedRelation [tmp]""".stripMargin))
       assert(output.contains("""== Physical Plan ==
                                |*(1) ColumnarToRow
-                               |+- ColumnarRange 0, 10, 1, 2, 10, [id#0L]""".stripMargin))
+                               |+- ColumnarRange 0, 10, 1, 2, 10""".stripMargin))
     }
   }
 

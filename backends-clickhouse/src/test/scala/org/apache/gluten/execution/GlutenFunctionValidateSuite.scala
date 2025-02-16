@@ -16,9 +16,6 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.config.GlutenConfig
-import org.apache.gluten.utils.UTSystemParameters
-
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{DataFrame, Row, TestUtils}
 import org.apache.spark.sql.catalyst.expressions.{Expression, GetJsonObject, Literal}
@@ -57,7 +54,6 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
       .set("spark.databricks.delta.properties.defaults.checkpointInterval", "5")
       .set("spark.databricks.delta.stalenessLimit", "3600000")
       .set(ClickHouseConfig.CLICKHOUSE_WORKER_ID, "1")
-      .set(GlutenConfig.GLUTEN_LIB_PATH.key, UTSystemParameters.clickHouseLibPath)
       .set("spark.gluten.sql.columnar.iterator", "true")
       .set("spark.gluten.sql.columnar.hashagg.enablefinal", "true")
       .set("spark.gluten.sql.enable.native.validation", "false")
@@ -972,6 +968,17 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     compareResultsAgainstVanillaSpark(sql, true, { _ => })
   }
 
+  test("GLUTEN-8598 Fix diff for cast string to long") {
+    withSQLConf(
+      SQLConf.OPTIMIZER_EXCLUDED_RULES.key ->
+        (ConstantFolding.ruleName + "," + NullPropagation.ruleName)) {
+      runQueryAndCompare(
+        "select cast(' \t2570852431\n' as long), cast('25708\t52431\n' as long)",
+        noFallBack = false
+      )(checkGlutenOperatorMatch[ProjectExecTransformer])
+    }
+  }
+
   test("Test transform_keys/transform_values") {
     val sql = """
                 |select id, sort_array(map_entries(m1)), sort_array(map_entries(m2)) from(
@@ -1015,5 +1022,11 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
           |""".stripMargin
       compareResultsAgainstVanillaSpark(sql, true, { _ => })
     }
+  }
+
+  test("Test approx_count_distinct") {
+    val sql = "select approx_count_distinct(id, 0.001), approx_count_distinct(id, 0.01), " +
+      "approx_count_distinct(id, 0.1) from range(1000)"
+    compareResultsAgainstVanillaSpark(sql, true, { _ => })
   }
 }

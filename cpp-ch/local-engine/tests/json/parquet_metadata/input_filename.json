@@ -1,0 +1,194 @@
+{
+  "extensions": [
+    {
+      "extensionFunction": {
+        "name": "alias:str"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 1,
+        "name": "alias:i64"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "root": {
+        "input": {
+          "project": {
+            "common": {
+              "emit": {
+                "outputMapping": [
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              }
+            },
+            "input": {
+              "read": {
+                "common": {
+                  "direct": {}
+                },
+                "baseSchema": {
+                  "names": [
+                    "a",
+                    "input_file_name",
+                    "input_file_block_length",
+                    "input_file_block_start"
+                  ],
+                  "struct": {
+                    "types": [
+                      {
+                        "i32": {
+                          "nullability": "NULLABILITY_NULLABLE"
+                        }
+                      },
+                      {
+                        "string": {
+                          "nullability": "NULLABILITY_REQUIRED"
+                        }
+                      },
+                      {
+                        "i64": {
+                          "nullability": "NULLABILITY_REQUIRED"
+                        }
+                      },
+                      {
+                        "i64": {
+                          "nullability": "NULLABILITY_REQUIRED"
+                        }
+                      }
+                    ]
+                  },
+                  "columnTypes": [
+                    "NORMAL_COL",
+                    "NORMAL_COL",
+                    "NORMAL_COL",
+                    "NORMAL_COL"
+                  ]
+                },
+                "advancedExtension": {
+                  "optimization": {
+                    "@type": "type.googleapis.com/google.protobuf.StringValue",
+                    "value": "isMergeTree=0\n"
+                  }
+                }
+              }
+            },
+            "expressions": [
+              {
+                "selection": {
+                  "directReference": {
+                    "structField": {}
+                  }
+                }
+              },
+              {
+                "scalarFunction": {
+                  "outputType": {
+                    "string": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "selection": {
+                          "directReference": {
+                            "structField": {
+                              "field": 1
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 1,
+                  "outputType": {
+                    "i64": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "selection": {
+                          "directReference": {
+                            "structField": {
+                              "field": 3
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 1,
+                  "outputType": {
+                    "i64": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "selection": {
+                          "directReference": {
+                            "structField": {
+                              "field": 2
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "names": [
+          "a#23",
+          "input_file_name#37",
+          "input_file_block_start#38",
+          "input_file_block_length#39"
+        ],
+        "outputSchema": {
+          "types": [
+            {
+              "i32": {
+                "nullability": "NULLABILITY_NULLABLE"
+              }
+            },
+            {
+              "string": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            },
+            {
+              "i64": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            },
+            {
+              "i64": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            }
+          ],
+          "nullability": "NULLABILITY_REQUIRED"
+        }
+      }
+    }
+  ]
+}

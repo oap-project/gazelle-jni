@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution.mergetree
 
-import org.apache.gluten.backendsapi.clickhouse.{CHConf, RuntimeSettings}
+import org.apache.gluten.backendsapi.clickhouse.{CHConfig, RuntimeSettings}
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.GlutenClickHouseTPCHAbstractSuite
 
@@ -44,7 +44,7 @@ class GlutenClickHouseMergeTreeWriteTaskNotSerializableSuite
       .set("spark.sql.files.maxPartitionBytes", "20000000")
       .set("spark.memory.offHeap.size", "4G")
       .set(GlutenConfig.NATIVE_WRITER_ENABLED.key, "true")
-      .set(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
+      .set(CHConfig.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
   }
 
   override protected def createTPCHNotNullTables(): Unit = {

@@ -14,25 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gluten.utils
+package org.apache.gluten.sql.shims
 
-object SystemParameters {
+import org.apache.gluten.execution.GlutenPlan
 
-  val CLICKHOUSE_LIB_PATH_KEY = "clickhouse.lib.path"
-  val CLICKHOUSE_LIB_PATH_DEFAULT_VALUE = "/usr/local/clickhouse/lib/libch.so"
+import org.apache.spark.sql.execution.SparkPlan
 
-  val TPCDS_DATA_PATH_KEY = "tpcds.data.path"
-  val TPCDS_DATA_PATH_DEFAULT_VALUE = "/data/tpcds-data-sf1"
+sealed abstract class ShimDescriptor
 
-  def getClickHouseLibPath: String = {
-    System.getProperty(
-      SystemParameters.CLICKHOUSE_LIB_PATH_KEY,
-      SystemParameters.CLICKHOUSE_LIB_PATH_DEFAULT_VALUE)
-  }
+trait DeltaShims {
+  def supportDeltaOptimizedWriterExec(plan: SparkPlan): Boolean = false
 
-  def getTpcdsDataPath: String = {
-    System.getProperty(
-      SystemParameters.TPCDS_DATA_PATH_KEY,
-      SystemParameters.TPCDS_DATA_PATH_DEFAULT_VALUE)
+  def offloadDeltaOptimizedWriterExec(plan: SparkPlan): GlutenPlan = {
+    throw new UnsupportedOperationException(
+      s"Can't transform ColumnarDeltaOptimizedWriterExec from ${plan.getClass.getSimpleName}")
   }
 }

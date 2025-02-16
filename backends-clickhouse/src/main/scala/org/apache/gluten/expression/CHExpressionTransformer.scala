@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.expression
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 import org.apache.gluten.exception.GlutenNotSupportException
 import org.apache.gluten.expression.ConverterUtils.FunctionConfig
 import org.apache.gluten.substrait.expression._
@@ -70,7 +70,7 @@ case class CHTruncTimestampTransformer(
     if (
       timeZoneIgnore && timeZoneId.nonEmpty &&
       !timeZoneId.get.equalsIgnoreCase(
-        SQLConf.get.getConfString(s"${CHConf.runtimeConfig("timezone")}")
+        SQLConf.get.getConfString(s"${CHConfig.runtimeConfig("timezone")}")
       )
     ) {
       throw new GlutenNotSupportException(
@@ -260,6 +260,7 @@ case class GetArrayItemTransformer(
       ConverterUtils.getTypeNode(getArrayItem.dataType, getArrayItem.nullable))
   }
 }
+
 case class CHStringSplitTransformer(
     substraitExprName: String,
     children: Seq[ExpressionTransformer],

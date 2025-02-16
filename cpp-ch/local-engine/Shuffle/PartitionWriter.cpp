@@ -31,6 +31,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <Common/Stopwatch.h>
 #include <Common/ThreadPool.h>
+#include <Common/logger_useful.h>
 
 namespace DB
 {

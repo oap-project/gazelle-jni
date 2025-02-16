@@ -17,17 +17,15 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <Columns/IColumn.h>
 #include <Core/Block.h>
-#include <Core/ColumnWithTypeAndName.h>
 #include <Core/SortDescription.h>
 #include <Functions/IFunction.h>
-#include <Interpreters/ActionsDAG.h>
 #include <Interpreters/ExpressionActions.h>
 #include <Processors/Chunk.h>
 #include <base/types.h>
 #include <substrait/plan.pb.h>
 #include <Poco/JSON/Array.h>
-#include <Common/BlockIterator.h>
 #include <Common/PODArray.h>
 
 namespace local_engine

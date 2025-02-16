@@ -243,7 +243,7 @@ QueryPlanPtr SerializedPlanParser::parseOp(const substrait::Rel & rel, std::list
         const auto & read = rel.read();
         if (read.has_local_files())
         {
-            if (read_rel_parser->isReadRelFromJava(read))
+            if (ReadRelParser::isReadRelFromJava(read))
             {
                 auto iter = read.local_files().items().at(0).uri_file();
                 auto pos = iter.find(':');
@@ -252,7 +252,7 @@ QueryPlanPtr SerializedPlanParser::parseOp(const substrait::Rel & rel, std::list
                 read_rel_parser->setInputIter(input_iter, materalize_input);
             }
         }
-        else if (read_rel_parser->isReadFromMergeTree(read))
+        else if (ReadRelParser::isReadFromMergeTree(read))
         {
             if (!read.has_extension_table())
             {
@@ -297,6 +297,7 @@ DB::QueryPipelineBuilderPtr SerializedPlanParser::buildQueryPipeline(DB::QueryPl
     const auto query_status = std::make_shared<QueryStatus>(
         parser_context->queryContext(),
         "",
+        0, // since we set a query to empty string, let's set hash to zero.
         parser_context->queryContext()->getClientInfo(),
         priorities.insert(settings[Setting::priority]),
         CurrentThread::getGroup(),

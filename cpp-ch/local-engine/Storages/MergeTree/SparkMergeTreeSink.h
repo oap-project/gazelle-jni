@@ -204,6 +204,8 @@ public:
 
     void collectStats(const std::deque<PartWithStats> & parts, const std::string & partition_dir) const
     {
+        if (parts.empty())
+            return;
         const std::string & partition = partition_dir.empty() ? WriteStatsBase::NO_PARTITION_ID : partition_dir;
         size_t columnSize = parts[0].delta_stats->min.size();
         assert(columns_.size() == stats_column_start + columnSize * 3);

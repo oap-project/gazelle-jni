@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution.mergetree
 
-import org.apache.gluten.backendsapi.clickhouse.{CHConf, RuntimeConfig}
+import org.apache.gluten.backendsapi.clickhouse.{CHConfig, RuntimeConfig}
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.{BasicScanExecTransformer, FileSourceScanExecTransformer, GlutenClickHouseTPCHAbstractSuite}
 
@@ -66,7 +66,7 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
       .set("spark.sql.adaptive.enabled", "true")
       .set(RuntimeConfig.LOGGER_LEVEL.key, "error")
       .set(GlutenConfig.NATIVE_WRITER_ENABLED.key, "true")
-      .set(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
+      .set(CHConfig.ENABLE_ONEPIPELINE_MERGETREE_WRITE.key, spark35.toString)
   }
 
   override protected def beforeEach(): Unit = {
@@ -557,8 +557,8 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
 
     withSQLConf(
       "spark.databricks.delta.optimize.minFileSize" -> "200000000",
-      CHConf.runtimeSettings("mergetree.insert_without_local_storage") -> "true",
-      CHConf.runtimeSettings("mergetree.merge_after_insert") -> "true"
+      CHConfig.runtimeSettings("mergetree.insert_without_local_storage") -> "true",
+      CHConfig.runtimeSettings("mergetree.merge_after_insert") -> "true"
     ) {
       spark.sql(s"""
                    |DROP TABLE IF EXISTS $tableName;
@@ -617,7 +617,7 @@ class GlutenClickHouseMergeTreeWriteOnS3Suite
 
     FileUtils.forceDelete(new File(S3_METADATA_PATH))
 
-    withSQLConf(CHConf.runtimeSettings("enabled_driver_filter_mergetree_index") -> "true") {
+    withSQLConf(CHConfig.runtimeSettings("enabled_driver_filter_mergetree_index") -> "true") {
       runTPCHQueryBySQL(6, q6(tableName)) {
         df =>
           val scanExec = collect(df.queryExecution.executedPlan) {

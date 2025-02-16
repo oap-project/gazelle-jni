@@ -17,7 +17,6 @@
 package org.apache.gluten.execution
 
 import org.apache.gluten.backendsapi.BackendsApiManager
-import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.expression._
 import org.apache.gluten.extension.ValidationResult
 import org.apache.gluten.metrics.MetricsUpdater
@@ -87,7 +86,7 @@ case class WindowExecTransformer(
     val windowParametersStr = new StringBuffer("WindowParameters:")
     // isStreaming: 1 for streaming, 0 for sort
     val isStreaming: Int =
-      if (GlutenConfig.get.veloxColumnarWindowType.equals("streaming")) 1 else 0
+      if (BackendsApiManager.getSettings.requiredChildOrderingForWindow()) 1 else 0
 
     windowParametersStr
       .append("isStreaming=")

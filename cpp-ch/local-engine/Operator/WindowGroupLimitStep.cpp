@@ -17,8 +17,10 @@
 
 #include "WindowGroupLimitStep.h"
 
+#include <Columns/IColumn.h>
 #include <Processors/Chunk.h>
 #include <Processors/IProcessor.h>
+#include <Processors/Port.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
 #include <Common/logger_useful.h>
 

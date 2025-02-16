@@ -19,25 +19,13 @@
 #include "config.h"
 
 #if USE_PARQUET
-#include <memory>
-#include <DataTypes/DataTypeFixedString.h>
-#include <DataTypes/DataTypeString.h>
-#include <DataTypes/DataTypesNumber.h>
-#include <IO/ReadBuffer.h>
+#include <Storages/Parquet/ParquetMeta.h>
 #include <Storages/SubstraitSource/FormatFile.h>
-#include <parquet/metadata.h>
-#include <parquet/statistics.h>
 
 namespace local_engine
 {
-struct RowGroupInformation
-{
-    UInt32 index = 0;
-    UInt64 start = 0;
-    UInt64 total_compressed_size = 0;
-    UInt64 total_size = 0;
-    UInt64 num_rows = 0;
-};
+
+
 class ParquetFormatFile : public FormatFile
 {
 public:
@@ -48,22 +36,28 @@ public:
         bool use_local_format_);
     ~ParquetFormatFile() override = default;
 
-    FormatFile::InputFormatPtr createInputFormat(const DB::Block & header) override;
+    InputFormatPtr createInputFormat(const DB::Block & /*header*/) override
+    {
+        throw DB::Exception(DB::ErrorCodes::LOGICAL_ERROR, "Use createInputFormat with key_condition and column_index_filter");
+    }
+
+    InputFormatPtr createInputFormat(
+        const DB::Block & header,
+        const std::shared_ptr<const DB::KeyCondition> & key_condition = nullptr,
+        const ColumnIndexFilterPtr & column_index_filter = nullptr) const;
+
     std::optional<size_t> getTotalRows() override;
 
     bool supportSplit() const override { return true; }
 
     String getFileFormat() const override { return "Parquet"; }
 
-    static bool supportPageindexReader(const DB::Block & header);
+    static bool onlyHasFlatType(const DB::Block & header);
 
 private:
     bool use_pageindex_reader;
     std::mutex mutex;
     std::optional<size_t> total_rows;
-
-    std::vector<RowGroupInformation> collectRequiredRowGroups(int & total_row_groups) const;
-    std::vector<RowGroupInformation> collectRequiredRowGroups(DB::ReadBuffer * read_buffer, int & total_row_groups) const;
 };
 
 }

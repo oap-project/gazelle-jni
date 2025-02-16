@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 
 import org.apache.spark.SparkConf
 
@@ -33,7 +33,7 @@ class GlutenClickHouseS3SourceSuite extends GlutenClickHouseTPCHAbstractSuite {
   override protected val queriesResults: String = rootPath + "queries-output"
 
   override protected def sparkConf: SparkConf = {
-    import org.apache.gluten.backendsapi.clickhouse.CHConf._
+    import org.apache.gluten.backendsapi.clickhouse.CHConfig._
 
     super.sparkConf
       .set("spark.shuffle.manager", "org.apache.spark.shuffle.sort.ColumnarShuffleManager")
@@ -95,7 +95,7 @@ class GlutenClickHouseS3SourceSuite extends GlutenClickHouseTPCHAbstractSuite {
     println(s"currTime=$currTime")
     // scalastyle:on println
     spark.sparkContext.setLocalProperty(
-      CHConf.runtimeSettings("spark.kylin.local-cache.accept-cache-time"),
+      CHConfig.runtimeSettings("spark.kylin.local-cache.accept-cache-time"),
       currTime.toString)
     spark
       .sql("""
@@ -109,7 +109,7 @@ class GlutenClickHouseS3SourceSuite extends GlutenClickHouseTPCHAbstractSuite {
     println(s"currTime=$currTime")
     // scalastyle:on println
     spark.sparkContext.setLocalProperty(
-      CHConf.runtimeSettings("spark.kylin.local-cache.accept-cache-time"),
+      CHConfig.runtimeSettings("spark.kylin.local-cache.accept-cache-time"),
       currTime.toString)
     spark
       .sql("""
@@ -123,7 +123,7 @@ class GlutenClickHouseS3SourceSuite extends GlutenClickHouseTPCHAbstractSuite {
     println(s"currTime=$currTime")
     // scalastyle:on println
     spark.sparkContext.setLocalProperty(
-      CHConf.runtimeSettings("spark.kylin.local-cache.accept-cache-time"),
+      CHConfig.runtimeSettings("spark.kylin.local-cache.accept-cache-time"),
       currTime.toString)
     spark
       .sql("""

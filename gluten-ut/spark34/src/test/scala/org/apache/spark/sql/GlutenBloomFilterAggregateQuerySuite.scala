@@ -29,19 +29,19 @@ class GlutenBloomFilterAggregateQuerySuite
   with AdaptiveSparkPlanHelper {
   import testImplicits._
 
+  val veloxBloomFilterMaxNumBits = 4194304L
+
   testGluten("Test bloom_filter_agg with big RUNTIME_BLOOM_FILTER_MAX_NUM_ITEMS") {
     val table = "bloom_filter_test"
     withSQLConf(
-      SQLConf.RUNTIME_BLOOM_FILTER_MAX_NUM_ITEMS.key -> "5000000",
-      GlutenConfig.COLUMNAR_VELOX_BLOOM_FILTER_MAX_NUM_BITS.key -> "4194304"
+      SQLConf.RUNTIME_BLOOM_FILTER_MAX_NUM_ITEMS.key -> "5000000"
     ) {
       val numEstimatedItems = 5000000L
-      val numBits = GlutenConfig.get.veloxBloomFilterMaxNumBits
       val sqlString = s"""
                          |SELECT every(might_contain(
                          |            (SELECT bloom_filter_agg(col,
                          |              cast($numEstimatedItems as long),
-                         |              cast($numBits as long))
+                         |              cast($veloxBloomFilterMaxNumBits as long))
                          |             FROM $table),
                          |            col)) positive_membership_test
                          |FROM $table
@@ -71,14 +71,13 @@ class GlutenBloomFilterAggregateQuerySuite
   testGluten("Test bloom_filter_agg filter fallback") {
     val table = "bloom_filter_test"
     val numEstimatedItems = 5000000L
-    val numBits = GlutenConfig.get.veloxBloomFilterMaxNumBits
     val sqlString = s"""
                        |SELECT col positive_membership_test
                        |FROM $table
                        |WHERE might_contain(
                        |            (SELECT bloom_filter_agg(col,
                        |              cast($numEstimatedItems as long),
-                       |              cast($numBits as long))
+                       |              cast($veloxBloomFilterMaxNumBits as long))
                        |             FROM $table), col)
                       """.stripMargin
     withTempView(table) {
@@ -117,14 +116,13 @@ class GlutenBloomFilterAggregateQuerySuite
   testGluten("Test bloom_filter_agg agg fallback") {
     val table = "bloom_filter_test"
     val numEstimatedItems = 5000000L
-    val numBits = GlutenConfig.get.veloxBloomFilterMaxNumBits
     val sqlString = s"""
                        |SELECT col positive_membership_test
                        |FROM $table
                        |WHERE might_contain(
                        |            (SELECT bloom_filter_agg(col,
                        |              cast($numEstimatedItems as long),
-                       |              cast($numBits as long))
+                       |              cast($veloxBloomFilterMaxNumBits as long))
                        |             FROM $table), col)
                       """.stripMargin
 

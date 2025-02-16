@@ -110,6 +110,8 @@ protected:
     void movePartitionToTable(const DB::StoragePtr & dest_table, const DB::ASTPtr & partition, DB::ContextPtr context) override;
     bool partIsAssignedToBackgroundOperation(const DataPartPtr & part) const override;
     void attachRestoredParts(MutableDataPartsVector && /*parts*/) override { throw std::runtime_error("not implement"); }
+    UInt64 getNumberOnFlyDataMutations() const override { throw std::runtime_error("not implement"); }
+    UInt64 getNumberOnFlyMetadataMutations() const override { throw std::runtime_error("not implement"); }
 
 public:
     MutationsSnapshotPtr getMutationsSnapshot(const IMutationsSnapshot::Params & /*params*/) const override

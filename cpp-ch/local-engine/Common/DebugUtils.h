@@ -17,6 +17,7 @@
 #pragma once
 
 #include <Core/Block.h>
+#include <Common/Logger.h>
 
 namespace google::protobuf
 {

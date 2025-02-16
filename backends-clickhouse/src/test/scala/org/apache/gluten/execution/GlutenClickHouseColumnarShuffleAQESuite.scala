@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
@@ -179,7 +179,7 @@ class GlutenClickHouseColumnarShuffleAQESuite
 
   test("GLUTEN-6768 rerorder hash join") {
     withSQLConf(
-      (CHConf.prefixOf("enable_reorder_hash_join_tables"), "true"),
+      (CHConfig.prefixOf("enable_reorder_hash_join_tables"), "true"),
       ("spark.sql.adaptive.enabled", "true")) {
       spark.sql("create table t1(a int, b int) using parquet")
       spark.sql("create table t2(a int, b int) using parquet")
@@ -265,8 +265,8 @@ class GlutenClickHouseColumnarShuffleAQESuite
 
   test("GLUTEN-6768 change mixed join condition into multi join on clauses") {
     withSQLConf(
-      (CHConf.runtimeConfig("prefer_multi_join_on_clauses"), "true"),
-      (CHConf.runtimeConfig("multi_join_on_clauses_build_side_row_limit"), "1000000")
+      (CHConfig.runtimeConfig("prefer_multi_join_on_clauses"), "true"),
+      (CHConfig.runtimeConfig("multi_join_on_clauses_build_side_row_limit"), "1000000")
     ) {
 
       spark.sql("create table t1(a int, b int, c int, d int) using parquet")

@@ -16,7 +16,7 @@
  */
 package org.apache.spark.shuffle
 
-import org.apache.gluten.backendsapi.clickhouse.CHBackendSettings
+import org.apache.gluten.backendsapi.clickhouse.{CHBackendSettings, CHConfig}
 import org.apache.gluten.execution.ColumnarNativeIterator
 import org.apache.gluten.memory.CHThreadGroup
 import org.apache.gluten.vectorized._
@@ -29,7 +29,6 @@ import org.apache.spark.sql.vectorized.ColumnarBatch
 import org.apache.celeborn.client.ShuffleClient
 import org.apache.celeborn.common.CelebornConf
 import org.apache.celeborn.common.protocol.ShuffleMode
-import org.apache.gluten.config.GlutenConfig
 
 import java.io.IOException
 import java.util.Locale
@@ -80,10 +79,10 @@ class CHCelebornColumnarShuffleWriter[K, V](
       nativeBufferSize,
       capitalizedCompressionCodec,
       compressionLevel,
-      GlutenConfig.get.chColumnarShuffleSpillThreshold,
+      CHConfig.get.chColumnarShuffleSpillThreshold,
       CHBackendSettings.shuffleHashAlgorithm,
       celebornPartitionPusher,
-      GlutenConfig.get.chColumnarForceMemorySortShuffle
+      CHConfig.get.chColumnarForceMemorySortShuffle
         || ShuffleMode.SORT.name.equalsIgnoreCase(shuffleWriterType)
     )
 

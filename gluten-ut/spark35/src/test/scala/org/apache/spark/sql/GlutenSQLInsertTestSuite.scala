@@ -20,4 +20,4 @@ class GlutenFileSourceSQLInsertTestSuite
   extends FileSourceSQLInsertTestSuite
   with GlutenSQLTestsTrait {}
 
-class GlutenDSV2SQLInsertTestSuite extends DSV2SQLInsertTestSuite {}
+class GlutenDSV2SQLInsertTestSuite extends DSV2SQLInsertTestSuite with GlutenTestsBaseTrait {}

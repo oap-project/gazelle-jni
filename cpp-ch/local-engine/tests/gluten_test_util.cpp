@@ -93,6 +93,7 @@ std::pair<substrait::Plan, std::unique_ptr<LocalExecutor>> create_plan_and_execu
     return create_plan_and_executor(json_plan, split, context);
 }
 
+// /home/chang/SourceCode/gluten_backend/utils/extern-local-engine/tests/data
 const char * get_data_dir()
 {
     const auto * const result = std::getenv("PARQUET_TEST_DATA");
@@ -104,15 +105,35 @@ const char * get_data_dir()
     return result;
 }
 
-std::string data_file(const char * file)
+std::string internal_data_file(const char * file, const std::string & dir_string)
 {
     const fs::path parquet_path = file;
     if (parquet_path.is_absolute())
         return file;
-    const std::string dir_string(get_data_dir());
     std::stringstream ss;
     ss << dir_string << "/" << file;
     return ss.str();
+}
+
+/// used with the PARQUET_TEST_DATA environment variable
+std::string third_party_data(const char * file)
+{
+    return internal_data_file(file, get_data_dir());
+}
+
+/// Used with the SOURCE_DIR macro defined in config.h.
+/// It represents a test data file in 'utils/extern-local-engine/tests/data'
+std::string gtest_data(const char * file)
+{
+#define DATA_SOURCE_DIR SOURCE_DIR "/utils/extern-local-engine/tests/data"
+    return internal_data_file(file, DATA_SOURCE_DIR);
+}
+
+/// It represents a test data file in 'utils/extern-local-engine/tests/data' with 'file://' schema
+std::string gtest_uri(const char * file)
+{
+#define GLUTEN_DATA_DIR(file) "file://" SOURCE_DIR file
+    return internal_data_file(file, GLUTEN_DATA_DIR("/utils/extern-local-engine/tests/data"));
 }
 
 std::shared_ptr<arrow::io::RandomAccessFile> asArrowFileForParquet(DB::ReadBuffer & in, const DB::FormatSettings & settings)

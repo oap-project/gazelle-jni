@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#if defined(__x86_64__)
+
 #include <cstddef>
 #if USE_MULTITARGET_CODE
 #include <immintrin.h>
@@ -1275,3 +1277,5 @@ BENCHMARK_TEMPLATE(BM_myFilterToIndicesDefault, UInt64);
 BENCHMARK_TEMPLATE(BM_myFilterToIndicesAVX512, UInt32);
 BENCHMARK_TEMPLATE(BM_myFilterToIndicesAVX512, UInt64);
 */
+
+#endif

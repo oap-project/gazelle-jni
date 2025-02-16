@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <boost/algorithm/string.hpp>
-#include <Poco/StringTokenizer.h>
-#include <Poco/URI.h>
 
 #include "GlutenStringUtils.h"
 
@@ -26,20 +23,6 @@ namespace local_engine
 bool GlutenStringUtils::isNullPartitionValue(const std::string & value)
 {
     return value == "__HIVE_DEFAULT_PARTITION__";
-}
-
-std::string GlutenStringUtils::dumpPartitionValues(const std::map<std::string, std::string> & values)
-{
-    std::string res;
-    res += "[";
-
-    for (const auto & [key, value] : values)
-    {
-        res += key + "=" + value + ", ";
-    }
-
-    res += "]";
-    return res;
 }
 
 }

@@ -4,6 +4,7 @@
     "spark.hadoop.fs.s3a.connection.ssl.enabled": "false",
     "spark.hadoop.dfs.client.log.severity": "INFO",
     "spark.gluten.sql.columnar.backend.ch.runtime_config.use_local_format": "true",
+    "spark.gluten.sql.columnar.backend.ch.runtime_config.dump_pipeline": "true",
     "spark.hadoop.fs.s3a.access.key": "",
     "spark.gluten.sql.columnar.backend.ch.runtime_config.hdfs.input_read_timeout": "180000",
     "spark.gluten.sql.columnar.backend.velox.IOThreads": "0",

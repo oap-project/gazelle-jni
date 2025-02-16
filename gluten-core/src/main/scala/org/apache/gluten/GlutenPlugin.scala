@@ -259,26 +259,6 @@ private[gluten] class GlutenDriverPlugin extends DriverPlugin with Logging {
       conf.set(SQLConf.ORC_VECTORIZED_READER_ENABLED.key, "false")
       conf.set(SQLConf.CACHE_VECTORIZED_READER_ENABLED.key, "false")
     }
-    // When the Velox cache is enabled, the Velox file handle cache should also be enabled.
-    // Otherwise, a 'reference id not found' error may occur.
-    if (
-      conf.getBoolean(COLUMNAR_VELOX_CACHE_ENABLED.key, false) &&
-      !conf.getBoolean(COLUMNAR_VELOX_FILE_HANDLE_CACHE_ENABLED.key, false)
-    ) {
-      throw new IllegalArgumentException(
-        s"${COLUMNAR_VELOX_CACHE_ENABLED.key} and " +
-          s"${COLUMNAR_VELOX_FILE_HANDLE_CACHE_ENABLED.key} should be enabled together.")
-    }
-
-    if (
-      conf.getBoolean(COLUMNAR_VELOX_CACHE_ENABLED.key, false) &&
-      conf.getSizeAsBytes(LOAD_QUANTUM.key, LOAD_QUANTUM.defaultValueString) > 8 * 1024 * 1024
-    ) {
-      throw new IllegalArgumentException(
-        s"Velox currently only support up to 8MB load quantum size " +
-          s"on SSD cache enabled by ${COLUMNAR_VELOX_CACHE_ENABLED.key}, " +
-          s"User can set ${LOAD_QUANTUM.key} <= 8MB skip this error.")
-    }
   }
 }
 

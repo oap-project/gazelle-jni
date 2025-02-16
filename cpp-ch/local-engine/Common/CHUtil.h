@@ -18,6 +18,7 @@
 #pragma once
 #include <unordered_set>
 #include <Core/Block.h>
+#include <Core/Block_fwd.h>
 #include <Core/Joins.h>
 #include <Functions/CastOverloadResolver.h>
 #include <Interpreters/ActionsDAG.h>

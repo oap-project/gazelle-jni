@@ -17,6 +17,7 @@
 package org.apache.gluten.execution
 
 import org.apache.gluten.config.GlutenConfig
+import org.apache.gluten.config.VeloxConfig
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{DataFrame, Row, TestUtils}
@@ -344,7 +345,7 @@ class VeloxTPCHV1BhjOffheapSuite extends VeloxTPCHSuite {
     super.sparkConf
       .set("spark.sql.sources.useV1SourceList", "parquet")
       .set("spark.sql.autoBroadcastJoinThreshold", "30M")
-      .set(GlutenConfig.VELOX_BROADCAST_BUILD_RELATION_USE_OFFHEAP.key, "true")
+      .set(VeloxConfig.VELOX_BROADCAST_BUILD_RELATION_USE_OFFHEAP.key, "true")
   }
 }
 

@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.delta
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 
 import org.apache.spark.SparkException
 import org.apache.spark.sql.Dataset
@@ -71,7 +71,7 @@ class ClickhouseOptimisticTransaction(
     val nativeWrite = GlutenConfig.get.enableNativeWriter.getOrElse(false)
     if (writingMergeTree) {
       // TODO: update FallbackByBackendSettings for mergetree always return true
-      val onePipeline = nativeWrite && CHConf.get.enableOnePipelineMergeTreeWrite
+      val onePipeline = nativeWrite && CHConfig.get.enableOnePipelineMergeTreeWrite
       if (onePipeline)
         pipelineWriteFiles(inputData, writeOptions, isOptimize, additionalConstraints)
       else {
@@ -155,7 +155,7 @@ class ClickhouseOptimisticTransaction(
       spark.conf.getAll.foreach(
         entry => {
           if (
-            CHConf.startWithSettingsPrefix(entry._1)
+            CHConfig.startWithSettingsPrefix(entry._1)
             || entry._1.equalsIgnoreCase(DeltaSQLConf.DELTA_OPTIMIZE_MIN_FILE_SIZE.key)
           ) {
             options += (entry._1 -> entry._2)
@@ -267,7 +267,6 @@ class ClickhouseOptimisticTransaction(
       // TODO: val checkInvariants = DeltaInvariantCheckerExec(empty2NullPlan, constraints)
       val checkInvariants = empty2NullPlan
 
-      // TODO: DeltaOptimizedWriterExec
       // No need to plan optimized write if the write command is OPTIMIZE, which aims to produce
       // evenly-balanced data files already.
        val physicalPlan =

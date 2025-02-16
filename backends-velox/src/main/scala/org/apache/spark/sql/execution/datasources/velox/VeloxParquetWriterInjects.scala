@@ -39,6 +39,11 @@ class VeloxParquetWriterInjects extends VeloxFormatWriterInjects {
       GlutenConfig.PARQUET_BLOCK_ROWS,
       GlutenConfig.get.columnarParquetWriteBlockRows.toString)
     sparkOptions.put(GlutenConfig.PARQUET_BLOCK_ROWS, blockRows)
+    sparkOptions.put(
+      SQLConf.SESSION_LOCAL_TIMEZONE.key,
+      options.getOrElse(
+        SQLConf.SESSION_LOCAL_TIMEZONE.key,
+        SQLConf.SESSION_LOCAL_TIMEZONE.defaultValueString))
     options
       .get(GlutenConfig.PARQUET_GZIP_WINDOW_SIZE)
       .foreach(sparkOptions.put(GlutenConfig.PARQUET_GZIP_WINDOW_SIZE, _))

@@ -88,7 +88,7 @@ class CHListenerApi extends ListenerApi with Logging {
       JniLibLoader.loadFromPath(executorLibPath, true)
     }
     // Add configs
-    import org.apache.gluten.backendsapi.clickhouse.CHConf._
+    import org.apache.gluten.backendsapi.clickhouse.CHConfig._
     conf.setCHConfig(
       "timezone" -> conf.get("spark.sql.session.timeZone", TimeZone.getDefault.getID),
       "local_engine.settings.log_processors_profiles" -> "true")

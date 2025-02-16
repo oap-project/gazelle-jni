@@ -186,7 +186,7 @@ object ColumnarShuffleManager extends Logging {
     executorComponents
   }
 
-  private def bypassDecompressionSerializerManger =
+  def bypassDecompressionSerializerManger: SerializerManager =
     new SerializerManager(
       SparkEnv.get.serializer,
       SparkEnv.get.conf,

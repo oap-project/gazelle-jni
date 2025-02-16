@@ -20,7 +20,7 @@ import org.apache.spark.sql.internal.SQLConf
 
 object RuntimeSettings {
 
-  import CHConf.runtimeSettings
+  import CHConfig.runtimeSettings
   import SQLConf._
 
   /** Clickhouse settings */

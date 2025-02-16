@@ -20,7 +20,6 @@
 #include "config.h"
 
 #if USE_ORC
-#include <IO/WriteBuffer.h>
 #include <Storages/Output/OutputFormatFile.h>
 
 namespace local_engine

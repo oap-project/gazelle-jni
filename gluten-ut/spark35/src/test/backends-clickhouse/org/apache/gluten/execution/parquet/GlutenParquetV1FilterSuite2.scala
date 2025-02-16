@@ -20,9 +20,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.execution.datasources.parquet.GlutenParquetV1FilterSuite
 
 
-/** testing use_local_format parquet reader.
- * FIXME: Run this suite in Spark 35 CI Pipeline
- * */
+/** testing use_local_format parquet reader. **/
 class GlutenParquetV1FilterSuite2 extends GlutenParquetV1FilterSuite {
   override def sparkConf: SparkConf =
     super.sparkConf

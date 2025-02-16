@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include <Operator/EarlyStopStep.h>
+#include <Processors/Port.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
 
 namespace DB

@@ -667,8 +667,6 @@ core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::
     }
   }
 
-  // Do not hard-code connector ID and allow for connectors other than Hive.
-  static const std::string kHiveConnectorId = "test-hive";
   // Currently only support parquet format.
   dwio::common::FileFormat fileFormat = dwio::common::FileFormat::PARQUET;
 
@@ -1273,17 +1271,14 @@ core::PlanNodePtr SubstraitToVeloxPlanConverter::toVeloxPlan(const ::substrait::
     SubstraitParser::parseColumnTypes(baseSchema, columnTypes);
   }
 
-  // Do not hard-code connector ID and allow for connectors other than Hive.
-  static const std::string kHiveConnectorId = "test-hive";
-
   // Velox requires Filter Pushdown must being enabled.
   bool filterPushdownEnabled = true;
   std::shared_ptr<connector::hive::HiveTableHandle> tableHandle;
   if (!readRel.has_filter()) {
     tableHandle = std::make_shared<connector::hive::HiveTableHandle>(
-        kHiveConnectorId, "hive_table", filterPushdownEnabled, connector::hive::SubfieldFilters{}, nullptr);
+        kHiveConnectorId, "hive_table", filterPushdownEnabled, common::SubfieldFilters{}, nullptr);
   } else {
-    connector::hive::SubfieldFilters subfieldFilters;
+    common::SubfieldFilters subfieldFilters;
     auto names = colNameList;
     auto types = veloxTypeList;
     auto remainingFilter = exprConverter_->toVeloxExpr(readRel.filter(), ROW(std::move(names), std::move(types)));

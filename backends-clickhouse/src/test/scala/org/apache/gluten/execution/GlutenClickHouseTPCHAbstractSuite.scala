@@ -16,9 +16,6 @@
  */
 package org.apache.gluten.execution
 
-import org.apache.gluten.config.GlutenConfig
-import org.apache.gluten.utils.UTSystemParameters
-
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.DataFrame
@@ -568,7 +565,6 @@ abstract class GlutenClickHouseTPCHAbstractSuite
       .set("spark.databricks.delta.stalenessLimit", "3600000")
       .set("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
       .set(ClickHouseConfig.CLICKHOUSE_WORKER_ID, "1")
-      .set(GlutenConfig.GLUTEN_LIB_PATH.key, UTSystemParameters.clickHouseLibPath)
       .set("spark.gluten.sql.columnar.iterator", "true")
       .set("spark.gluten.sql.columnar.hashagg.enablefinal", "true")
       .set("spark.gluten.sql.enable.native.validation", "false")
@@ -591,8 +587,6 @@ abstract class GlutenClickHouseTPCHAbstractSuite
     ClickhouseSnapshot.clearAllFileStatusCache()
     DeltaLog.clearCache()
     super.afterAll()
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 
   override protected def runTPCHQuery(

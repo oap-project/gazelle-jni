@@ -20,6 +20,7 @@
 #include <Core/Settings.h>
 #include <Functions/FunctionFactory.h>
 #include <Interpreters/CollectJoinOnKeysVisitor.h>
+#include <Interpreters/ExpressionActions.h>
 #include <Interpreters/FullSortingMergeJoin.h>
 #include <Interpreters/GraceHashJoin.h>
 #include <Interpreters/HashJoin/HashJoin.h>

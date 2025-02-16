@@ -286,7 +286,7 @@ spark.dynamicAllocation.enabled false
 
 ## Uniffle support
 
-Uniffle with velox backend supports [Uniffle](https://github.com/apache/incubator-uniffle) as remote shuffle service. Currently, the supported Uniffle versions are `0.9.1`.
+Uniffle with velox backend supports [Uniffle](https://github.com/apache/incubator-uniffle) as remote shuffle service. Currently, the supported Uniffle versions are `0.9.2`.
 
 First refer to this URL(https://uniffle.apache.org/docs/intro) to get start with uniffle.
 

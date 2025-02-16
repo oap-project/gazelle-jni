@@ -1,0 +1,790 @@
+{
+  "extensions": [
+    {
+      "extensionFunction": {
+        "functionAnchor": 5,
+        "name": "alias:ts"
+      }
+    },
+    {
+      "extensionFunction": {
+        "name": "alias:struct<str,str,i64,i64,i64,ts>"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 2,
+        "name": "alias:str"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 4,
+        "name": "alias:i64"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 1,
+        "name": "named_struct:str_str_str_str_str_i64_str_i64_str_i64_str_ts"
+      }
+    },
+    {
+      "extensionFunction": {
+        "functionAnchor": 3,
+        "name": "get_struct_field:struct<str,str,i64,i64,i64,ts>"
+      }
+    }
+  ],
+  "relations": [
+    {
+      "root": {
+        "input": {
+          "project": {
+            "common": {
+              "emit": {
+                "outputMapping": [
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11,
+                  12
+                ]
+              }
+            },
+            "input": {
+              "project": {
+                "common": {
+                  "emit": {
+                    "outputMapping": [
+                      9,
+                      10,
+                      11,
+                      12
+                    ]
+                  }
+                },
+                "input": {
+                  "read": {
+                    "common": {
+                      "direct": {}
+                    },
+                    "baseSchema": {
+                      "names": [
+                        "name",
+                        "age",
+                        "info",
+                        "id",
+                        "university",
+                        "file_path",
+                        "file_name",
+                        "file_size",
+                        "file_block_start",
+                        "file_block_length",
+                        "file_modification_time"
+                      ],
+                      "struct": {
+                        "types": [
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "i32": {
+                              "nullability": "NULLABILITY_NULLABLE"
+                            }
+                          },
+                          {
+                            "struct": {
+                              "types": [
+                                {
+                                  "i64": {
+                                    "nullability": "NULLABILITY_NULLABLE"
+                                  }
+                                },
+                                {
+                                  "string": {
+                                    "nullability": "NULLABILITY_NULLABLE"
+                                  }
+                                }
+                              ],
+                              "nullability": "NULLABILITY_NULLABLE",
+                              "names": [
+                                "id",
+                                "university"
+                              ]
+                            }
+                          },
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          {
+                            "string": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          {
+                            "i64": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          {
+                            "i64": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          {
+                            "i64": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          {
+                            "timestamp": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          }
+                        ]
+                      },
+                      "columnTypes": [
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "NORMAL_COL",
+                        "METADATA_COL",
+                        "METADATA_COL",
+                        "METADATA_COL",
+                        "METADATA_COL",
+                        "METADATA_COL",
+                        "METADATA_COL"
+                      ]
+                    },
+                    "advancedExtension": {
+                      "optimization": {
+                        "@type": "type.googleapis.com/google.protobuf.StringValue",
+                        "value": "isMergeTree=0\n"
+                      }
+                    }
+                  }
+                },
+                "expressions": [
+                  {
+                    "selection": {
+                      "directReference": {
+                        "structField": {}
+                      }
+                    }
+                  },
+                  {
+                    "selection": {
+                      "directReference": {
+                        "structField": {
+                          "field": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "selection": {
+                      "directReference": {
+                        "structField": {
+                          "field": 2
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "scalarFunction": {
+                      "outputType": {
+                        "struct": {
+                          "types": [
+                            {
+                              "string": {
+                                "nullability": "NULLABILITY_REQUIRED"
+                              }
+                            },
+                            {
+                              "string": {
+                                "nullability": "NULLABILITY_REQUIRED"
+                              }
+                            },
+                            {
+                              "i64": {
+                                "nullability": "NULLABILITY_REQUIRED"
+                              }
+                            },
+                            {
+                              "i64": {
+                                "nullability": "NULLABILITY_REQUIRED"
+                              }
+                            },
+                            {
+                              "i64": {
+                                "nullability": "NULLABILITY_REQUIRED"
+                              }
+                            },
+                            {
+                              "timestamp": {
+                                "nullability": "NULLABILITY_REQUIRED"
+                              }
+                            }
+                          ],
+                          "nullability": "NULLABILITY_REQUIRED",
+                          "names": [
+                            "file_path",
+                            "file_name",
+                            "file_size",
+                            "file_block_start",
+                            "file_block_length",
+                            "file_modification_time"
+                          ]
+                        }
+                      },
+                      "arguments": [
+                        {
+                          "value": {
+                            "scalarFunction": {
+                              "functionReference": 1,
+                              "outputType": {
+                                "struct": {
+                                  "types": [
+                                    {
+                                      "string": {
+                                        "nullability": "NULLABILITY_REQUIRED"
+                                      }
+                                    },
+                                    {
+                                      "string": {
+                                        "nullability": "NULLABILITY_REQUIRED"
+                                      }
+                                    },
+                                    {
+                                      "i64": {
+                                        "nullability": "NULLABILITY_REQUIRED"
+                                      }
+                                    },
+                                    {
+                                      "i64": {
+                                        "nullability": "NULLABILITY_REQUIRED"
+                                      }
+                                    },
+                                    {
+                                      "i64": {
+                                        "nullability": "NULLABILITY_REQUIRED"
+                                      }
+                                    },
+                                    {
+                                      "timestamp": {
+                                        "nullability": "NULLABILITY_REQUIRED"
+                                      }
+                                    }
+                                  ],
+                                  "nullability": "NULLABILITY_REQUIRED",
+                                  "names": [
+                                    "file_path",
+                                    "file_name",
+                                    "file_size",
+                                    "file_block_start",
+                                    "file_block_length",
+                                    "file_modification_time"
+                                  ]
+                                }
+                              },
+                              "arguments": [
+                                {
+                                  "value": {
+                                    "literal": {
+                                      "string": "file_path"
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "selection": {
+                                      "directReference": {
+                                        "structField": {
+                                          "field": 3
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "literal": {
+                                      "string": "file_name"
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "selection": {
+                                      "directReference": {
+                                        "structField": {
+                                          "field": 4
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "literal": {
+                                      "string": "file_size"
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "selection": {
+                                      "directReference": {
+                                        "structField": {
+                                          "field": 5
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "literal": {
+                                      "string": "file_block_start"
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "selection": {
+                                      "directReference": {
+                                        "structField": {
+                                          "field": 6
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "literal": {
+                                      "string": "file_block_length"
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "selection": {
+                                      "directReference": {
+                                        "structField": {
+                                          "field": 7
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "literal": {
+                                      "string": "file_modification_time"
+                                    }
+                                  }
+                                },
+                                {
+                                  "value": {
+                                    "selection": {
+                                      "directReference": {
+                                        "structField": {
+                                          "field": 8
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "expressions": [
+              {
+                "selection": {
+                  "directReference": {
+                    "structField": {}
+                  }
+                }
+              },
+              {
+                "selection": {
+                  "directReference": {
+                    "structField": {
+                      "field": 1
+                    }
+                  }
+                }
+              },
+              {
+                "selection": {
+                  "directReference": {
+                    "structField": {
+                      "field": 2
+                    }
+                  }
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 2,
+                  "outputType": {
+                    "string": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "scalarFunction": {
+                          "functionReference": 3,
+                          "outputType": {
+                            "string": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          "arguments": [
+                            {
+                              "value": {
+                                "selection": {
+                                  "directReference": {
+                                    "structField": {
+                                      "field": 3
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "value": {
+                                "literal": {
+                                  "i32": 1
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 2,
+                  "outputType": {
+                    "string": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "scalarFunction": {
+                          "functionReference": 3,
+                          "outputType": {
+                            "string": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          "arguments": [
+                            {
+                              "value": {
+                                "selection": {
+                                  "directReference": {
+                                    "structField": {
+                                      "field": 3
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "value": {
+                                "literal": {
+                                  "i32": 0
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 4,
+                  "outputType": {
+                    "i64": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "scalarFunction": {
+                          "functionReference": 3,
+                          "outputType": {
+                            "i64": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          "arguments": [
+                            {
+                              "value": {
+                                "selection": {
+                                  "directReference": {
+                                    "structField": {
+                                      "field": 3
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "value": {
+                                "literal": {
+                                  "i32": 2
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 4,
+                  "outputType": {
+                    "i64": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "scalarFunction": {
+                          "functionReference": 3,
+                          "outputType": {
+                            "i64": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          "arguments": [
+                            {
+                              "value": {
+                                "selection": {
+                                  "directReference": {
+                                    "structField": {
+                                      "field": 3
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "value": {
+                                "literal": {
+                                  "i32": 3
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 4,
+                  "outputType": {
+                    "i64": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "scalarFunction": {
+                          "functionReference": 3,
+                          "outputType": {
+                            "i64": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          "arguments": [
+                            {
+                              "value": {
+                                "selection": {
+                                  "directReference": {
+                                    "structField": {
+                                      "field": 3
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "value": {
+                                "literal": {
+                                  "i32": 4
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "scalarFunction": {
+                  "functionReference": 5,
+                  "outputType": {
+                    "timestamp": {
+                      "nullability": "NULLABILITY_REQUIRED"
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "value": {
+                        "scalarFunction": {
+                          "functionReference": 3,
+                          "outputType": {
+                            "timestamp": {
+                              "nullability": "NULLABILITY_REQUIRED"
+                            }
+                          },
+                          "arguments": [
+                            {
+                              "value": {
+                                "selection": {
+                                  "directReference": {
+                                    "structField": {
+                                      "field": 3
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "value": {
+                                "literal": {
+                                  "i32": 5
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "names": [
+          "name#18",
+          "age#19",
+          "info#20",
+          "file_name#25",
+          "file_path#26",
+          "file_size#27",
+          "file_block_start#28",
+          "file_block_length#29",
+          "file_modification_time#30"
+        ],
+        "outputSchema": {
+          "types": [
+            {
+              "string": {
+                "nullability": "NULLABILITY_NULLABLE"
+              }
+            },
+            {
+              "i32": {
+                "nullability": "NULLABILITY_NULLABLE"
+              }
+            },
+            {
+              "struct": {
+                "types": [
+                  {
+                    "i64": {
+                      "nullability": "NULLABILITY_NULLABLE"
+                    }
+                  },
+                  {
+                    "string": {
+                      "nullability": "NULLABILITY_NULLABLE"
+                    }
+                  }
+                ],
+                "nullability": "NULLABILITY_NULLABLE",
+                "names": [
+                  "id",
+                  "university"
+                ]
+              }
+            },
+            {
+              "string": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            },
+            {
+              "string": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            },
+            {
+              "i64": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            },
+            {
+              "i64": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            },
+            {
+              "i64": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            },
+            {
+              "timestamp": {
+                "nullability": "NULLABILITY_REQUIRED"
+              }
+            }
+          ],
+          "nullability": "NULLABILITY_REQUIRED"
+        }
+      }
+    }
+  ]
+}

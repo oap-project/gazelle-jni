@@ -15,17 +15,58 @@
  * limitations under the License.
  */
 #pragma once
+#include <algorithm>
+#include <sstream>
 #include <string>
-#include <vector>
-#include <map>
+#include <fmt/core.h>
 
 namespace local_engine
 {
-class GlutenStringUtils
+namespace GlutenStringUtils
 {
-public:
-    static bool isNullPartitionValue(const std::string & value);
+bool isNullPartitionValue(const std::string & value);
 
-    static std::string dumpPartitionValues(const std::map<std::string, std::string> & values);
+template <typename T>
+struct is_pair : std::false_type
+{
+};
+
+template <typename K, typename V>
+struct is_pair<std::pair<K, V>> : std::true_type
+{
+};
+
+template <typename Container>
+using is_kv_container = is_pair<typename Container::value_type>;
+
+template <typename Container>
+std::string mkString(
+    const Container & container,
+    const std::string & delimiter = ", ",
+    const std::string & prefix = "[",
+    const std::string & suffix = "]",
+    const std::string & pairSeparator = "=")
+{
+    if (container.empty())
+        return "<empty>";
+
+    std::string result = prefix;
+
+    bool first = true;
+    for (const auto & element : container)
+    {
+        if (!first)
+            result += delimiter;
+        if constexpr (is_kv_container<Container>::value)
+            result += fmt::format("{}{}{}", element.first, pairSeparator, element.second);
+        else
+            result += fmt::format("{}", element);
+        first = false;
+    }
+
+    result += suffix;
+    return result;
+}
+
 };
 }

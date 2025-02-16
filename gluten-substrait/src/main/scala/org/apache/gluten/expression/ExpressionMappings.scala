@@ -192,6 +192,7 @@ object ExpressionMappings {
     Sig[MonthsBetween](MONTHS_BETWEEN),
     Sig[DateFromUnixDate](DATE_FROM_UNIX_DATE),
     Sig[UnixDate](UNIX_DATE),
+    Sig[MakeDate](MAKE_DATE),
     Sig[MakeTimestamp](MAKE_TIMESTAMP),
     Sig[MakeYMInterval](MAKE_YM_INTERVAL),
     Sig[ToUTCTimestamp](TO_UTC_TIMESTAMP),
@@ -322,6 +323,7 @@ object ExpressionMappings {
     Sig[Skewness](SKEWNESS),
     Sig[Kurtosis](KURTOSIS),
     Sig[ApproximatePercentile](APPROX_PERCENTILE),
+    Sig[HyperLogLogPlusPlus](APPROX_COUNT_DISTINCT),
     Sig[Percentile](PERCENTILE)
   ) ++ SparkShimLoader.getSparkShims.aggregateExpressionMappings
 

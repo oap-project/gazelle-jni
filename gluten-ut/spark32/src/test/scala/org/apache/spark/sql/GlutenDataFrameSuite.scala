@@ -379,7 +379,7 @@ class GlutenDataFrameSuite extends DataFrameSuite with GlutenSQLTestsTrait {
                                |+- 'UnresolvedRelation [tmp]""".stripMargin))
       assert(output.contains("""== Physical Plan ==
                                |*(1) ColumnarToRow
-                               |+- ColumnarRange 0, 10, 1, 2, 10, [id#0L]""".stripMargin))
+                               |+- ColumnarRange 0, 10, 1, 2, 10""".stripMargin))
     }
   }
 

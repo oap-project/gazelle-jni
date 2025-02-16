@@ -1530,4 +1530,11 @@ abstract class ScalarFunctionsValidateSuite extends FunctionsValidateSuite {
         }
     }
   }
+
+  test("make_date") {
+    runQueryAndCompare(
+      "select make_date(2025, 2, 7), make_date(2024, 11, null), make_date(2024, 11, 50)") {
+      checkGlutenOperatorMatch[ProjectExecTransformer]
+    }
+  }
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.execution.tpch
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf._
+import org.apache.gluten.backendsapi.clickhouse.CHConfig._
 import org.apache.gluten.execution.{CHNativeCacheManager, FileSourceScanExecTransformer, GlutenClickHouseTPCHAbstractSuite}
 
 import org.apache.spark.SparkConf

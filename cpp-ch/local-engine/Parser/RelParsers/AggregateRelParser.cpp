@@ -31,6 +31,7 @@
 #include <Processors/QueryPlan/AggregatingStep.h>
 #include <Processors/QueryPlan/ExpressionStep.h>
 #include <Processors/QueryPlan/MergingAggregatedStep.h>
+#include <boost/algorithm/string/join.hpp>
 #include <google/protobuf/wrappers.pb.h>
 #include <Common/CHUtil.h>
 #include <Common/GlutenConfig.h>

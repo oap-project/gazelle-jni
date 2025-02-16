@@ -17,7 +17,6 @@
 package org.apache.gluten.execution
 
 import org.apache.gluten.backendsapi.clickhouse.RuntimeConfig
-import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.utils.UTSystemParameters
 
 import org.apache.spark.{SPARK_VERSION_SHORT, SparkConf}
@@ -76,10 +75,9 @@ class GlutenClickHouseWholeStageTransformerSuite extends WholeStageTransformerSu
   }
 
   override protected def sparkConf: SparkConf = {
-    import org.apache.gluten.backendsapi.clickhouse.CHConf._
+    import org.apache.gluten.backendsapi.clickhouse.CHConfig._
 
     val conf = super.sparkConf
-      .set(GlutenConfig.GLUTEN_LIB_PATH.key, UTSystemParameters.clickHouseLibPath)
       .set("spark.gluten.sql.enable.native.validation", "false")
       .set("spark.sql.warehouse.dir", warehouse)
       .setCHConfig("user_defined_path", "/tmp/user_defined")

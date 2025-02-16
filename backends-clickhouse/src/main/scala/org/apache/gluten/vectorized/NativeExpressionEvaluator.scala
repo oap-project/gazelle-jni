@@ -16,7 +16,7 @@
  */
 package org.apache.gluten.vectorized
 
-import org.apache.gluten.backendsapi.clickhouse.CHConf
+import org.apache.gluten.backendsapi.clickhouse.CHConfig
 import org.apache.gluten.utils.ConfigUtil
 
 import scala.collection.JavaConverters._
@@ -29,10 +29,10 @@ object NativeExpressionEvaluator {
     ExpressionEvaluatorJniWrapper.updateQueryRuntimeSettings(
       ConfigUtil.serialize(
         settings
-          .filter(t => CHConf.startWithSettingsPrefix(t._1) && t._2.nonEmpty)
+          .filter(t => CHConfig.startWithSettingsPrefix(t._1) && t._2.nonEmpty)
           .map {
             case (k, v) =>
-              (CHConf.removeSettingsPrefix(k), v)
+              (CHConfig.removeSettingsPrefix(k), v)
           }
           .asJava))
   }

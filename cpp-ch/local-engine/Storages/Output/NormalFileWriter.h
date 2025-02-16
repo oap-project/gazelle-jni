@@ -16,6 +16,7 @@
  */
 #pragma once
 
+#include <Columns/ColumnNullable.h>
 #include <Core/Block.h>
 #include <Core/Field.h>
 #include <Interpreters/Context.h>

@@ -18,15 +18,6 @@ package org.apache.gluten.utils
 
 object UTSystemParameters {
 
-  private val CLICKHOUSE_LIB_PATH_KEY = "clickhouse.lib.path"
-  private val CLICKHOUSE_LIB_PATH_DEFAULT_VALUE = "/usr/local/clickhouse/lib/libch.so"
-
-  def clickHouseLibPath: String = {
-    System.getProperty(
-      UTSystemParameters.CLICKHOUSE_LIB_PATH_KEY,
-      UTSystemParameters.CLICKHOUSE_LIB_PATH_DEFAULT_VALUE)
-  }
-
   private val TEST_DATA_PATH_KEY = "gluten.test.data.path"
   private val TEST_DATA_PATH_DEFAULT_VALUE = "/data"
 
@@ -43,29 +34,12 @@ object UTSystemParameters {
       UTSystemParameters.TEST_DATA_DISK_OUTPUT_KEY,
       UTSystemParameters.TEST_DATA_DISK_OUTPUT_DEFAULT_VALUE)
   }
-
-  private val TPCDS_DATA_PATH_KEY = "tpcds.data.path"
-  private val TPCDS_DATA_DECIMAL_PATH_KEY = "tpcds.data.decimal.path"
   private val TPCDS_RELATIVE_DATA_PATH = "tpcds-data-sf1"
   private val TPCDS_DECIMAL_RELATIVE_DATA_PATH = "tpcds-data-sf1-decimal"
 
-  def tpcdsDataPath: String = {
-    val result = System.getProperty(UTSystemParameters.TPCDS_DATA_PATH_KEY, null)
-    if (result == null) {
-      s"$testDataPath/$TPCDS_RELATIVE_DATA_PATH"
-    } else {
-      result
-    }
-  }
+  def tpcdsDataPath: String = s"$testDataPath/$TPCDS_RELATIVE_DATA_PATH"
 
-  def tpcdsDecimalDataPath: String = {
-    val result = System.getProperty(UTSystemParameters.TPCDS_DATA_DECIMAL_PATH_KEY, null)
-    if (result == null) {
-      s"$testDataPath/$TPCDS_DECIMAL_RELATIVE_DATA_PATH"
-    } else {
-      result
-    }
-  }
+  def tpcdsDecimalDataPath: String = s"$testDataPath/$TPCDS_DECIMAL_RELATIVE_DATA_PATH"
 
   private val TEST_MERGETREE_ON_OBJECT_STORAGE = "gluten.ch.test.mergetree.object.storage"
   private val TEST_MERGETREE_ON_OBJECT_STORAGE_DEFAULT_VALUE = "true"

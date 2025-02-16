@@ -19,7 +19,6 @@ package org.apache.gluten.sql
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.WholeStageTransformerSuite
 import org.apache.gluten.utils.BackendTestUtils
-import org.apache.gluten.utils.SystemParameters
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
@@ -41,7 +40,6 @@ class SQLQuerySuite extends WholeStageTransformerSuite {
     if (BackendTestUtils.isCHBackendLoaded()) {
       conf
         .set("spark.gluten.sql.enable.native.validation", "false")
-        .set(GlutenConfig.GLUTEN_LIB_PATH.key, SystemParameters.getClickHouseLibPath)
     }
     conf
   }

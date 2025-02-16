@@ -16,6 +16,7 @@
  */
 
 #include "StreamingAggregatingStep.h"
+#include <Processors/Port.h>
 #include <Processors/Transforms/AggregatingTransform.h>
 #include <QueryPipeline/QueryPipelineBuilder.h>
 #include <Common/CHUtil.h>
@@ -23,6 +24,7 @@
 #include <Common/QueryContext.h>
 #include <Common/Stopwatch.h>
 #include <Common/formatReadable.h>
+#include <Common/logger_useful.h>
 
 namespace DB
 {

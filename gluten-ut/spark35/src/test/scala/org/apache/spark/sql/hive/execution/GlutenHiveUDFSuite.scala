@@ -81,9 +81,9 @@ class GlutenHiveUDFSuite
   with GlutenTestHiveSingleton
   with SQLTestUtils
   with GlutenTestsBaseTrait {
-  override protected val spark: SparkSession = GlutenTestHive.sparkSession
-  protected val hiveContext: TestHiveContext = GlutenTestHive
-  protected val hiveClient: HiveClient =
+  override protected lazy val spark: SparkSession = GlutenTestHive.sparkSession
+  protected lazy val hiveContext: TestHiveContext = GlutenTestHive
+  protected lazy val hiveClient: HiveClient =
     spark.sharedState.externalCatalog.unwrapped.asInstanceOf[HiveExternalCatalog].client
 
   override protected def beforeAll(): Unit = {

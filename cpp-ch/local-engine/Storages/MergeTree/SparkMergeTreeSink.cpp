@@ -17,6 +17,7 @@
 #include "SparkMergeTreeSink.h"
 
 #include <Core/Settings.h>
+#include <IO/copyData.h>
 #include <Interpreters/MergeTreeTransaction.h>
 #include <Storages/MergeTree/MetaDataHelper.h>
 #include <Common/QueryContext.h>
