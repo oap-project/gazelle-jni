@@ -16,8 +16,8 @@
 
 set -exu
 
-VELOX_REPO=https://github.com/oap-project/velox.git
-VELOX_BRANCH=2025_02_14
+VELOX_REPO=https://github.com/ArnavBalyan/velox.git
+VELOX_BRANCH=arnavb/cast-timestamp-bool
 VELOX_HOME=""
 
 OS=`uname -s`

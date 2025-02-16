@@ -562,6 +562,7 @@ class ClickHouseTestSettings extends BackendTestSettings {
     .exclude("SPARK-36924: Cast IntegralType to DayTimeIntervalType")
     .exclude("SPARK-36924: Cast YearMonthIntervalType to IntegralType")
     .exclude("SPARK-36924: Cast IntegralType to YearMonthIntervalType")
+    .exclude("cast from boolean to timestamp")
   enableSuite[GlutenCollectionExpressionsSuite]
     .exclude("ArraysZip") // wait for https://github.com/ClickHouse/ClickHouse/pull/69576
     .exclude("Sequence of numbers")
