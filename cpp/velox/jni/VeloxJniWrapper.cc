@@ -312,7 +312,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_utils_VeloxBatchResizerJniWrapper
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_apache_gluten_utils_VeloxFileSystemValidationJniWrapper_allSupportedByRegisteredFileSystems( // NOLINT
+Java_org_apache_gluten_utils_VeloxFileSystemValidationJniWrapper_allSupportedByRegisteredFileSystemsNative( // NOLINT
     JNIEnv* env,
     jclass,
     jobjectArray stringArray) {
