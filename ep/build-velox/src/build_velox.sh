@@ -124,6 +124,12 @@ function compile {
   if [ -n "${GLUTEN_VCPKG_ENABLED:-}" ]; then
     COMPILE_OPTION="$COMPILE_OPTION -DVELOX_GFLAGS_TYPE=static"
   fi
+  CPU_CAPABILITIES=$(cat /proc/cpuinfo | grep flags | head -n 1| awk '{print tolower($0)}')
+  # Set to OFF for machines don't have AVX-512 instruction set,
+  # which is used to compile simdjson, the default value is 'ON'.
+  if [[ "$CPU_CAPABILITIES" != *"avx512"* ]]; then
+      COMPILE_OPTION="$COMPILE_OPTION -DSIMDJSON_AVX512_ALLOWED=OFF"
+  fi
 
   COMPILE_OPTION="$COMPILE_OPTION -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
   COMPILE_TYPE=$(if [[ "$BUILD_TYPE" == "debug" ]] || [[ "$BUILD_TYPE" == "Debug" ]]; then echo 'debug'; else echo 'release'; fi)
