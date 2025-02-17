@@ -1482,13 +1482,13 @@ abstract class ScalarFunctionsValidateSuite extends FunctionsValidateSuite {
     withTempView("try_cast_table") {
       withTempPath {
         path =>
-          Seq[(String)](("123456"), ("000A1234"))
+          Seq[(String)](("123456"), ("000A1234"), ("1.1"), ("1a.1"))
             .toDF("str")
             .write
             .parquet(path.getCanonicalPath)
           spark.read.parquet(path.getCanonicalPath).createOrReplaceTempView("try_cast_table")
           runQueryAndCompare("select try_cast(str as bigint) from try_cast_table") {
-            checkGlutenOperatorMatch[ProjectExecTransformer]
+            checkSparkOperatorMatch[ProjectExec]
           }
           runQueryAndCompare("select try_cast(str as double) from try_cast_table") {
             checkGlutenOperatorMatch[ProjectExecTransformer]

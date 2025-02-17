@@ -337,6 +337,9 @@ object ExpressionConverter extends SQLConfHelper with Logging {
       case s: ScalarSubquery =>
         ScalarSubqueryTransformer(substraitExprName, s)
       case c: Cast =>
+        if (SparkShimLoader.getSparkShims.withAnsiEvalMode(c)) {
+          throw new GlutenNotSupportException(s"Cast expression does not support ANSI mode, $c")
+        }
         // Add trim node, as necessary.
         val newCast =
           BackendsApiManager.getSparkPlanExecApiInstance.genCastWithNewChild(c)
