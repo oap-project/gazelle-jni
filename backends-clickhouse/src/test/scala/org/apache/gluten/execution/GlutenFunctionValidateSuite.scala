@@ -208,6 +208,10 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     spark.catalog.createTable("url_table", urlFilePath, fileFormat)
   }
 
+  override def afterAll(): Unit = {
+    sparkConf.set("spark.gluten.sql.supported.collapseNestedFunctions", "")
+  }
+
   test("Test get_json_object 1") {
     runQueryAndCompare("SELECT get_json_object(string_field1, '$.a') from json_test") {
       checkGlutenOperatorMatch[ProjectExecTransformer]
@@ -395,17 +399,21 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
       }
       false
     }
-    withSQLConf(("spark.gluten.sql.supported.collapseNestedFunctions", "and,or")) {
-      runQueryAndCompare(
-        "SELECT count(1) from json_test where int_field1 = 5 and double_field1 > 1.0" +
-          " and string_field1 is not null") {
-        x => assert(checkCollapsedFunctions(x.queryExecution.executedPlan, "and", 5))
+    try {
+      withSQLConf(("spark.gluten.sql.supported.collapseNestedFunctions", "and,or")) {
+        runQueryAndCompare(
+          "SELECT count(1) from json_test where int_field1 = 5 and double_field1 > 1.0" +
+            " and string_field1 is not null") {
+          x => assert(checkCollapsedFunctions(x.queryExecution.executedPlan, "and", 5))
+        }
+        runQueryAndCompare(
+          "SELECT count(1) from json_test where int_field1 = 5 or double_field1 > 1.0" +
+            " or string_field1 is not null") {
+          x => assert(checkCollapsedFunctions(x.queryExecution.executedPlan, "or", 3))
+        }
       }
-      runQueryAndCompare(
-        "SELECT count(1) from json_test where int_field1 = 5 or double_field1 > 1.0" +
-          " or string_field1 is not null") {
-        x => assert(checkCollapsedFunctions(x.queryExecution.executedPlan, "or", 3))
-      }
+    } finally {
+      sparkConf.set("spark.gluten.sql.supported.collapseNestedFunctions", "")
     }
   }
 
