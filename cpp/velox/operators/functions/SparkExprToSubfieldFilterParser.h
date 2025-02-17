@@ -21,7 +21,6 @@ namespace gluten {
 /// Parses Spark expression into subfield filter. Differences from Presto's parser include:
 /// 1) Some Spark functions are registered under different names.
 /// 2) The supported functions vary.
-/// 3) Filter push-down on nested fields is disabled.
 class SparkExprToSubfieldFilterParser : public facebook::velox::exec::ExprToSubfieldFilterParser {
  public:
   std::unique_ptr<facebook::velox::common::Filter> leafCallToSubfieldFilter(
@@ -29,10 +28,6 @@ class SparkExprToSubfieldFilterParser : public facebook::velox::exec::ExprToSubf
       facebook::velox::common::Subfield& subfield,
       facebook::velox::core::ExpressionEvaluator* evaluator,
       bool negated) override;
-
- private:
-  // Compared to the upstream 'toSubfield', the push-down of filter on nested field is disabled.
-  bool toSparkSubfield(const facebook::velox::core::ITypedExpr* field, facebook::velox::common::Subfield& subfield);
 };
 
 } // namespace gluten
