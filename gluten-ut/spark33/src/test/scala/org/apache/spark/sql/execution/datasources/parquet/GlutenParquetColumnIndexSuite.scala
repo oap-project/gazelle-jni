@@ -38,7 +38,25 @@ class GlutenParquetColumnIndexSuite extends ParquetColumnIndexSuite with GlutenS
         "cast(id as float) as _5",
         "cast(id as double) as _6",
         "cast(id as decimal(20,0)) as _7",
-        "cast(cast(1618161925000 + id * 1000 * 60 * 60 * 24 as timestamp) as date) as _9"
+        "cast(cast(1618161925 + id * 60 * 60 * 24 as timestamp) as date) as _9"
+      )
+    checkUnalignedPages(df)(actions: _*)
+  }
+
+  testGluten("test reading unaligned pages - test all types (dict encode)") {
+    val df = spark
+      .range(0, 2000)
+      .selectExpr(
+        "id as _1",
+        "cast(id % 10 as byte) as _2",
+        "cast(id % 10 as short) as _3",
+        "cast(id % 10 as int) as _4",
+        "cast(id % 10 as float) as _5",
+        "cast(id % 10 as double) as _6",
+        "cast(id % 10 as decimal(20,0)) as _7",
+        "cast(id % 2 as boolean) as _8",
+        "cast(cast(1618161925 + (id % 10) * 60 * 60 * 24 as timestamp) as date) as _9",
+        "cast(1618161925 + (id % 10) as timestamp) as _10"
       )
     checkUnalignedPages(df)(actions: _*)
   }
