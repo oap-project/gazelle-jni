@@ -337,11 +337,12 @@ ExpressionParser::NodeRawConstPtr ExpressionParser::parseExpression(ActionsDAG &
             }
             else if ((isDecimal(denull_input_type) || isNativeNumber(denull_input_type)) && substrait_type.has_decimal())
             {
-                int decimal_precision = substrait_type.decimal().precision();
-                if (decimal_precision)
+                int precision = substrait_type.decimal().precision();
+                int scale = substrait_type.decimal().scale();
+                if (precision)
                 {
-                    args.emplace_back(addConstColumn(actions_dag, std::make_shared<DataTypeInt32>(), decimal_precision));
-                    args.emplace_back(addConstColumn(actions_dag, std::make_shared<DataTypeInt32>(), substrait_type.decimal().scale()));
+                    args.emplace_back(addConstColumn(actions_dag, std::make_shared<DataTypeInt32>(), precision));
+                    args.emplace_back(addConstColumn(actions_dag, std::make_shared<DataTypeInt32>(), scale));
                     result_node = toFunctionNode(actions_dag, "checkDecimalOverflowSparkOrNull", args);
                 }
             }

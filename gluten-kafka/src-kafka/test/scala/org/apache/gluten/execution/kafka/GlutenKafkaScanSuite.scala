@@ -48,12 +48,6 @@ trait GlutenKafkaScanSuite extends WholeStageTransformerSuite {
             .drop(col("timestamp"))
             .drop(col("timestampType"))
 
-          val streamQuery = df.writeStream
-            .format("parquet")
-            .option("checkpointLocation", dir.getCanonicalPath + "/_checkpoint")
-            .trigger(Trigger.ProcessingTime("5 seconds"))
-            .start(dir.getCanonicalPath)
-
           spark.sql(s"""
                        |CREATE EXTERNAL TABLE $table_name (
                        |    id long,
@@ -72,6 +66,12 @@ trait GlutenKafkaScanSuite extends WholeStageTransformerSuite {
             .option("kafka.bootstrap.servers", kafkaBootstrapServers)
             .option("topic", table_name)
             .save()
+
+          val streamQuery = df.writeStream
+            .format("parquet")
+            .option("checkpointLocation", dir.getCanonicalPath + "/_checkpoint")
+            .trigger(Trigger.ProcessingTime("5 seconds"))
+            .start(dir.getCanonicalPath)
 
           eventually(timeout(60.seconds), interval(5.seconds)) {
             val size = streamQuery

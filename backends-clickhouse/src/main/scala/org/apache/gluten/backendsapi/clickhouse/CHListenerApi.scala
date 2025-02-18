@@ -93,6 +93,13 @@ class CHListenerApi extends ListenerApi with Logging {
       "timezone" -> conf.get("spark.sql.session.timeZone", TimeZone.getDefault.getID),
       "local_engine.settings.log_processors_profiles" -> "true")
     conf.setCHSettings("spark_version", SPARK_VERSION)
+    if (!conf.contains(RuntimeSettings.ENABLE_MEMORY_SPILL_SCHEDULER.key)) {
+      // Enable adaptive memory spill scheduler for native by default
+      conf.set(
+        RuntimeSettings.ENABLE_MEMORY_SPILL_SCHEDULER.key,
+        RuntimeSettings.ENABLE_MEMORY_SPILL_SCHEDULER.defaultValueString)
+    }
+
     // add memory limit for external sort
     if (conf.getLong(RuntimeSettings.MAX_BYTES_BEFORE_EXTERNAL_SORT.key, -1) < 0) {
       if (conf.getBoolean("spark.memory.offHeap.enabled", defaultValue = false)) {

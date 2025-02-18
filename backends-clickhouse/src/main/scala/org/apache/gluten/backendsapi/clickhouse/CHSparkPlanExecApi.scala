@@ -940,6 +940,5 @@ class CHSparkPlanExecApi extends SparkPlanExecApi with Logging {
       numElements: BigInt,
       outputAttributes: Seq[Attribute],
       child: Seq[SparkPlan]): ColumnarRangeBaseExec =
-    throw new GlutenNotSupportException("ColumnarRange is not supported in ch backend.")
-
+    CHRangeExecTransformer(start, end, step, numSlices, numElements, outputAttributes, child)
 }

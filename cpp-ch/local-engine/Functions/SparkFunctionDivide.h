@@ -81,91 +81,117 @@ public:
     DB::ColumnPtr
     executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr & result_type, size_t input_rows_count) const override
     {
-        if (arguments.size() != 2)
-            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {}'s arguments number must be 2", name);
+        using L = Float64;
+        using R = Float64;
+        using T = Float64;
 
-        if (!isNativeNumber(arguments[0].type) || !isNativeNumber(arguments[1].type))
-            throw DB::Exception(DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Function {}'s arguments type must be native number", name);
+        const DB::ColumnVector<L> * col_left = nullptr;
+        const DB::ColumnVector<R> * col_right = nullptr;
+        const DB::ColumnVector<L> * const_col_left = checkAndGetColumnConstData<DB::ColumnVector<L>>(arguments[0].column.get());
+        const DB::ColumnVector<R> * const_col_right = checkAndGetColumnConstData<DB::ColumnVector<R>>(arguments[1].column.get());
 
-        using Types = TypeList<
-            DB::DataTypeFloat32,
-            DB::DataTypeFloat64,
-            DB::DataTypeUInt8,
-            DB::DataTypeUInt16,
-            DB::DataTypeUInt32,
-            DB::DataTypeUInt64,
-            DB::DataTypeInt8,
-            DB::DataTypeInt16,
-            DB::DataTypeInt32,
-            DB::DataTypeInt64>;
+        L left_const_val = 0;
+        if (const_col_left)
+            left_const_val = const_col_left->getElement(0);
+        else
+            col_left = assert_cast<const DB::ColumnVector<L> *>(arguments[0].column.get());
 
-        DB::ColumnPtr result = nullptr;
-        bool valid = castTypeToEither(
-            Types{},
-            arguments[0].type.get(),
-            [&](const auto & left_)
+        R right_const_val = 0;
+        if (const_col_right)
+        {
+            right_const_val = const_col_right->getElement(0);
+            if (right_const_val == 0)
             {
-                return castTypeToEither(
-                    Types{},
-                    arguments[1].type.get(),
-                    [&](const auto & right_)
+                auto data_col = DB::ColumnVector<T>::create(1, 0);
+                auto null_map_col = DB::ColumnVector<UInt8>::create(1, 1);
+                return DB::ColumnConst::create(DB::ColumnNullable::create(std::move(data_col), std::move(null_map_col)), input_rows_count);
+            }
+        }
+        else
+            col_right = assert_cast<const DB::ColumnVector<R> *>(arguments[1].column.get());
+
+        auto res_col = DB::ColumnVector<T>::create(input_rows_count, 0);
+        auto res_null_map = DB::ColumnVector<UInt8>::create(input_rows_count, 0);
+        DB::PaddedPODArray<T> & res_data = res_col->getData();
+        DB::PaddedPODArray<UInt8> & res_null_map_data = res_null_map->getData();
+        vector(col_left, col_right, left_const_val, right_const_val, res_data, res_null_map_data, input_rows_count);
+        return DB::ColumnNullable::create(std::move(res_col), std::move(res_null_map));
+    }
+
+    MULTITARGET_FUNCTION_AVX2_SSE42(
+        MULTITARGET_FUNCTION_HEADER(static void NO_SANITIZE_UNDEFINED NO_INLINE),
+        vectorImpl,
+        MULTITARGET_FUNCTION_BODY(
+            (const DB::ColumnVector<Float64> * col_left,
+             const DB::ColumnVector<Float64> * col_right,
+             Float64 left_const_val,
+             Float64 right_const_val,
+             DB::PaddedPODArray<Float64> & res_data,
+             DB::PaddedPODArray<UInt8> & res_null_map_data,
+             size_t input_rows_count) /// NOLINT
+            {
+                if (col_left && col_right)
+                {
+                    const auto & ldata = col_left->getData();
+                    const auto & rdata = col_right->getData();
+
+                    for (size_t i = 0; i < input_rows_count; ++i)
                     {
-                        using L = typename std::decay_t<decltype(left_)>::FieldType;
-                        using R = typename std::decay_t<decltype(right_)>::FieldType;
-                        using T = typename DB::NumberTraits::ResultOfFloatingPointDivision<L, R>::Type;
+                        auto l = ldata[i];
+                        auto r = rdata[i];
+                        res_data[i] = SparkDivideFloatingImpl<Float64, Float64>::apply(l, r ? r : 1);
+                        res_null_map_data[i] = !rdata[i];
+                    }
+                }
+                else if (col_left)
+                {
+                    Float64 r = right_const_val;
+                    for (size_t i = 0; i < input_rows_count; ++i)
+                    {
+                        Float64 l = col_left->getData()[i];
 
-                        const DB::ColumnVector<L> * col_left = nullptr;
-                        const DB::ColumnVector<R> * col_right = nullptr;
-                        const DB::ColumnVector<L> * const_col_left = checkAndGetColumnConstData<DB::ColumnVector<L>>(arguments[0].column.get());
-                        const DB::ColumnVector<R> * const_col_right
-                            = checkAndGetColumnConstData<DB::ColumnVector<R>>(arguments[1].column.get());
+                        /// r must not be zero because r = 0 is already processed in fast path
+                        /// No need to assign null_map_data[i] = 0, because it is already 0
+                        // res_null_map_data[i] = 0;
+                        res_data[i] = SparkDivideFloatingImpl<Float64, Float64>::apply(l, r);
+                    }
+                }
+                else if (col_right)
+                {
+                    Float64 l = left_const_val;
+                    for (size_t i = 0; i < input_rows_count; ++i)
+                    {
+                        Float64 r = col_right->getData()[i];
+                        res_null_map_data[i] = !r;
+                        res_data[i] = SparkDivideFloatingImpl<Float64, Float64>::apply(l, r ? r : 1);
+                    }
+                }
+            }))
 
-                        L left_const_val = 0;
-                        if (const_col_left)
-                            left_const_val = const_col_left->getElement(0);
-                        else
-                            col_left = assert_cast<const DB::ColumnVector<L> *>(arguments[0].column.get());
+    static void NO_INLINE vector(
+        const DB::ColumnVector<Float64> * col_left,
+        const DB::ColumnVector<Float64> * col_right,
+        Float64 left_const_val,
+        Float64 right_const_val,
+        DB::PaddedPODArray<Float64> & res_data,
+        DB::PaddedPODArray<UInt8> & res_null_map_data,
+        size_t input_rows_count)
+    {
+#if USE_MULTITARGET_CODE
+        if (isArchSupported(DB::TargetArch::AVX2))
+        {
+            vectorImplAVX2(col_left, col_right, left_const_val, right_const_val, res_data, res_null_map_data, input_rows_count);
+            return;
+        }
 
-                        R right_const_val = 0;
-                        if (const_col_right)
-                        {
-                            right_const_val = const_col_right->getElement(0);
-                            if (right_const_val == 0)
-                            {
-                                /// TODO(taiyang-li): return const column instead
-                                auto data_col = DB::ColumnVector<T>::create(arguments[0].column->size(), 0);
-                                auto null_map_col = DB::ColumnVector<UInt8>::create(arguments[0].column->size(), 1);
-                                result = DB::ColumnNullable::create(std::move(data_col), std::move(null_map_col));
-                                return true;
-                            }
-                        }
-                        else
-                            col_right = assert_cast<const DB::ColumnVector<R> *>(arguments[1].column.get());
+        if (isArchSupported(DB::TargetArch::SSE42))
+        {
+            vectorImplSSE42(col_left, col_right, left_const_val, right_const_val, res_data, res_null_map_data, input_rows_count);
+            return;
+        }
+#endif
 
-                        auto res_values = DB::ColumnVector<T>::create(input_rows_count, 0);
-                        auto res_null_map = DB::ColumnVector<UInt8>::create(input_rows_count, 0);
-                        DB::PaddedPODArray<T> & res_data = res_values->getData();
-                        DB::PaddedPODArray<UInt8> & res_null_map_data = res_null_map->getData();
-                        for (size_t i = 0; i < input_rows_count; ++i)
-                        {
-                            L l = col_left ? col_left->getElement(i) : left_const_val;
-                            R r = col_right ? col_right->getElement(i) : right_const_val;
-
-                            /// TODO(taiyang-li): try to vectorize it
-                            if (r == 0)
-                                res_null_map_data[i] = 1;
-                            else
-                                res_data[i] = SparkDivideFloatingImpl<L, R>::apply(l, r);
-                        }
-
-                        result = DB::ColumnNullable::create(std::move(res_values), std::move(res_null_map));
-                        return true;
-                    });
-            });
-
-        if (!valid)
-            throw DB::Exception(DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Function {}'s arguments type is not valid", name);
-        return result;
+        vectorImpl(col_left, col_right, left_const_val, right_const_val, res_data, res_null_map_data, input_rows_count);
     }
 
 #if USE_EMBEDDED_COMPILER
