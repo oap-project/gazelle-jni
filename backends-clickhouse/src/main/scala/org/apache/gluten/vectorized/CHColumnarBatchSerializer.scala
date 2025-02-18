@@ -35,13 +35,18 @@ import scala.reflect.ClassTag
 class CHColumnarBatchSerializer(
     readBatchNumRows: SQLMetric,
     numOutputRows: SQLMetric,
-    dataSize: SQLMetric)
+    dataSize: SQLMetric,
+    deserializationTime: SQLMetric)
   extends Serializer
   with Serializable {
 
   /** Creates a new [[SerializerInstance]]. */
   override def newInstance(): SerializerInstance = {
-    new CHColumnarBatchSerializerInstance(readBatchNumRows, numOutputRows, dataSize)
+    new CHColumnarBatchSerializerInstance(
+      readBatchNumRows,
+      numOutputRows,
+      dataSize,
+      deserializationTime)
   }
 
   override def supportsRelocationOfSerializedObjects: Boolean = true
@@ -50,7 +55,8 @@ class CHColumnarBatchSerializer(
 private class CHColumnarBatchSerializerInstance(
     readBatchNumRows: SQLMetric,
     numOutputRows: SQLMetric,
-    dataSize: SQLMetric)
+    dataSize: SQLMetric,
+    deserializationTime: SQLMetric)
   extends SerializerInstance
   with Logging {
 
@@ -74,6 +80,7 @@ private class CHColumnarBatchSerializerInstance(
 
       private var numBatchesTotal: Long = _
       private var numRowsTotal: Long = _
+      private var timeDeSerdeTotal: Long = _
 
       private var isClosed: Boolean = false
 
@@ -90,6 +97,7 @@ private class CHColumnarBatchSerializerInstance(
 
       @throws(classOf[EOFException])
       override def readValue[T: ClassTag](): T = {
+        val start = System.nanoTime()
         if (cb != null) {
           cb.close()
           cb = null
@@ -108,6 +116,7 @@ private class CHColumnarBatchSerializerInstance(
         numBatchesTotal += 1
         numRowsTotal += numRows
         cb = nativeBlock.toColumnarBatch
+        timeDeSerdeTotal += System.nanoTime() - start
         cb.asInstanceOf[T]
       }
 
@@ -122,6 +131,7 @@ private class CHColumnarBatchSerializerInstance(
             readBatchNumRows.set(numRowsTotal.toDouble / numBatchesTotal)
           }
           numOutputRows += numRowsTotal
+          deserializationTime += timeDeSerdeTotal
           if (cb != null) {
             cb.close()
             cb = null

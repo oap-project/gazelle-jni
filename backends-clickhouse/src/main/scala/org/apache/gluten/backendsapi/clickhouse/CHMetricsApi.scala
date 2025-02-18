@@ -261,6 +261,9 @@ class CHMetricsApi extends MetricsApi with Logging with LogLevelUtil {
       "serializeTime" -> SQLMetrics.createNanoTimingMetric(
         sparkContext,
         "time to block serialization"),
+      "deserializeTime" -> SQLMetrics.createNanoTimingMetric(
+        sparkContext,
+        "time to deserialization blocks"),
       "spillTime" -> SQLMetrics.createNanoTimingMetric(sparkContext, "time to spill"),
       "compressTime" -> SQLMetrics.createNanoTimingMetric(sparkContext, "time to compress"),
       "prepareTime" -> SQLMetrics.createNanoTimingMetric(sparkContext, "time to prepare"),
