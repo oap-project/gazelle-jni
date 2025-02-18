@@ -1024,9 +1024,61 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
     }
   }
 
+  test("GLUTEN-8715 nan semantics") {
+    withTable("test_8715") {
+      spark.sql("create table test_8715(c1 int, c2 double) using parquet")
+      val insert_sql =
+        """
+          |insert into test_8715 values
+          |(1, double('infinity'))
+          |,(2, double('infinity'))
+          |,(3, double('inf'))
+          |,(4, double('-inf'))
+          |,(5, double('NaN'))
+          |,(6, double('NaN'))
+          |,(7, double('-infinity'))
+          |""".stripMargin
+      spark.sql(insert_sql)
+      val sql =
+        """
+          |select c2 = cast('nan' as double) from test_8715 where c1=5
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql, true, { _ => })
+      val sql1 =
+        """
+          |select sum(c1) from test_8715
+          |group by c2 order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql1, true, { _ => })
+      val sql2 =
+        """
+          |select * from test_8715
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql2, true, { _ => })
+      val sql3 =
+        """
+          |select * from test_8715
+          |order by c2 desc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql3, true, { _ => })
+      val sql4 =
+        """
+          |select a.c1 as a_c1, a.c2 as a_c2,
+          |b.c1 as b_c1, b.c2 as b_c2
+          |from test_8715 a
+          |join test_8715 b on a.c2 = b.c2
+          |order by a.c1, b.c1 desc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql4, true, { _ => })
+    }
+  }
+
   test("Test approx_count_distinct") {
     val sql = "select approx_count_distinct(id, 0.001), approx_count_distinct(id, 0.01), " +
       "approx_count_distinct(id, 0.1) from range(1000)"
     compareResultsAgainstVanillaSpark(sql, true, { _ => })
   }
+
 }
