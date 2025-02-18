@@ -514,6 +514,8 @@ std::unordered_map<std::string, std::string> WholeStageResultIterator::getQueryC
         std::to_string(veloxCfg_->get<bool>(kJoinSpillEnabled, true));
     configs[velox::core::QueryConfig::kOrderBySpillEnabled] =
         std::to_string(veloxCfg_->get<bool>(kOrderBySpillEnabled, true));
+    configs[velox::core::QueryConfig::kWindowSpillEnabled] =
+        std::to_string(veloxCfg_->get<bool>(kWindowSpillEnabled, true));
     configs[velox::core::QueryConfig::kMaxSpillLevel] = std::to_string(veloxCfg_->get<int32_t>(kMaxSpillLevel, 4));
     configs[velox::core::QueryConfig::kMaxSpillFileSize] =
         std::to_string(veloxCfg_->get<uint64_t>(kMaxSpillFileSize, 1L * 1024 * 1024 * 1024));
