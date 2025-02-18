@@ -40,8 +40,7 @@ namespace ErrorCodes
 namespace local_engine
 {
 
-/// TODO(taiyang-li): remove int_max_value and int_min_value for it is determined by T
-template <is_integer T, typename Name, T int_max_value, T int_min_value>
+template <is_integer T, typename Name>
 class SparkFunctionCastFloatToInt : public DB::IFunction
 {
 public:
@@ -61,19 +60,16 @@ public:
         if (arguments.size() != 1)
             throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {}'s arguments number must be 1", name);
 
+        if (!isFloat(removeNullable(arguments[0])))
+            throw DB::Exception(DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Function {}'s 1st argument must be float type", name);
+
         return makeNullable(std::make_shared<const DB::DataTypeNumber<T>>());
     }
 
-    DB::ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr & result_type, size_t) const override
+    DB::ColumnPtr executeImpl(const DB::ColumnsWithTypeAndName & arguments, const DB::DataTypePtr & result_type, size_t input_rows_count) const override
     {
-        if (arguments.size() != 1)
-            throw DB::Exception(DB::ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "Function {}'s arguments number must be 1", name);
-
-        if (!isFloat(removeNullable(arguments[0].type)))
-            throw DB::Exception(DB::ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Function {}'s 1st argument must be float type", name);
-
         DB::ColumnPtr src_col = arguments[0].column;
-        size_t size = src_col->size();
+        size_t size = input_rows_count;
 
         auto res_col = DB::ColumnVector<T>::create(size, 0);
         auto null_map_col = DB::ColumnUInt8::create(size, 0);
@@ -94,23 +90,60 @@ public:
         return DB::ColumnNullable::create(std::move(res_col), std::move(null_map_col));
     }
 
+    MULTITARGET_FUNCTION_AVX2_SSE42(
+        MULTITARGET_FUNCTION_HEADER(template <typename F> static void NO_SANITIZE_UNDEFINED NO_INLINE),
+        vectorImpl,
+        MULTITARGET_FUNCTION_BODY(
+            (F int_min,
+             F int_max,
+             const DB::PaddedPODArray<F> & src_data,
+             DB::PaddedPODArray<T> & data,
+             DB::PaddedPODArray<UInt8> & null_map_data,
+             size_t rows) /// NOLINT
+            {
+                for (size_t i = 0; i < rows; ++i)
+                {
+                    null_map_data[i] = !isFinite(src_data[i]);
+                    data[i] = static_cast<T>(std::fmax(int_min, std::fmin(int_max, src_data[i])));
+                }
+            }))
+
+    template <typename F>
+    static void NO_INLINE vector(
+        F int_min,
+        F int_max,
+        const DB::PaddedPODArray<F> & src_data,
+        DB::PaddedPODArray<T> & data,
+        DB::PaddedPODArray<UInt8> & null_map_data,
+        size_t rows)
+    {
+#if USE_MULTITARGET_CODE
+        if (isArchSupported(DB::TargetArch::AVX2))
+        {
+            vectorImplAVX2(int_min, int_max, src_data, data, null_map_data, rows);
+            return;
+        }
+
+        if (isArchSupported(DB::TargetArch::SSE42))
+        {
+            vectorImplSSE42(int_min, int_max, src_data, data, null_map_data, rows);
+            return;
+        }
+#endif
+
+        vectorImpl(int_min, int_max, src_data, data, null_map_data, rows);
+    }
+
     template <typename F>
     void executeInternal(const DB::ColumnPtr & src, DB::PaddedPODArray<T> & data, DB::PaddedPODArray<UInt8> & null_map_data) const
     {
         const DB::ColumnVector<F> * src_vec = assert_cast<const DB::ColumnVector<F> *>(src.get());
-        /// TODO(taiyang-li): try to vectorize below loop
-        for (size_t i = 0; i < src_vec->size(); ++i)
-        {
-            F element = src_vec->getElement(i);
-            if (isNaN(element) || !isFinite(element))
-                null_map_data[i] = 1;
-            else if (element > int_max_value)
-                data[i] = int_max_value;
-            else if (element < int_min_value)
-                data[i] = int_min_value;
-            else
-                data[i] = static_cast<T>(element);
-        }
+
+        size_t rows = src_vec->size();
+        const auto & src_data = src_vec->getData();
+        const auto int_min = static_cast<F>(std::numeric_limits<T>::min());
+        const auto int_max = static_cast<F>(std::numeric_limits<T>::max());
+        vector(int_min, int_max, src_data, data, null_map_data, rows);
     }
 
 #if USE_EMBEDDED_COMPILER
@@ -124,6 +157,7 @@ public:
 
         return true;
     }
+
 
     llvm::Value *
     compileImpl(llvm::IRBuilderBase & builder, const DB::ValuesWithType & arguments, const DB::DataTypePtr & result_type) const override
@@ -140,16 +174,7 @@ public:
             b.CreateFCmpOEQ(src_value, llvm::ConstantFP::getInfinity(float_type, true)));
 
         bool is_signed = std::is_signed_v<T>;
-        llvm::Value * max_value = llvm::ConstantInt::get(int_type, static_cast<UInt64>(int_max_value), is_signed);
-        llvm::Value * min_value = llvm::ConstantInt::get(int_type, static_cast<UInt64>(int_min_value), is_signed);
-        llvm::Value * clamped_value = b.CreateSelect(
-            b.CreateFCmpOGT(src_value, llvm::ConstantFP::get(float_type, static_cast<Float64>(int_max_value))),
-            max_value,
-            b.CreateSelect(
-                b.CreateFCmpOLT(src_value, llvm::ConstantFP::get(float_type, static_cast<Float64>(int_min_value))),
-                min_value,
-                is_signed_v<T> ? b.CreateFPToSI(src_value, int_type) : b.CreateFPToUI(src_value, int_type)));
-        llvm::Value * result_value = b.CreateSelect(b.CreateOr(is_nan, is_inf), llvm::Constant::getNullValue(int_type), clamped_value);
+        llvm::Value * result_value = is_signed_v<T> ? b.CreateFPToSI(src_value, int_type) : b.CreateFPToUI(src_value, int_type);
         llvm::Value * result_is_null = b.CreateOr(is_nan, is_inf);
 
         auto * nullable_structure_type = toNativeType(b, result_type);

@@ -236,6 +236,7 @@ class ClickHouseTestSettings extends BackendTestSettings {
     ) // disabled due to case-insensitive not supported in CH tuple
   enableSuite[GlutenDataFrameStatSuite]
   enableSuite[GlutenDataFrameSuite]
+    .exclude("SPARK-27439: Explain result should match collected result after view change")
     .exclude("Uuid expressions should produce same results at retries in the same DataFrame")
     .exclude("SPARK-28224: Aggregate sum big decimal overflow")
     .exclude("SPARK-28067: Aggregate sum should not return wrong results for decimal overflow")

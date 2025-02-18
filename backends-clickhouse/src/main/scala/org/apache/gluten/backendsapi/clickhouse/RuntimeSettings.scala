@@ -96,4 +96,10 @@ object RuntimeSettings {
       .doc("The bucket directory for writing data")
       .stringConf
       .createWithDefault("")
+
+  val ENABLE_MEMORY_SPILL_SCHEDULER =
+    buildConf(runtimeSettings("enable_adaptive_memory_spill_scheduler"))
+      .doc("Enable memory spill scheduler")
+      .booleanConf
+      .createWithDefault(true)
 }

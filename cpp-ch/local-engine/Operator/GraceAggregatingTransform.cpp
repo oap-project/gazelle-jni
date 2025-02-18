@@ -61,6 +61,9 @@ GraceAggregatingTransform::GraceAggregatingTransform(
     if (enable_spill_test)
         buckets.emplace(1, BufferFileStream());
     current_data_variants = std::make_shared<DB::AggregatedDataVariants>();
+
+    // IProcessor::spillable, MemorySpillScheduler will trigger the spill by enable this flag.
+    spillable = true;
 }
 
 GraceAggregatingTransform::~GraceAggregatingTransform()
@@ -477,6 +480,8 @@ void GraceAggregatingTransform::mergeOneBlock(const DB::Block & block, bool is_o
     {
         rehashDataVariants();
     }
+    // reset the flag
+    force_spill = false;
 
     LOG_DEBUG(
         logger,
@@ -535,6 +540,13 @@ void GraceAggregatingTransform::mergeOneBlock(const DB::Block & block, bool is_o
 
 bool GraceAggregatingTransform::isMemoryOverflow()
 {
+    if (force_spill)
+    {
+        auto stats = getMemoryStats();
+        if (stats.spillable_memory_bytes > force_spill_on_bytes * 0.8)
+            return true;
+    }
+
     /// More greedy memory usage strategy.
     if (!current_data_variants)
         return false;
@@ -579,6 +591,43 @@ bool GraceAggregatingTransform::isMemoryOverflow()
         }
     }
     return false;
+}
+
+DB::ProcessorMemoryStats GraceAggregatingTransform::getMemoryStats()
+{
+    DB::ProcessorMemoryStats stats;
+    if (!current_data_variants)
+        return stats;
+
+    stats.need_reserved_memory_bytes = current_data_variants->aggregates_pool->allocatedBytes();
+    for (size_t i = current_bucket_index + 1; i < getBucketsNum(); ++i)
+    {
+        auto & file_stream = buckets[i];
+        stats.spillable_memory_bytes += file_stream.pending_bytes;
+    }
+
+    if (per_key_memory_usage > 0)
+    {
+        auto current_result_rows = current_data_variants->size();
+        stats.need_reserved_memory_bytes += current_result_rows * per_key_memory_usage;
+        stats.spillable_memory_bytes += current_result_rows * per_key_memory_usage;
+    }
+    else
+    {
+        // This is a rough estimation, we don't know the exact memory usage for each key.
+        stats.spillable_memory_bytes += current_data_variants->aggregates_pool->allocatedBytes();
+    }
+    return stats;
+}
+
+bool GraceAggregatingTransform::spillOnSize(size_t bytes)
+{
+    auto stats = getMemoryStats();
+    if (stats.spillable_memory_bytes < bytes * 0.8)
+        return false;
+    force_spill = true;
+    force_spill_on_bytes = bytes;
+    return true;
 }
 
 }

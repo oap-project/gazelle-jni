@@ -97,7 +97,7 @@ if(ENABLE_BENCHMARKS)
     benchmark_parquet_read.cpp
     benchmark_spark_row.cpp
     benchmark_unix_timestamp_function.cpp
-    benchmark_spark_floor_function.cpp
+    benchmark_spark_functions.cpp
     benchmark_cast_float_function.cpp
     benchmark_to_datetime_function.cpp
     benchmark_spark_divide_function.cpp
