@@ -269,29 +269,33 @@ bool SubstraitToVeloxPlanValidator::validateCast(
   const auto& toType = SubstraitParser::parseType(castExpr.type());
   core::TypedExprPtr input = exprConverter_->toVeloxExpr(castExpr.input(), inputType);
 
-  // Only support cast from date to timestamp
-  if (toType->kind() == TypeKind::TIMESTAMP && !input->type()->isDate()) {
-    LOG_VALIDATION_MSG(
-        "Casting from " + input->type()->toString() + " to " + toType->toString() + " is not supported.");
-    return false;
+  // Only support casting from date or varchar to timestamp.
+  switch (toType->kind()) {
+    case TypeKind::TIMESTAMP: {
+      if (!input->type()->isDate() && input->type()->kind() != TypeKind::VARCHAR) {
+        LOG_VALIDATION_MSG(
+            "Casting from " + input->type()->toString() + " to " + toType->toString() + " is not supported.");
+        return false;
+      }
+    }
+    default: {
+    }
   }
 
-  if (toType->isIntervalYearMonth()) {
-    LOG_VALIDATION_MSG("Casting to " + toType->toString() + " is not supported.");
+  if (input->type()->isIntervalYearMonth() || toType->isIntervalYearMonth()) {
+    LOG_VALIDATION_MSG("Casting from/to IntervalYearMonthType is not supported.");
     return false;
   }
 
   // Casting from some types is not supported. See CastExpr::applyPeeled.
   if (input->type()->isDate()) {
-    // Only support cast date to varchar & timestamp
+    // Only support casting from date to varchar or timestamp
     if (toType->kind() != TypeKind::VARCHAR && toType->kind() != TypeKind::TIMESTAMP) {
       LOG_VALIDATION_MSG("Casting from DATE to " + toType->toString() + " is not supported.");
       return false;
     }
-  } else if (input->type()->isIntervalYearMonth()) {
-    LOG_VALIDATION_MSG("Casting from INTERVAL_YEAR_MONTH is not supported.");
-    return false;
   }
+
   switch (input->type()->kind()) {
     case TypeKind::ARRAY:
     case TypeKind::MAP:

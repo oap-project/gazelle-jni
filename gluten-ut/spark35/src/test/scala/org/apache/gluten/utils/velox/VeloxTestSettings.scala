@@ -106,6 +106,8 @@ class VeloxTestSettings extends BackendTestSettings {
     .exclude("SPARK-26218: Fix the corner case of codegen when casting float to Integer")
     // Set timezone through config.
     .exclude("data type casting")
+    // Revised by setting timezone through config.
+    .exclude("cast string to timestamp")
   enableSuite[GlutenCollectionExpressionsSuite]
     // Rewrite in Gluten to replace Seq with Array
     .exclude("Shuffle")
