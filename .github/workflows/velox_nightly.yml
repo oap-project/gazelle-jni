@@ -1,0 +1,115 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Velox backend nightly job
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/velox_nightly.yml'
+  schedule:
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+    inputs:
+      spark:
+        description: 'Spark version: spark-3.2, spark-3.3, spark-3.4 or spark-3.5'
+        required: true
+        default: 'spark-3.5'
+      hadoop:
+        description: 'Hadoop version: 2.7.4, 3.2.0, 3.2.2, 3.3.1, 3.3.3 or 3.3.6'
+        required: true
+        default: '3.3.3'
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  CCACHE_DIR: "${{ github.workspace }}/.ccache"
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build-native-lib:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get Ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: '${{ env.CCACHE_DIR }}'
+          key: ccache-centos7-release-default-${{github.sha}}
+          restore-keys: |
+            ccache-centos7-release-default
+      - name: Build Gluten velox third party
+        run: |
+          docker run -v $GITHUB_WORKSPACE:/work -w /work apache/gluten:vcpkg-centos-7 bash -c "
+            df -a
+            cd /work
+            export CCACHE_DIR=/work/.ccache
+            bash dev/ci-velox-buildstatic-centos-7.sh
+            ccache -s
+            mkdir -p /work/.m2/repository/org/apache/arrow/
+            cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
+          "
+      - name: Upload native libs
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./cpp/build/releases/
+          name: velox-native-lib-${{github.sha}}
+          retention-days: 1
+      - name: Upload Artifact Arrow Jar
+        uses: actions/upload-artifact@v4
+        with:
+          path: .m2/repository/org/apache/arrow/
+          name: velox-arrow-jar-centos-7-${{github.sha}}
+
+  build-bundle-package-centos8:
+    needs: build-native-lib
+    runs-on: ubuntu-20.04
+    container: centos:8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: velox-native-lib-${{github.sha}}
+          path: ./cpp/build/releases
+      - name: Download All Arrow Jar Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: velox-arrow-jar-centos-7-${{github.sha}}
+          path: /root/.m2/repository/org/apache/arrow/
+      - name: Setup java and maven
+        run: |
+          sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
+          sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-* && \
+          yum update -y && yum install -y java-1.8.0-openjdk-devel wget && \
+          wget https://downloads.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz && \
+          tar -xvf apache-maven-3.8.8-bin.tar.gz && \
+          mv apache-maven-3.8.8 /usr/lib/maven
+      - name: Build for Spark ${{ github.event.inputs.spark }}
+        run: |
+          cd $GITHUB_WORKSPACE/ && \
+          export MAVEN_HOME=/usr/lib/maven && \
+          export PATH=${PATH}:${MAVEN_HOME}/bin && \
+          mvn clean install -Pspark-3.5 -Pbackends-velox -Pceleborn -Puniffle -DskipTests -Dmaven.source.skip
+      - name: Upload bundle package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-gluten-velox-bundle-package
+          path: package/target/gluten-velox-bundle-*.jar
+          retention-days: 7
+
+
