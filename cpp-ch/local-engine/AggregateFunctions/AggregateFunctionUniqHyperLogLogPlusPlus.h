@@ -216,7 +216,7 @@ private:
 
         // Adjust bounds
         size_t low = nearest_estimate_index + 1 > K ? nearest_estimate_index - K + 1 : 0;
-        size_t high = std::min(low + K, num_estimates);
+        size_t high = std::min(static_cast<size_t>(low + K), num_estimates);
         while (high < num_estimates && distance(high) < distance(low))
         {
             ++low;

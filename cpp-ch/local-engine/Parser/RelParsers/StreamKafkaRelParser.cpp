@@ -79,6 +79,9 @@ DB::QueryPlanPtr StreamKafkaRelParser::parseRelImpl(DB::QueryPlanPtr query_plan,
         start_offset,
         end_offset);
 
+    if (group_id.empty())
+        throw DB::Exception(DB::ErrorCodes::LOGICAL_ERROR, "Kafka group.id is not set");
+
     Names topics;
     topics.emplace_back(topic);
 

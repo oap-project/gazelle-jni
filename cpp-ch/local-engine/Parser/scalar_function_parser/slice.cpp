@@ -54,7 +54,7 @@ public:
             elif (if(isNull(length)))
                 null
             else
-                slice(assumeNotNull(arr), if (start=0) then throwIf(start=0) else start, if (length<0) then throwIf(length<0) else length)
+                slice(assumeNotNull(arr), if(isNotNull(arr) and start=0) then throwIf(isNotNull(arr) and start=0) else start, if (isNotNull(arr) and length<0) then throwIf(length<0) else length)
 
             Main differences between CH arraySlice and Spark slice
             1. Spark slice throws exception if start = 0 or length < 0
@@ -73,9 +73,10 @@ public:
         auto is_start_nullable = start_arg->result_type->isNullable();
         auto is_length_nullable = length_arg->result_type->isNullable();
 
+        const auto * arr_not_null_node = toFunctionNode(actions_dag, "isNotNull", {arr_arg});
         const auto * zero_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeInt32>(), 0);
-        const auto * start_if_node = makeStartIfNode(actions_dag, start_arg, zero_const_node);
-        const auto * length_if_node = makeLengthIfNode(actions_dag, length_arg, zero_const_node);
+        const auto * start_if_node = makeStartIfNode(actions_dag, start_arg, zero_const_node, arr_not_null_node);
+        const auto * length_if_node = makeLengthIfNode(actions_dag, length_arg, zero_const_node, arr_not_null_node);
 
         if (!is_arr_nullable && !is_start_nullable && !is_length_nullable)
         {
@@ -84,8 +85,8 @@ public:
         }
 
         // There is at least one nullable argument, should return nullable result
-        const auto * arr_not_null_node = is_arr_nullable ? toFunctionNode(actions_dag, "assumeNotNull", {arr_arg}) : arr_arg;
-        const auto * slice_node = toFunctionNode(actions_dag, "arraySlice", {arr_not_null_node, start_if_node, length_if_node});
+        const auto * arr_denull_node = is_arr_nullable ? toFunctionNode(actions_dag, "assumeNotNull", {arr_arg}) : arr_arg;
+        const auto * slice_node = toFunctionNode(actions_dag, "arraySlice", {arr_denull_node, start_if_node, length_if_node});
         DB::DataTypePtr wrap_arr_nullable_type = wrapNullableType(true, slice_node->result_type);
 
         const auto * wrap_slice_node = ActionsDAGUtil::convertNodeType(
@@ -102,28 +103,32 @@ public:
     }
 
 private:
-    // if (start=0) then throwIf(start=0) else start
+    // if(isNotNull(arr) and start=0) then throwIf(isNotNull(arr) and start=0) else start
     const DB::ActionsDAG::Node * makeStartIfNode(
         DB::ActionsDAG & actions_dag,
         const DB::ActionsDAG::Node * start_arg,
-        const DB::ActionsDAG::Node * zero_const_node) const
+        const DB::ActionsDAG::Node * zero_const_node,
+        const DB::ActionsDAG::Node * arr_not_null_node) const
     {
         const auto * start_equal_zero_node = toFunctionNode(actions_dag, "equals", {start_arg, zero_const_node});
-        const auto * start_msg_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), "Unexpected value for start");
-        const auto * start_throw_if_node = toFunctionNode(actions_dag, "throwIf", {start_equal_zero_node, start_msg_const_node});
-        return toFunctionNode(actions_dag, "if", {start_equal_zero_node, start_throw_if_node, start_arg});
+        const auto * condition_node = toFunctionNode(actions_dag, "and", {arr_not_null_node, start_equal_zero_node});
+        const auto * msg_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), "Unexpected value for start");
+        const auto * throw_if_node = toFunctionNode(actions_dag, "throwIf", {condition_node, msg_node});
+        return toFunctionNode(actions_dag, "if", {condition_node, throw_if_node, start_arg});
     }
 
-     // if (length<0) then throwIf(length<0) else length
+    // if (isNotNull(arr) and length<0) then throwIf(length<0) else length)
     const DB::ActionsDAG::Node * makeLengthIfNode(
         DB::ActionsDAG & actions_dag,
         const DB::ActionsDAG::Node * length_arg,
-        const DB::ActionsDAG::Node * zero_const_node) const
+        const DB::ActionsDAG::Node * zero_const_node,
+        const DB::ActionsDAG::Node * arr_not_null_node) const
     {
         const auto * length_less_zero_node = toFunctionNode(actions_dag, "less", {length_arg, zero_const_node});
-        const auto * length_msg_const_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), "Unexpected value for length");
-        const auto * length_throw_if_node = toFunctionNode(actions_dag, "throwIf", {length_less_zero_node, length_msg_const_node});
-        return toFunctionNode(actions_dag, "if", {length_less_zero_node, length_throw_if_node, length_arg});
+        const auto * condition_node = toFunctionNode(actions_dag, "and", {arr_not_null_node, length_less_zero_node});
+        const auto * msg_node = addColumnToActionsDAG(actions_dag, std::make_shared<DB::DataTypeString>(), "Unexpected value for length");
+        const auto * throw_if_node = toFunctionNode(actions_dag, "throwIf", {condition_node, msg_node});
+        return toFunctionNode(actions_dag, "if", {condition_node, throw_if_node, length_arg});
     }
 };
 

@@ -23,6 +23,7 @@
 #include <Processors/IProcessor.h>
 #include <Processors/Transforms/AggregatingTransform.h>
 #include <Poco/Logger.h>
+#include <Common/MemorySpillScheduler.h>
 #include <Common/AggregateUtil.h>
 
 
@@ -106,7 +107,13 @@ private:
     void checkAndSetupCurrentDataVariants();
     /// Merge one block into current_data_variants.
     void mergeOneBlock(const DB::Block & block, bool is_original_block);
+
+    // spill control
     bool isMemoryOverflow();
+    DB::ProcessorMemoryStats getMemoryStats() override;
+    bool spillOnSize(size_t bytes) override;
+    bool force_spill = false; // a force flag to trigger spill
+    bool force_spill_on_bytes = 0;
 
     bool input_finished = false;
     bool has_input = false;
