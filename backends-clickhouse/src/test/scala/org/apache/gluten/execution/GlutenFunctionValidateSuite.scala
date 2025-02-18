@@ -1045,6 +1045,42 @@ class GlutenFunctionValidateSuite extends GlutenClickHouseWholeStageTransformerS
           |order by c2 asc
           |""".stripMargin
       compareResultsAgainstVanillaSpark(sql, true, { _ => })
+      val sql5 =
+        """
+          |select c2 <= cast('nan' as double) from test_8715 where c1=5
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql5, true, { _ => })
+      val sql6 =
+        """
+          |select c2 >= cast('nan' as double) from test_8715 where c1=5
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql6, true, { _ => })
+      val sql7 =
+        """
+          |select c2 > cast('1.1' as double) from test_8715 where c1=5
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql7, true, { _ => })
+      val sql9 =
+        """
+          |select c2 >= cast('1.1' as double) from test_8715 where c1=5
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql9, true, { _ => })
+      val sql8 =
+        """
+          |select cast('1.1' as double) < c2 from test_8715 where c1=5
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql8, true, { _ => })
+      val sql10 =
+        """
+          |select cast('1.1' as double) <= c2 from test_8715 where c1=5
+          |order by c2 asc
+          |""".stripMargin
+      compareResultsAgainstVanillaSpark(sql10, true, { _ => })
       val sql1 =
         """
           |select sum(c1) from test_8715
