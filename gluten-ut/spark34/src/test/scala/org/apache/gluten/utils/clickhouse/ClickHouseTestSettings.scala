@@ -265,6 +265,8 @@ class ClickHouseTestSettings extends BackendTestSettings {
     .excludeGlutenTest("distributeBy and localSort")
     .excludeGlutenTest("describe")
     .excludeGlutenTest("Allow leading/trailing whitespace in string before casting")
+    .excludeGlutenTest(
+      "SPARK-27439: Explain result should match collected result after view change - re-write")
   enableSuite[GlutenDataFrameTimeWindowingSuite]
     .exclude("simple tumbling window with record at window start")
     .exclude("SPARK-21590: tumbling window using negative start time")

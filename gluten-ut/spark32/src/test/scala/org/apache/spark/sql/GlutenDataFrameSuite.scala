@@ -28,6 +28,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.SQLTestData.TestData2
 import org.apache.spark.sql.types.StringType
 
+import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 
 import scala.util.Random
@@ -357,6 +358,29 @@ class GlutenDataFrameSuite extends DataFrameSuite with GlutenSQLTestsTrait {
     val expectedBinaryResult = rawData.map(d => Row(d.getBytes(StandardCharsets.UTF_8))).seq
     df = spark.sql("select cast(col1 as binary) from t1")
     checkResult(df, expectedBinaryResult)
+  }
+
+  test("SPARK-27439: Explain result should match collected result after view change - re-write") {
+    withTempView("test", "test2", "tmp") {
+      spark.range(10).createOrReplaceTempView("test")
+      spark.range(5).createOrReplaceTempView("test2")
+      spark.sql("select * from test").createOrReplaceTempView("tmp")
+      val df = spark.sql("select * from tmp")
+      spark.sql("select * from test2").createOrReplaceTempView("tmp")
+
+      val captured = new ByteArrayOutputStream()
+      Console.withOut(captured) {
+        df.explain(extended = true)
+      }
+      checkAnswer(df, spark.range(10).toDF)
+      val output = captured.toString
+      assert(output.contains("""== Parsed Logical Plan ==
+                               |'Project [*]
+                               |+- 'UnresolvedRelation [tmp]""".stripMargin))
+      assert(output.contains("""== Physical Plan ==
+                               |*(1) ColumnarToRow
+                               |+- ColumnarRange 0, 10, 1, 2, 10""".stripMargin))
+    }
   }
 
   private def withExpr(newExpr: Expression): Column = new Column(newExpr)
