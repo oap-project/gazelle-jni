@@ -173,6 +173,17 @@ function setup_linux {
       exit 1
       ;;
     esac
+  elif [[ "$LINUX_DISTRIBUTION" == "openEuler" ]]; then
+    case "$LINUX_VERSION_ID" in
+      24.03)
+        $GLUTEN_VELOX_SCRIPT_HOME/setup-openeuler24.sh
+        export re2_SOURCE=BUNDLED
+        ;;
+      *)
+        echo "Unsupported openEuler version: $LINUX_VERSION_ID"
+        exit 1
+        ;;
+    esac
   elif [[ "$LINUX_DISTRIBUTION" == "alinux" ]]; then
     case "${LINUX_VERSION_ID:0:1}" in
     2)
