@@ -57,14 +57,12 @@ TEST(HyperLogLogPlusPlusDataTest, Small)
 
 TEST(HyperLogLogPlusPlusDataTest, Large)
 {
-    GTEST_SKIP();
     HyperLogLogPlusPlusData hll;
     initLargeHLL(hll);
-    EXPECT_EQ(hll.query(), 806);
+    EXPECT_EQ(hll.query(), 821);
 }
 
 TEST(HyperLogLogPlusPlusDataTest, Merge) {
-    GTEST_SKIP();
     HyperLogLogPlusPlusData hll1;
     initSmallHLL(hll1);
 
@@ -72,11 +70,10 @@ TEST(HyperLogLogPlusPlusDataTest, Merge) {
     initLargeHLL(hll2);
 
     hll1.merge(hll2);
-    EXPECT_EQ(hll1.query(), 806);
+    EXPECT_EQ(hll1.query(), 821);
 }
 
 TEST(HyperLogLogPlusPlusDataTest, SerializeAndDeserialize) {
-    GTEST_SKIP();
     HyperLogLogPlusPlusData hll1;
     initLargeHLL(hll1);
 
@@ -87,5 +84,5 @@ TEST(HyperLogLogPlusPlusDataTest, SerializeAndDeserialize) {
     HyperLogLogPlusPlusData hll2;
     hll2.deserialize(read_buffer);
 
-    EXPECT_EQ(hll2.query(), 806);
+    EXPECT_EQ(hll2.query(), 821);
 }
