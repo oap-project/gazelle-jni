@@ -18,6 +18,8 @@ package org.apache.spark.sql.internal
 
 import org.apache.gluten.config._
 
+import org.apache.spark.network.util.{ByteUnit, JavaUtils}
+
 object GlutenConfigUtil {
   private def getConfString(configProvider: ConfigProvider, key: String, value: String): String = {
     Option(ConfigEntry.findEntry(key))
@@ -41,5 +43,10 @@ object GlutenConfigUtil {
           (k, v)
         }
     }.toMap
+  }
+
+  def mapByteConfValue(conf: Map[String, String], key: String, unit: ByteUnit)(
+      f: Long => Unit): Unit = {
+    conf.get(key).foreach(v => f(JavaUtils.byteStringAs(v, unit)))
   }
 }
