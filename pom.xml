@@ -338,8 +338,8 @@
       <properties>
         <sparkbundle.version>3.5</sparkbundle.version>
         <sparkshim.artifactId>spark-sql-columnar-shims-spark35</sparkshim.artifactId>
-        <spark.version>3.5.2</spark.version>
-        <iceberg.version>1.5.0</iceberg.version>
+        <spark.version>3.5.4</spark.version>
+        <iceberg.version>1.8.0</iceberg.version>
         <delta.package.name>delta-spark</delta.package.name>
         <delta.version>3.2.0</delta.version>
         <delta.binary.version>32</delta.binary.version>

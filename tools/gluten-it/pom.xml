@@ -170,7 +170,7 @@
     <profile>
       <id>spark-3.5</id>
       <properties>
-        <spark.version>3.5.2</spark.version>
+        <spark.version>3.5.4</spark.version>
         <scala.library.version>2.12.18</scala.library.version>
       </properties>
     </profile>
