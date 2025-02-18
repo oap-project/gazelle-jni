@@ -18,4 +18,67 @@ package org.apache.spark.sql.execution.joins
 
 import org.apache.spark.sql.GlutenSQLTestsBaseTrait
 
-class GlutenExistenceJoinSuite extends ExistenceJoinSuite with GlutenSQLTestsBaseTrait {}
+class GlutenExistenceJoinSuite extends ExistenceJoinSuite with GlutenSQLTestsBaseTrait {
+
+  test("test existence join with broadcast nested loop join") {
+    import org.apache.spark.sql.catalyst.expressions._
+    import org.apache.spark.sql.catalyst.plans.logical.{JoinHint, _}
+    import org.apache.spark.sql.catalyst.plans.ExistenceJoin
+    import org.apache.spark.sql.types._
+    import org.apache.spark.sql.{DataFrame, Dataset, Row}
+
+    spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")
+    spark.conf.set("spark.sql.join.preferSortMergeJoin", "false")
+
+    val left: DataFrame = spark.createDataFrame(
+      sparkContext.parallelize(
+        Seq(
+          Row(1, "a"),
+          Row(2, "b"),
+          Row(3, "c")
+        )),
+      new StructType().add("id", IntegerType).add("val", StringType)
+    )
+
+    val right: DataFrame = spark.createDataFrame(
+      sparkContext.parallelize(
+        Seq(
+          Row(1, "x"),
+          Row(3, "y")
+        )),
+      new StructType().add("id", IntegerType).add("val", StringType)
+    )
+
+    val leftPlan = left.logicalPlan
+    val rightPlan = right.logicalPlan
+
+    val existsAttr = AttributeReference("exists", BooleanType, nullable = false)()
+
+    val joinCondition: Expression = LessThan(leftPlan.output(0), rightPlan.output(0))
+
+    val existenceJoin = Join(
+      left = leftPlan,
+      right = rightPlan,
+      joinType = ExistenceJoin(existsAttr),
+      condition = Some(joinCondition),
+      hint = JoinHint.NONE
+    )
+
+    val project = Project(
+      projectList = leftPlan.output :+ existsAttr,
+      child = existenceJoin
+    )
+
+    val df = Dataset.ofRows(spark, project)
+
+    assert(existenceJoin.joinType == ExistenceJoin(existsAttr))
+    assert(existenceJoin.condition.contains(joinCondition))
+    val expected = Seq(
+      Row(1, "a", true),
+      Row(2, "b", true),
+      Row(3, "c", false)
+    )
+    assert(df.collect() === expected)
+
+  }
+}
