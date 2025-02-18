@@ -453,6 +453,7 @@ class GetJsonObjectImpl
 {
 public:
     using Element = typename JSONParser::Element;
+    using Serializer = JSONStringSerializer;
 
     static DB::DataTypePtr getReturnType(const char *, const DB::ColumnsWithTypeAndName &, bool)
     {
@@ -462,8 +463,55 @@ public:
 
     static size_t getNumberOfIndexArguments(const DB::ColumnsWithTypeAndName & arguments) { return arguments.size() - 1; }
 
+    bool insertResultToColumn(DB::IColumn & dest, typename JSONParser::Element & root, std::vector<std::shared_ptr<DB::GeneratorJSONPath<JSONParser>>> & generator_json_paths, size_t & json_path_pos) const
+    {
+        DB::VisitorStatus status = DB::VisitorStatus::Ok;
+        bool success = false;
+        for (size_t i = json_path_pos; i < generator_json_paths.size(); ++i)
+        {
+            std::shared_ptr<DB::GeneratorJSONPath<JSONParser>> generator_json_path = generator_json_paths[i];
+            generator_json_path->reinitialize();
+            status = DB::VisitorStatus::Ok;
+            while (status != DB::VisitorStatus::Exhausted)
+            {
+                status = generator_json_path->getNextItem(root);
+                if (status == DB::VisitorStatus::Ok)
+                {
+                    success = true;
+                }
+                else if (status == DB::VisitorStatus::Error)
+                {
+                    success = false;
+                }
+            }
+            json_path_pos = i;
+            if (!success)
+            {
+                break;
+            }
+        }
+        if (!success)
+        {
+            return false;
+        }
+        DB::ColumnNullable & nullable_col_str = assert_cast<DB::ColumnNullable &>(dest);
+        DB::ColumnString * col_str = assert_cast<DB::ColumnString *>(&nullable_col_str.getNestedColumn());
+        JSONStringSerializer serializer(*col_str);
+        nullable_col_str.getNullMapData().push_back(0);
+        if (root.isString())
+        {
+            serializer.addRawString(root.getString());
+        }
+        else
+        {
+            serializer.addElement(root);
+        }
+        serializer.commit();
+        return true;
+    }
+
     bool insertResultToColumn(DB::IColumn & dest, const Element & root, DB::GeneratorJSONPath<JSONParser> & generator_json_path, bool path_has_asterisk)
-    {   
+    {
         Element current_element = root;
         DB::VisitorStatus status;
         std::stringstream out; // STYLE_CHECK_ALLOW_STD_STRING_STREAM
@@ -641,13 +689,6 @@ public:
             GetJsonObjectImpl<DB::DummyJSONParser, DB::DefaultJSONStringSerializer<DB::DummyJSONParser::Element>>>(arguments);
     }
 
-private:
-    DB::ContextPtr context;
-    /// If too many rows cannot be parsed by simdjson directly, we will normalize the json text at first;
-    mutable bool is_most_normal_json_text = true;
-    mutable size_t total_parsed_rows = 0;
-    mutable size_t total_normalized_rows = 0;
-
     template <typename JSONParser>
     bool safeParseJson(std::string_view str, JSONParser & parser, JSONParser::Element & doc) const
     {
@@ -679,15 +720,77 @@ private:
         return is_doc_ok;
     }
 
+private:
+    DB::ContextPtr context;
+    /// If too many rows cannot be parsed by simdjson directly, we will normalize the json text at first;
+    mutable bool is_most_normal_json_text = true;
+    mutable size_t total_parsed_rows = 0;
+    mutable size_t total_normalized_rows = 0;
+
+    template<typename JSONParser, typename JSONStringSerializer>
+    void insertResultToColumn(
+        const DB::MutableColumns & res,
+        const size_t column_index,
+        typename JSONParser::Element & document,
+        std::vector<std::shared_ptr<DB::GeneratorJSONPath<JSONParser>>> & generator_json_paths,
+        JSONParser & parser,
+        GetJsonObjectImpl<JSONParser, JSONStringSerializer> & impl,
+        bool path_has_asterisk) const
+    {
+        if (generator_json_paths.size() > 1)
+        {
+            /// If json_paths vector size is greator than 1, means it should has a nested calls, and the paths in the vector
+            /// represents the nested paths in order, so we will pass the path in order and recursively retrieve the result
+            /// from the parsed json.
+            bool result_finished = false;
+            size_t json_path_pos = 0;
+            typename JSONParser::Element root = document;
+            while (!result_finished)
+            {
+                result_finished = impl.insertResultToColumn(*res[column_index], root, generator_json_paths, json_path_pos);
+                if (!result_finished)
+                {
+                    if (root.isString())
+                    {
+                        typename JSONParser::Element t;
+                        bool parsed = safeParseJson(root.getString(), parser, t);
+                        if (!parsed)
+                        {
+                            res[column_index]->insertDefault();
+                            result_finished = true;
+                        }
+                        else
+                            root = t;
+                    }
+                    else
+                    {
+                        res[column_index]->insertDefault();
+                        result_finished = true;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /// If json_paths vector size is 1, means it should has no nested calls, and the extactly one path in the vector
+            /// represents the get_json_object function's path, so we can simply get the result from the parsed json by the path.
+            generator_json_paths[0]->reinitialize();
+            if (!impl.insertResultToColumn(*res[column_index], document, *generator_json_paths[0], path_has_asterisk))
+            {
+                res[column_index]->insertDefault();
+            }
+        }
+    }
+
     template <typename JSONParser, typename Impl>
     DB::ColumnPtr innerExecuteImpl(const DB::ColumnsWithTypeAndName & arguments) const
     {
         DB::DataTypePtr str_type = std::make_shared<DB::DataTypeString>();
         str_type = DB::makeNullable(str_type);
         DB::MutableColumns tuple_columns;
-        std::vector<DB::ASTPtr> json_path_asts;
 
-        std::vector<String> required_fields;
+        std::vector<std::vector<DB::ASTPtr>> json_path_asts;
+        std::vector<std::vector<String>> required_fields;
         std::vector<bool> path_has_asterisk;
         const auto & first_column = arguments[0];
         if (const auto * required_fields_col = typeid_cast<const DB::ColumnConst *>(arguments[1].column.get()))
@@ -697,30 +800,36 @@ private:
             bool path_parsed = true;
             for (const auto & field : tokenizer)
             {
-                auto normalized_field = JSONPathNormalizer::normalize(field);
-                // LOG_ERROR(getLogger("JSONPatch"), "xxx field {} -> {}", field, normalized_field);
+                auto normalized_field = field.find('#') != std::string::npos ? field : JSONPathNormalizer::normalize(field);
                 if(normalized_field.find("[*]") != std::string::npos)
                     path_has_asterisk.emplace_back(true);
                 else
                     path_has_asterisk.emplace_back(false);
 
-                required_fields.push_back(normalized_field);
-                tuple_columns.emplace_back(str_type->createColumn());
-
-                const char * query_begin = reinterpret_cast<const char *>(required_fields.back().c_str());
-                const char * query_end = required_fields.back().c_str() + required_fields.back().size();
-                DB::Tokens tokens(query_begin, query_end);
-                UInt32 max_parser_depth = static_cast<UInt32>(context->getSettingsRef()[DB::Setting::max_parser_depth]);
-                UInt32 max_parser_backtracks = static_cast<UInt32>(context->getSettingsRef()[DB::Setting::max_parser_backtracks]);
-                DB::IParser::Pos token_iterator(tokens, max_parser_depth, max_parser_backtracks);
-                DB::ASTPtr json_path_ast;
-                DB::ParserJSONPath path_parser;
-                DB::Expected expected;
-                if (!path_parser.parse(token_iterator, json_path_ast, expected))
+                Poco::StringTokenizer sub_tokenizer(normalized_field, "#");
+                std::vector<String> sub_required_fields;
+                std::vector<DB::ASTPtr> sub_json_path_asts;
+                for (const auto & sub_field : sub_tokenizer)
                 {
-                    path_parsed = false;
+                    sub_required_fields.push_back(sub_field);
+                    const char * query_begin = reinterpret_cast<const char *>(sub_field.c_str());
+                    const char * query_end = sub_field.c_str() + sub_field.size();
+                    DB::Tokens tokens(query_begin, query_end);
+                    UInt32 max_parser_depth = static_cast<UInt32>(context->getSettingsRef()[DB::Setting::max_parser_depth]);
+                    UInt32 max_parser_backtracks = static_cast<UInt32>(context->getSettingsRef()[DB::Setting::max_parser_backtracks]);
+                    DB::IParser::Pos token_iterator(tokens, max_parser_depth, max_parser_backtracks);
+                    DB::ASTPtr sub_json_path_ast;
+                    DB::ParserJSONPath path_parser;
+                    DB::Expected expected;
+                    if (!path_parser.parse(token_iterator, sub_json_path_ast, expected))
+                    {
+                        path_parsed = false;
+                    }
+                    sub_json_path_asts.push_back(sub_json_path_ast);
                 }
-                json_path_asts.push_back(json_path_ast);
+                required_fields.push_back(sub_required_fields);
+                json_path_asts.push_back(sub_json_path_asts);
+                tuple_columns.emplace_back(str_type->createColumn());
             }
             if (!path_parsed)
             {
@@ -767,12 +876,21 @@ private:
         }
 
         size_t tuple_size = tuple_columns.size();
-        std::vector<std::shared_ptr<DB::GeneratorJSONPath<JSONParser>>> generator_json_paths;
-        std::transform(
-            json_path_asts.begin(),
-            json_path_asts.end(),
-            std::back_inserter(generator_json_paths),
-            [](const auto & ast) { return std::make_shared<DB::GeneratorJSONPath<JSONParser>>(ast); });
+        /// Json_paths has 2 layer vectors. The first layer is used for optimization of mutiple get_json_object calls, and the second layer is used for optimization
+        /// of nested get_json_object calls.
+        /// Consider about `get_json_object(d, '$.a'), get_json_object(get_json_object(d, '$.b'), '$.c')`, which is mixed of the two optimization suitations above.
+        /// Here the json_paths will be set to ($.a, ($.b, $.c)).
+        std::vector<std::vector<std::shared_ptr<DB::GeneratorJSONPath<JSONParser>>>> generator_json_paths;
+        for (const auto & sub_json_path_asts : json_path_asts)
+        {
+            std::vector<std::shared_ptr<DB::GeneratorJSONPath<JSONParser>>> sub_generator_json_paths;
+            std::transform(
+                sub_json_path_asts.begin(),
+                sub_json_path_asts.end(),
+                std::back_inserter(sub_generator_json_paths),
+                [](const auto & ast) { return std::make_shared<DB::GeneratorJSONPath<JSONParser>>(ast); });
+            generator_json_paths.emplace_back(sub_generator_json_paths);
+        }
 
         for (const auto i : collections::range(0, arguments[0].column->size()))
         {
@@ -783,13 +901,10 @@ private:
             }
             if (document_ok)
             {
-                for (size_t j = 0; j < tuple_size; ++j)
+                for (size_t j = 0; j < generator_json_paths.size(); ++j)
                 {
-                    generator_json_paths[j]->reinitialize();
-                    if (!impl.insertResultToColumn(*tuple_columns[j], document, *generator_json_paths[j], path_has_asterisk[j]))
-                    {
-                        tuple_columns[j]->insertDefault();
-                    }
+                    auto & sub_generator_json_paths = generator_json_paths[j];
+                    insertResultToColumn<JSONParser, typename Impl::Serializer>(tuple_columns, j, document, sub_generator_json_paths, parser, impl, path_has_asterisk[j]);
                 }
             }
             else
@@ -800,7 +915,6 @@ private:
                 }
             }
         }
-
         return DB::ColumnTuple::create(std::move(tuple_columns));
     }
 };

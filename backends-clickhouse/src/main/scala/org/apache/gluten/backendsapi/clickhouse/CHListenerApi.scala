@@ -21,7 +21,7 @@ import org.apache.gluten.columnarbatch.CHBatch
 import org.apache.gluten.config.GlutenConfig
 import org.apache.gluten.execution.CHBroadcastBuildSideCache
 import org.apache.gluten.execution.datasource.GlutenFormatFactory
-import org.apache.gluten.expression.UDFMappings
+import org.apache.gluten.expression.{CollapsedExpressionMappings, UDFMappings}
 import org.apache.gluten.extension.ExpressionExtensionTrait
 import org.apache.gluten.extension.columnar.transition.Convention
 import org.apache.gluten.jni.JniLibLoader
@@ -115,6 +115,8 @@ class CHListenerApi extends ListenerApi with Logging {
 
     // Load supported hive/python/scala udfs
     UDFMappings.loadFromSparkConf(conf)
+    // Load supported collapsed functions
+    CollapsedExpressionMappings.loadFromSparkConf(conf)
 
     CHNativeExpressionEvaluator.initNative(conf.getAll.toMap)
 
