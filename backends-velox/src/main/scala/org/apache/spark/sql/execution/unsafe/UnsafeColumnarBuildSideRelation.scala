@@ -104,7 +104,7 @@ case class UnsafeColumnarBuildSideRelation(
 
   override def write(kryo: Kryo, out: Output): Unit = Utils.tryOrIOException {
     kryo.writeObject(out, output.toList)
-    kryo.writeObject(out, mode)
+    kryo.writeClassAndObject(out, mode)
     out.writeInt(batches.arraySize)
     kryo.writeObject(out, batches.bytesBufferLengths)
     out.writeLong(batches.totalBytes)
@@ -136,14 +136,14 @@ case class UnsafeColumnarBuildSideRelation(
     for (i <- 0 until totalArraySize) {
       val length = bytesBufferLengths(i)
       val tmpBuffer = new Array[Byte](length)
-      in.read(tmpBuffer)
+      in.readFully(tmpBuffer)
       batches.putBytesBuffer(i, tmpBuffer)
     }
   }
 
   override def read(kryo: Kryo, in: Input): Unit = Utils.tryOrIOException {
     output = kryo.readObject(in, classOf[List[_]]).asInstanceOf[Seq[Attribute]]
-    mode = kryo.readObject(in, classOf[BroadcastMode])
+    mode = kryo.readClassAndObject(in).asInstanceOf[BroadcastMode]
     val totalArraySize = in.readInt()
     val bytesBufferLengths = kryo.readObject(in, classOf[Array[Int]])
     val totalBytes = in.readLong()
