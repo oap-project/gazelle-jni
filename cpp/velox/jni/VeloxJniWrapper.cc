@@ -431,6 +431,38 @@ Java_org_apache_gluten_datasource_VeloxDataSourceJniWrapper_splitBlockByPartitio
   JNI_METHOD_END(nullptr)
 }
 
+JNIEXPORT jlong JNICALL Java_org_apache_gluten_columnarbatch_VeloxColumnarBatchJniWrapper_slice( // NOLINT
+    JNIEnv* env,
+    jobject wrapper,
+    jlong veloxBatchHandle,
+    jint offset,
+    jint limit) {
+  JNI_METHOD_START
+  auto ctx = getRuntime(env, wrapper);
+  auto batch = ObjectStore::retrieve<ColumnarBatch>(veloxBatchHandle);
+
+  auto numRows = batch->numRows();
+  if (limit >= numRows) {
+    return veloxBatchHandle;
+  }
+
+  auto veloxBatch = std::dynamic_pointer_cast<VeloxColumnarBatch>(batch);
+  VELOX_CHECK_NOT_NULL(veloxBatch, "Expected VeloxColumnarBatch but got a different type.");
+
+  auto rowVector = veloxBatch->getRowVector();
+  auto prunedVector = rowVector->slice(offset, limit);
+
+  auto prunedRowVector = std::dynamic_pointer_cast<facebook::velox::RowVector>(prunedVector);
+  VELOX_CHECK_NOT_NULL(prunedRowVector, "Expected RowVector but got a different type.");
+
+  auto prunedBatch = std::make_shared<VeloxColumnarBatch>(prunedRowVector);
+
+  jlong prunedHandle = ctx->saveObject(prunedBatch);
+  return prunedHandle;
+
+  JNI_METHOD_END(kInvalidObjectHandle)
+}
+
 #ifdef __cplusplus
 }
 #endif

@@ -114,4 +114,31 @@ public final class VeloxColumnarBatches {
     final long handle = VeloxColumnarBatchJniWrapper.create(runtime).compose(handles);
     return ColumnarBatches.create(handle);
   }
+
+  /**
+   * Returns a new ColumnarBatch that contains at most `limit` rows from the given batch.
+   *
+   * <p>If `limit >= batch.numRows()`, returns the original batch. Otherwise, copies up to `limit`
+   * rows into new column vectors.
+   *
+   * @param batch the original batch
+   * @param limit the maximum number of rows to include
+   * @return a new pruned [[ColumnarBatch]] with row count = `limit`, or the original batch if no
+   *     pruning is required
+   */
+  public static ColumnarBatch slice(ColumnarBatch batch, int offset, int limit) {
+    int totalRows = batch.numRows();
+    if (limit >= totalRows) {
+      // No need to prune
+      return batch;
+    } else {
+      Runtime runtime =
+          Runtimes.contextInstance(
+              BackendsApiManager.getBackendName(), "VeloxColumnarBatches#sliceBatch");
+      long nativeHandle =
+          ColumnarBatches.getNativeHandle(BackendsApiManager.getBackendName(), batch);
+      long handle = VeloxColumnarBatchJniWrapper.create(runtime).slice(nativeHandle, offset, limit);
+      return ColumnarBatches.create(handle);
+    }
+  }
 }

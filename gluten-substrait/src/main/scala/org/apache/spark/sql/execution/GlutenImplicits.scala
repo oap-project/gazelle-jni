@@ -18,12 +18,13 @@ package org.apache.spark.sql.execution
 
 import org.apache.gluten.execution.{GlutenPlan, WholeStageTransformer}
 import org.apache.gluten.utils.PlanUtil
+
 import org.apache.spark.sql.{AnalysisException, Dataset, SparkSession}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{CommandResult, LogicalPlan}
 import org.apache.spark.sql.catalyst.util.StringUtils.PlanStringConcat
 import org.apache.spark.sql.execution.ColumnarWriteFilesExec.NoopLeaf
-import org.apache.spark.sql.execution.adaptive.{AQEShuffleReadExec, AdaptiveSparkPlanExec, QueryStageExec}
+import org.apache.spark.sql.execution.adaptive.{AdaptiveSparkPlanExec, AQEShuffleReadExec, QueryStageExec}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DataWritingCommandExec, ExecutedCommandExec}
 import org.apache.spark.sql.execution.datasources.WriteFilesExec
@@ -33,7 +34,6 @@ import org.apache.spark.sql.internal.SQLConf
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-
 
 // format: off
 /**

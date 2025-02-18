@@ -34,6 +34,8 @@ public class VeloxColumnarBatchJniWrapper implements RuntimeAware {
 
   public native long compose(long[] batches);
 
+  public native long slice(long veloxBatchHandle, int offset, int limit);
+
   @Override
   public long rtHandle() {
     return runtime.getHandle();

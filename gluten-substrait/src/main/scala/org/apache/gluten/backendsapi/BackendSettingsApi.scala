@@ -153,5 +153,7 @@ trait BackendSettingsApi {
 
   def needPreComputeRangeFrameBoundary(): Boolean = false
 
+  def supportCollectLimitExec(): Boolean = false
+
   def supportRangeExec(): Boolean = false
 }
