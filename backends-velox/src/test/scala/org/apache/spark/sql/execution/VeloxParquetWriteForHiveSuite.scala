@@ -330,4 +330,43 @@ class VeloxParquetWriteForHiveSuite
       }
     }
   }
+
+  testWithSpecifiedSparkVersion(
+    "Native writer should keep the same compression codec if `hive.exec.compress.output` is true",
+    maxSparkVersion = Some("3.3")) {
+    Seq(false, true).foreach {
+      enableNativeWrite =>
+        withSQLConf("spark.gluten.sql.native.writer.enabled" -> enableNativeWrite.toString) {
+          withTable("t") {
+            withSQLConf(
+              "spark.sql.hive.convertMetastoreParquet" -> "false",
+              "spark.sql.parquet.compression.codec" -> "gzip") {
+              spark.sql("SET hive.exec.compress.output=true")
+              spark.sql("SET parquet.compression=gzip")
+              spark.sql(
+                "SET mapred.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec")
+              checkNativeWrite(
+                "CREATE TABLE t STORED AS PARQUET TBLPROPERTIES ('parquet.compression'='zstd') " +
+                  "AS SELECT 1 as c",
+                checkNative = enableNativeWrite)
+              val tableDir = new Path(s"${conf.getConf(StaticSQLConf.WAREHOUSE_PATH)}/t")
+              val configuration = spark.sessionState.newHadoopConf()
+              val files = tableDir
+                .getFileSystem(configuration)
+                .listStatus(tableDir)
+                .filterNot(_.getPath.getName.startsWith("\\."))
+              assert(files.nonEmpty)
+              val in = HadoopInputFile.fromStatus(files.head, spark.sessionState.newHadoopConf())
+              Utils.tryWithResource(ParquetFileReader.open(in)) {
+                reader =>
+                  val compression =
+                    reader.getFooter.getBlocks.get(0).getColumns.get(0).getCodec.toString
+                  // native writer and vanilla spark hive writer should be consistent
+                  assert("zstd".equalsIgnoreCase(compression))
+              }
+            }
+          }
+        }
+    }
+  }
 }

@@ -42,6 +42,8 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapred.{JobConf, Reporter}
 import org.apache.hadoop.mapreduce.{Job, TaskAttemptContext}
+import org.apache.parquet.hadoop.ParquetOutputFormat
+import org.apache.parquet.hadoop.metadata.CompressionCodecName
 
 import scala.collection.JavaConverters._
 
@@ -99,17 +101,25 @@ class HiveFileFormat(fileSinkConf: FileSinkDesc)
     if ("true" == sparkSession.sparkContext.getLocalProperty("isNativeApplicable")) {
       val nativeFormat = sparkSession.sparkContext.getLocalProperty("nativeFormat")
       val tableOptions = tableDesc.getProperties.asScala.toMap
-      val isParquetFormat = nativeFormat == "parquet"
-      val compressionCodec = if (fileSinkConf.compressed) {
-        // hive related configurations
-        fileSinkConf.compressCodec
-      } else if (isParquetFormat) {
-        val parquetOptions =
-          new ParquetOptions(tableOptions, sparkSession.sessionState.conf)
-        parquetOptions.compressionCodecClassName
-      } else {
-        val orcOptions = new OrcOptions(tableOptions, sparkSession.sessionState.conf)
-        orcOptions.compressionCodec
+      val compressionCodec = nativeFormat match {
+        case "parquet" if fileSinkConf.compressed =>
+          // MapredParquetOutputFormat use the `ParquetOutputFormat.COMPRESSION` as
+          // the compression codec. Currently, we only support the parquet native
+          // writer for Spark3.2/3.3 code path.
+          tableOptions.getOrElse(
+            ParquetOutputFormat.COMPRESSION,
+            conf.get(ParquetOutputFormat.COMPRESSION, CompressionCodecName.UNCOMPRESSED.name))
+        case "parquet" =>
+          val parquetOptions =
+            new ParquetOptions(tableOptions, sparkSession.sessionState.conf)
+          parquetOptions.compressionCodecClassName
+        case _ =>
+          if (fileSinkConf.compressed) {
+            fileSinkConf.compressCodec
+          } else {
+            val orcOptions = new OrcOptions(tableOptions, sparkSession.sessionState.conf)
+            orcOptions.compressionCodec
+          }
       }
 
       val nativeConf =
