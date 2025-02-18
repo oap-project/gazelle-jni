@@ -228,12 +228,7 @@ class GlutenSQLQueryTestSuite
     "ignored.sql", // Do NOT remove this one. It is here to test the ignore functionality.
     "explain-aqe.sql", // explain plan is different
     "explain-cbo.sql", // explain
-    "explain.sql", // explain
-    "udf/udf-window.sql", // Local window fixes are not added.
-    "window.sql", // Local window fixes are not added.
-    // Disable for Spark 3.
-    "group-by.sql",
-    "udf/udf-group-by.sql - Scala UDF"
+    "explain.sql" // explain
   ) ++ otherIgnoreList ++ udafIgnoreList ++
     BackendTestSettings.instance.getSQLQueryTestSettings.getIgnoredSQLQueryTests
 

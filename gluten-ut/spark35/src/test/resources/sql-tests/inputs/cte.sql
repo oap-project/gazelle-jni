@@ -94,9 +94,9 @@ SELECT * FROM same_name, (SELECT 10) AS same_name;
 WITH same_name(x) AS (SELECT 42)
 SELECT same_name.x FROM (SELECT 10) AS same_name(x), same_name;
 
--- Test behavior with an unknown-type literal in the WITH
 set spark.sql.optimizer.excludedRules=org.apache.spark.sql.catalyst.optimizer.ConvertToLocalRelation,org.apache.spark.sql.catalyst.optimizer.NullPropagation;
 
+-- Test behavior with an unknown-type literal in the WITH
 WITH q AS (SELECT 'foo' AS x)
 SELECT x, typeof(x) FROM q;
 
