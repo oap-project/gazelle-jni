@@ -1,0 +1,9 @@
+{
+    "name": "Gluten dev container",
+    "image": "apache/gluten:centos-8-dev",
+    "containerEnv": {
+        "https_proxy": "${localEnv:https_proxy}",
+        "http_proxy": "${localEnv:http_proxy}",
+        "no_proxy": "${localEnv:no_proxy}"
+    }
+}
